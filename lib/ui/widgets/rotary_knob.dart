@@ -2,13 +2,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/pod_theme.dart';
 
-/// A skeuomorphic rotary knob widget with metallic appearance
+/// A minimalist rotary knob widget
 ///
 /// Features:
-/// - Metallic gradient appearance
+/// - Clean geometric design
 /// - Configurable value range (default 0-127)
-/// - Rotating indicator dot (~270° arc)
+/// - Rotating indicator line (~270° arc)
 /// - Label and value display
+/// - Optional value formatter for real values
 /// - Vertical drag or circular gesture control
 class RotaryKnob extends StatefulWidget {
   /// Label displayed below the knob
@@ -32,6 +33,10 @@ class RotaryKnob extends StatefulWidget {
   /// Whether to show tick marks around the edge
   final bool showTickMarks;
 
+  /// Optional formatter for displaying the value
+  /// If null, displays the raw integer value
+  final String Function(int value)? valueFormatter;
+
   const RotaryKnob({
     super.key,
     required this.label,
@@ -41,6 +46,7 @@ class RotaryKnob extends StatefulWidget {
     this.maxValue = 127,
     this.size = 80.0,
     this.showTickMarks = true,
+    this.valueFormatter,
   });
 
   @override
@@ -51,6 +57,11 @@ class _RotaryKnobState extends State<RotaryKnob> {
   late int _currentValue;
   Offset? _lastDragPosition;
   double _accumulatedDelta = 0.0;
+
+  // Rotation angles: 7:30 (135°) to 4:30 (45°), 270° arc through the top
+  // Start at 135° (7:30 position), sweep 270° clockwise to 45° (4:30 position)
+  static const double _startAngle = 135.0 * math.pi / 180.0; // 2.356 rad (7:30)
+  static const double _totalArc = 270.0 * math.pi / 180.0; // 4.712 rad
 
   @override
   void initState() {
@@ -67,35 +78,44 @@ class _RotaryKnobState extends State<RotaryKnob> {
   }
 
   /// Convert value to angle (in radians)
-  /// 270° arc of rotation, starting from bottom-left (-135°)
+  /// Min value at -135° (7:30), max value at 135° (4:30)
   double _valueToAngle(int value) {
     final normalizedValue =
         (value - widget.minValue) / (widget.maxValue - widget.minValue);
-    // Start at -135° (bottom-left), end at +135° (bottom-right)
-    // Total rotation: 270°
-    const startAngle = -135.0 * math.pi / 180.0; // -2.356 rad
-    const arcAngle = 270.0 * math.pi / 180.0; // 4.712 rad
-    return startAngle + (normalizedValue * arcAngle);
+    return _startAngle + (normalizedValue * _totalArc);
   }
 
   /// Convert angle (in radians) to value
   int _angleToValue(double angle) {
-    // Normalize angle to 0-2π range
-    double normalizedAngle = angle % (2 * math.pi);
-    if (normalizedAngle < 0) normalizedAngle += 2 * math.pi;
+    // Normalize angle to 0-2π range, then shift to match our start angle
+    double normalizedAngle = angle;
 
-    // Convert to -π to π range for easier calculation
-    if (normalizedAngle > math.pi) normalizedAngle -= 2 * math.pi;
+    // Handle the wrap-around: our range goes from 135° through 360°/0° to 45°
+    // First normalize to 0-2π
+    while (normalizedAngle < 0) {
+      normalizedAngle += 2 * math.pi;
+    }
+    while (normalizedAngle > 2 * math.pi) {
+      normalizedAngle -= 2 * math.pi;
+    }
 
-    // Map angle range [-2.356, 2.356] to [0, 1]
-    const startAngle = -135.0 * math.pi / 180.0;
-    const endAngle = 135.0 * math.pi / 180.0;
+    // Calculate how far we are from start angle
+    double deltaFromStart = normalizedAngle - _startAngle;
+    if (deltaFromStart < 0) deltaFromStart += 2 * math.pi;
 
-    // Clamp angle to valid range
-    double clampedAngle = normalizedAngle.clamp(startAngle, endAngle);
+    // Clamp to valid arc range
+    if (deltaFromStart > _totalArc) {
+      // We're in the dead zone (bottom of knob)
+      // Snap to nearest end
+      if (deltaFromStart > _totalArc + (2 * math.pi - _totalArc) / 2) {
+        deltaFromStart = 0; // Snap to min
+      } else {
+        deltaFromStart = _totalArc; // Snap to max
+      }
+    }
 
     // Convert to 0-1 range
-    double normalizedValue = (clampedAngle - startAngle) / (endAngle - startAngle);
+    double normalizedValue = deltaFromStart / _totalArc;
 
     // Convert to value range
     int value = (widget.minValue +
@@ -107,7 +127,6 @@ class _RotaryKnobState extends State<RotaryKnob> {
 
   void _handleVerticalDrag(DragUpdateDetails details) {
     // Vertical drag: up = increase, down = decrease
-    // Accumulate small movements to prevent jitter
     _accumulatedDelta += -details.delta.dy;
 
     // Sensitivity: pixels per value step
@@ -117,7 +136,8 @@ class _RotaryKnobState extends State<RotaryKnob> {
       final steps = (_accumulatedDelta / sensitivity).floor();
       _accumulatedDelta -= steps * sensitivity;
 
-      final newValue = (_currentValue + steps).clamp(widget.minValue, widget.maxValue);
+      final newValue =
+          (_currentValue + steps).clamp(widget.minValue, widget.maxValue);
 
       if (newValue != _currentValue) {
         setState(() {
@@ -129,7 +149,6 @@ class _RotaryKnobState extends State<RotaryKnob> {
   }
 
   void _handleCircularDrag(DragUpdateDetails details, Offset center) {
-    // Circular drag: calculate angle from center
     final position = details.localPosition;
     final delta = position - center;
     final angle = math.atan2(delta.dy, delta.dx);
@@ -145,8 +164,6 @@ class _RotaryKnobState extends State<RotaryKnob> {
   }
 
   void _handleDragUpdate(DragUpdateDetails details, Offset center) {
-    // Determine if this is vertical or circular drag
-    // If drag starts near center, use circular; otherwise use vertical
     if (_lastDragPosition == null) {
       _lastDragPosition = details.localPosition;
       return;
@@ -155,7 +172,6 @@ class _RotaryKnobState extends State<RotaryKnob> {
     final distanceFromCenter = (details.localPosition - center).distance;
     final knobRadius = widget.size / 2;
 
-    // If within knob radius, prefer circular drag
     if (distanceFromCenter < knobRadius * 1.2) {
       _handleCircularDrag(details, center);
     } else {
@@ -166,6 +182,13 @@ class _RotaryKnobState extends State<RotaryKnob> {
   void _handleDragEnd(DragEndDetails details) {
     _lastDragPosition = null;
     _accumulatedDelta = 0.0;
+  }
+
+  String _getDisplayValue() {
+    if (widget.valueFormatter != null) {
+      return widget.valueFormatter!(_currentValue);
+    }
+    return _currentValue.toString();
   }
 
   @override
@@ -180,6 +203,19 @@ class _RotaryKnobState extends State<RotaryKnob> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Value display above knob
+          SizedBox(
+            height: 16,
+            child: Text(
+              _getDisplayValue(),
+              style: const TextStyle(
+                color: PodColors.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           // Knob
           SizedBox(
             width: widget.size,
@@ -194,25 +230,15 @@ class _RotaryKnobState extends State<RotaryKnob> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           // Label
           Text(
             widget.label,
             style: const TextStyle(
-              color: PodColors.textLabel,
-              fontSize: 12,
+              color: PodColors.textSecondary,
+              fontSize: 10,
               fontWeight: FontWeight.w500,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 2),
-          // Value display
-          Text(
-            _currentValue.toString(),
-            style: const TextStyle(
-              color: PodColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -221,13 +247,16 @@ class _RotaryKnobState extends State<RotaryKnob> {
   }
 }
 
-/// Custom painter for the rotary knob
+/// Custom painter for the minimalist rotary knob
 class _RotaryKnobPainter extends CustomPainter {
   final int value;
   final int minValue;
   final int maxValue;
   final double angle;
   final bool showTickMarks;
+
+  static const double _startAngle = 135.0 * math.pi / 180.0; // 7:30 position
+  static const double _totalArc = 270.0 * math.pi / 180.0;
 
   _RotaryKnobPainter({
     required this.value,
@@ -242,160 +271,80 @@ class _RotaryKnobPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Draw shadow
-    _drawShadow(canvas, center, radius);
-
-    // Draw main knob body with metallic gradient
-    _drawKnobBody(canvas, center, radius);
-
     // Draw tick marks (optional)
     if (showTickMarks) {
       _drawTickMarks(canvas, center, radius);
     }
 
-    // Draw center cap
-    _drawCenterCap(canvas, center, radius);
+    // Draw main knob body (solid circle)
+    _drawKnobBody(canvas, center, radius);
 
-    // Draw indicator dot
+    // Draw indicator line
     _drawIndicator(canvas, center, radius);
   }
 
-  void _drawShadow(Canvas canvas, Offset center, double radius) {
-    final shadowPaint = Paint()
-      ..color = PodColors.knobShadow.withValues(alpha: 0.6)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-
-    canvas.drawCircle(
-      center + const Offset(2, 2),
-      radius,
-      shadowPaint,
-    );
-  }
-
   void _drawKnobBody(Canvas canvas, Offset center, double radius) {
-    // Outer metallic gradient (radial gradient for 3D effect)
-    final gradientPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          PodColors.knobHighlight,
-          PodColors.knobBase,
-          PodColors.knobShadow,
-        ],
-        stops: const [0.0, 0.6, 1.0],
-        center: const Alignment(-0.3, -0.3), // Light from top-left
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    // Solid dark circle
+    final bodyPaint = Paint()
+      ..color = PodColors.surfaceLight
+      ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(center, radius, gradientPaint);
+    canvas.drawCircle(center, radius * 0.85, bodyPaint);
 
-    // Add subtle edge highlight for more depth
-    final edgeHighlight = Paint()
+    // Thin border
+    final borderPaint = Paint()
+      ..color = PodColors.textSecondary.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..shader = SweepGradient(
-        colors: [
-          PodColors.knobHighlight.withValues(alpha: 0.3),
-          Colors.transparent,
-          Colors.transparent,
-          PodColors.knobHighlight.withValues(alpha: 0.3),
-        ],
-        stops: const [0.0, 0.25, 0.75, 1.0],
-        startAngle: -math.pi / 4,
-        endAngle: (7 * math.pi) / 4,
-      ).createShader(Rect.fromCircle(center: center, radius: radius - 1));
+      ..strokeWidth = 1;
 
-    canvas.drawCircle(center, radius - 1, edgeHighlight);
-
-    // Inner shadow for depth
-    final innerShadow = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..color = PodColors.knobShadow.withValues(alpha: 0.5);
-
-    canvas.drawCircle(center, radius - 2, innerShadow);
+    canvas.drawCircle(center, radius * 0.85, borderPaint);
   }
 
   void _drawTickMarks(Canvas canvas, Offset center, double radius) {
-    const startAngle = -135.0 * math.pi / 180.0;
-    const endAngle = 135.0 * math.pi / 180.0;
-    const tickCount = 11; // 11 ticks for 0, 12.7, 25.4, ..., 127
+    const tickCount = 11;
 
     final tickPaint = Paint()
-      ..color = PodColors.knobShadow
-      ..strokeWidth = 1.5
+      ..color = PodColors.textSecondary.withValues(alpha: 0.4)
+      ..strokeWidth = 1
       ..strokeCap = StrokeCap.round;
 
     for (int i = 0; i < tickCount; i++) {
-      final tickAngle = startAngle + (i / (tickCount - 1)) * (endAngle - startAngle);
+      final tickAngle = _startAngle + (i / (tickCount - 1)) * _totalArc;
       final tickStart = center +
           Offset(
-            math.cos(tickAngle) * (radius - 8),
-            math.sin(tickAngle) * (radius - 8),
+            math.cos(tickAngle) * (radius * 0.92),
+            math.sin(tickAngle) * (radius * 0.92),
           );
       final tickEnd = center +
           Offset(
-            math.cos(tickAngle) * (radius - 3),
-            math.sin(tickAngle) * (radius - 3),
+            math.cos(tickAngle) * radius,
+            math.sin(tickAngle) * radius,
           );
 
       canvas.drawLine(tickStart, tickEnd, tickPaint);
     }
   }
 
-  void _drawCenterCap(Canvas canvas, Offset center, double radius) {
-    final capRadius = radius * 0.25;
-
-    // Center cap with gradient
-    final capGradient = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          PodColors.knobHighlight,
-          PodColors.knobBase,
-        ],
-        stops: const [0.0, 1.0],
-        center: const Alignment(-0.4, -0.4),
-      ).createShader(Rect.fromCircle(center: center, radius: capRadius));
-
-    canvas.drawCircle(center, capRadius, capGradient);
-
-    // Cap outline
-    final capOutline = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = PodColors.knobShadow;
-
-    canvas.drawCircle(center, capRadius, capOutline);
-  }
-
   void _drawIndicator(Canvas canvas, Offset center, double radius) {
-    // Indicator position (on the edge of the knob)
-    final indicatorRadius = radius * 0.75;
-    final indicatorPosition = center +
+    // Simple line indicator from center outward
+    final indicatorPaint = Paint()
+      ..color = PodColors.textPrimary
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final startPoint = center +
         Offset(
-          math.cos(angle) * indicatorRadius,
-          math.sin(angle) * indicatorRadius,
+          math.cos(angle) * (radius * 0.3),
+          math.sin(angle) * (radius * 0.3),
         );
 
-    // Indicator dot with glow effect
-    final glowPaint = Paint()
-      ..color = PodColors.knobIndicator.withValues(alpha: 0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    final endPoint = center +
+        Offset(
+          math.cos(angle) * (radius * 0.7),
+          math.sin(angle) * (radius * 0.7),
+        );
 
-    canvas.drawCircle(indicatorPosition, 6, glowPaint);
-
-    // Indicator dot
-    final indicatorPaint = Paint()..color = PodColors.knobIndicator;
-
-    canvas.drawCircle(indicatorPosition, 4, indicatorPaint);
-
-    // Indicator dot highlight
-    final highlightPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.8);
-
-    canvas.drawCircle(
-      indicatorPosition + const Offset(-1, -1),
-      1.5,
-      highlightPaint,
-    );
+    canvas.drawLine(startPoint, endPoint, indicatorPaint);
   }
 
   @override

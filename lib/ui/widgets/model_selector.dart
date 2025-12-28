@@ -67,102 +67,45 @@ class ModelSelector extends StatelessWidget {
           const SizedBox(height: 4),
         ],
 
-        // LCD Display
+        // Model display
         GestureDetector(
           onTap: onTap,
           onHorizontalDragEnd: _handleSwipe,
           child: Container(
-            height: 60,
+            height: 48,
             decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(8),
+              color: PodColors.surface,
+              borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: Colors.grey.shade800,
-                width: 2,
+                color: PodColors.surfaceLight,
+                width: 1,
               ),
-              boxShadow: [
-                // Outer shadow for depth
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.5),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: Container(
-              margin: const EdgeInsets.all(3),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(6),
-                // Inner shadow effect using gradient
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.8),
-                    PodColors.lcdBackground,
-                    PodColors.lcdBackground,
-                    Colors.black.withValues(alpha: 0.6),
-                  ],
-                  stops: const [0.0, 0.15, 0.85, 1.0],
-                ),
-                boxShadow: [
-                  // Inner shadow effect (top)
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Stack(
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Subtle scanline effect overlay
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.1),
-                          ],
-                          stops: const [0.5, 0.5],
-                          tileMode: TileMode.repeated,
-                        ),
-                      ),
+                  Icon(
+                    Icons.chevron_left,
+                    color: PodColors.textSecondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    value,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      color: PodColors.textPrimary,
                     ),
                   ),
-
-                  // LCD Text with glow
-                  Center(
-                    child: Text(
-                      '« $value »',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.5,
-                        fontFamily: 'monospace',
-                        color: PodColors.lcdText,
-                        shadows: [
-                          // Glow effect
-                          Shadow(
-                            color: PodColors.lcdGlow,
-                            blurRadius: 8,
-                          ),
-                          Shadow(
-                            color: PodColors.lcdGlow,
-                            blurRadius: 16,
-                          ),
-                          Shadow(
-                            color: PodColors.lcdGlow.withValues(alpha: 0.5),
-                            blurRadius: 24,
-                          ),
-                        ],
-                      ),
-                    ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.chevron_right,
+                    color: PodColors.textSecondary,
+                    size: 20,
                   ),
                 ],
               ),

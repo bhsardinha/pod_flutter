@@ -2,7 +2,7 @@
 
 ## Current State (2025-12-28)
 
-The app successfully builds and mounts with the new skeuomorphic UI layout.
+**MIDI COMMUNICATION WORKING!** The app successfully connects to POD XT Pro via USB MIDI and provides bidirectional control - changes on app reflect on device and vice versa.
 
 ---
 
@@ -21,67 +21,74 @@ The app successfully builds and mounts with the new skeuomorphic UI layout.
 
 ### Services
 - `lib/services/midi_service.dart` - Abstract MIDI interface
-- `lib/services/ble_midi_service.dart` - BLE MIDI implementation using flutter_midi_command
+- `lib/services/ble_midi_service.dart` - BLE/USB MIDI implementation using flutter_midi_command
 - `lib/services/pod_controller.dart` - High-level POD control API with convenience accessors
 
 ### UI Theme
 - `lib/ui/theme/pod_theme.dart` - PodColors, PodTextStyles, PodTheme (Material3 dark theme)
 
-### UI Widgets
-- `lib/ui/widgets/rotary_knob.dart` - Metallic rotary knob with CustomPainter, ~270° rotation
-- `lib/ui/widgets/effect_button.dart` - Backlit toggle button (click=toggle, hold=modal)
-- `lib/ui/widgets/vertical_fader.dart` - Bipolar center-zero EQ fader
-- `lib/ui/widgets/model_selector.dart` - LCD-style green display with chevrons
+### UI Widgets (Minimalist Design)
+- `lib/ui/widgets/rotary_knob.dart` - Clean geometric knob with line indicator, 270° rotation (7:30 to 4:30)
+- `lib/ui/widgets/effect_button.dart` - Solid toggle button (click=toggle, right-click/long-press=modal)
+- `lib/ui/widgets/vertical_fader.dart` - Compact bipolar center-zero EQ fader (100px height)
 - `lib/ui/widgets/pod_modal.dart` - Modal wrapper + showPodModal() function
 - `lib/ui/widgets/connection_indicator.dart` - Green/red connection dot
 - `lib/ui/widgets/patch_browser.dart` - Bottom patch navigation bar
 - `lib/ui/widgets/widgets.dart` - Barrel export file
 
 ### UI Screens
-- `lib/ui/screens/main_screen.dart` - Main horizontal layout with all sections
-- `lib/ui/screens/midi_test_screen.dart` - MIDI connectivity test screen
+- `lib/ui/screens/main_screen.dart` - Main horizontal layout with MIDI integration
+
+### MIDI Integration (NEW!)
+- **Bidirectional Communication** - App sends CC to POD, POD sends CC to app
+- **Connected Parameters:**
+  - All 6 main knobs (Drive, Bass, Mid, Treble, Presence, Volume)
+  - All effect enable buttons (Gate, Amp, Wah, Stomp, Mod, Delay, Reverb, EQ)
+  - Patch navigation (previous/next program change)
+- **Device Connection Panel** - Scan, connect, disconnect, sync from POD
+- **Edit Buffer Sync** - Request current state from POD on connect
+
+### UI Features (NEW!)
+- **Minimalist Design** - No glow effects, solid geometric shapes
+- **Real Value Display** - Knobs show 0.0-10.0 scale, EQ shows actual Hz values
+- **AMP Bypass Button** - Toggle amp on/off
+- **Custom Amp Selector** - Arrows at extremes, compact design
+- **Dropdown Selectors** - CAB and MIC as compact dropdowns
+- **Right-click Support** - Desktop: right-click = long-press action
+- **EQ Section Tile** - EQ bands grouped in a container
 
 ### Documentation
 - `CLAUDE.md` - Project context for Claude
 - `docs/UI_PLAN.md` - Comprehensive UI specification with ASCII diagrams
+- `docs/PROGRESS.md` - This file
 
 ---
 
-## TODO / Lacking
+## TODO / Remaining Work
 
 ### High Priority
-1. **Effect Parameter Modals** - Currently show placeholder text
-   - `stomp_modal.dart` - Stomp box parameters (varies by model)
-   - `mod_modal.dart` - Modulation parameters
-   - `delay_modal.dart` - Delay parameters (time, feedback, mix, etc.)
-   - `reverb_modal.dart` - Reverb parameters
-   - `wah_modal.dart` - Wah parameters
-   - `gate_modal.dart` - Noise gate threshold/decay
+1. **Edit Buffer Auto-Sync** - Debug sysex response handling for initial state load
+2. **Effect Parameter Modals** - Currently show placeholder text
+   - Gate modal (threshold/decay)
+   - Wah/Stomp/Mod/Delay/Reverb modals with full parameters
 
-2. **Picker Modals** - Currently show placeholder text
-   - `amp_picker_modal.dart` - Scrollable amp list grouped by pack
-   - `cab_picker_modal.dart` - Cabinet selection
-   - `mic_picker_modal.dart` - Microphone selection
-   - `patch_list_modal.dart` - Full 128-patch browser
-
-3. **Wire up PodController** - Connect UI state to actual MIDI
-   - Integrate BleMidiService with MainScreen
-   - Send CC messages when knobs/faders change
-   - Receive and parse edit buffer dumps
-   - Update UI when MIDI data received
+3. **Picker Modals** - Currently show placeholder text
+   - Amp picker (scrollable list grouped by pack)
+   - Cab picker
+   - Mic picker
+   - Patch list (full 128-patch browser)
 
 ### Medium Priority
-4. **Patch Navigation** - Implement prev/next patch buttons
-5. **Amp/Model Navigation** - Implement prev/next model swipe
-6. **Connection Screen** - Device scanning and connection UI
-7. **State Management** - Consider Provider/Riverpod for cleaner state
+4. **Amp Navigation** - Implement prev/next amp arrows functionality
+5. **EQ Parameter Send** - Wire up EQ faders and frequency knobs to MIDI
+6. **State Persistence** - Remember last connected device
+7. **Error Handling** - Better feedback on connection failures
 
 ### Low Priority / Polish
-8. **Haptic Feedback** - Add vibration on knob changes, button holds
-9. **Animations** - Smooth transitions for button states, modal open/close
-10. **Sound Preview** - Play test tone through POD when connected
-11. **Preset Save/Load** - Save edited patches back to POD
-12. **USB MIDI Support** - For desktop testing (currently BLE only works)
+8. **Haptic Feedback** - Add vibration on mobile
+9. **Animations** - Smooth transitions
+10. **Preset Save/Load** - Save patches back to POD
+11. **Remove Debug Prints** - Clean up console output for production
 
 ---
 
@@ -105,14 +112,14 @@ lib/
 │   └── pod_controller.dart
 └── ui/
     ├── screens/
-    │   ├── main_screen.dart      # Main UI
+    │   ├── main_screen.dart      # Main UI with MIDI integration
     │   └── midi_test_screen.dart # Debug screen
     ├── theme/
     │   └── pod_theme.dart
     └── widgets/
         ├── connection_indicator.dart
         ├── effect_button.dart
-        ├── model_selector.dart
+        ├── model_selector.dart   # (unused, replaced by inline selector)
         ├── patch_browser.dart
         ├── pod_modal.dart
         ├── rotary_knob.dart
@@ -125,8 +132,9 @@ lib/
 ## Notes
 
 - App forces landscape orientation in MainScreen
-- All effect buttons: click = toggle on/off, hold 600ms = open modal
-- Modals close by tapping outside (no X button)
+- All effect buttons: click = toggle, right-click (desktop) or long-press (mobile) = open modal
+- Modals close by tapping outside
 - EQ faders are bipolar: center = 0dB, up = boost, down = cut
-- LCD selector uses green glow effect like real POD hardware
+- Knobs display real values (0-10 scale or Hz for EQ frequencies)
 - Knobs support both vertical drag and circular gesture
+- Amp enable CC is inverted: 127 = bypass (off), 0 = amp on

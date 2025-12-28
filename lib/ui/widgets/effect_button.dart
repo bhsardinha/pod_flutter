@@ -57,35 +57,16 @@ class EffectButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
-      onLongPressStart: (_) {
-        // Trigger haptic feedback on long press if available
-        // HapticFeedback.mediumImpact();
-      },
+      onSecondaryTap: onLongPress, // Right-click on desktop
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isOn ? color.withValues(alpha: 0.3) : PodColors.buttonOff,
-          borderRadius: BorderRadius.circular(8),
+          color: isOn ? color : PodColors.buttonOff,
+          borderRadius: BorderRadius.circular(4),
           border: Border.all(
-            color: isOn ? color.withValues(alpha: 0.5) : PodColors.buttonOff.withValues(alpha: 0.5),
+            color: isOn ? color : PodColors.surfaceLight,
             width: 1,
           ),
-          boxShadow: isOn
-              ? [
-                  // Inner glow effect
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.6),
-                    blurRadius: 12,
-                    spreadRadius: 0,
-                  ),
-                  // Outer glow effect
-                  BoxShadow(
-                    color: PodColors.buttonGlow.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ]
-              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -95,23 +76,22 @@ class EffectButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isOn ? Colors.white : PodColors.buttonOffText,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+                color: isOn ? Colors.black : PodColors.buttonOffText,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
             // Model/preset name (e.g., "Fassel") - optional
             if (modelName != null && modelName!.isNotEmpty) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
-                '"$modelName"',
+                modelName!,
                 style: TextStyle(
                   color: isOn
-                      ? Colors.white.withValues(alpha: 0.8)
-                      : PodColors.buttonOffText.withValues(alpha: 0.7),
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
+                      ? Colors.black.withValues(alpha: 0.7)
+                      : PodColors.buttonOffText.withValues(alpha: 0.6),
+                  fontSize: 11,
                 ),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,

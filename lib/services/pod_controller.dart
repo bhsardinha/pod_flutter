@@ -329,9 +329,19 @@ class PodController {
   }
 
   Future<void> _requestInitialState() async {
+    // Wait a moment for the connection to stabilize
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    print('POD: Requesting initial state...');
+
     // Request expansion packs info
     await _midi.requestInstalledPacks();
+
+    // Small delay between requests
+    await Future.delayed(const Duration(milliseconds: 100));
+
     // Request current edit buffer
+    print('POD: Requesting edit buffer...');
     await _midi.requestEditBuffer();
   }
 
@@ -353,11 +363,17 @@ class PodController {
   }
 
   void _handleSysex(SysexMessage message) {
+    // Debug: print received sysex
+    print('POD Sysex received: $message');
+
     if (message.isEditBufferDump) {
+      print('  -> Edit buffer dump!');
       _handleEditBufferDump(message);
     } else if (message.isPatchDump) {
+      print('  -> Patch dump');
       _handlePatchDump(message);
     } else if (message.isInstalledPacks) {
+      print('  -> Installed packs');
       _handleInstalledPacks(message);
     }
   }

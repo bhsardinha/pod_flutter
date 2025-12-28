@@ -34,7 +34,7 @@ class VerticalFader extends StatefulWidget {
   /// Whether to show the value display
   final bool showValue;
 
-  /// Custom fill color (defaults to accent orange)
+  /// Custom fill color (defaults to accent color)
   final Color? fillColor;
 
   const VerticalFader({
@@ -44,8 +44,8 @@ class VerticalFader extends StatefulWidget {
     this.min = -12.0,
     this.max = 12.0,
     this.label,
-    this.width = 40.0,
-    this.height = 200.0,
+    this.width = 32.0,
+    this.height = 100.0,
     this.showValue = true,
     this.fillColor,
   });
@@ -172,12 +172,12 @@ class _FaderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double trackWidth = size.width * 0.3;
+    final double trackWidth = size.width * 0.25;
     final double trackLeft = (size.width - trackWidth) / 2;
     final double trackRight = trackLeft + trackWidth;
 
-    final double handleWidth = size.width * 0.8;
-    final double handleHeight = 12.0;
+    final double handleWidth = size.width * 0.7;
+    final double handleHeight = 8.0;
 
     // Calculate center position (where value = 0)
     final double centerY = size.height / 2;
@@ -196,7 +196,7 @@ class _FaderPainter extends CustomPainter {
       0,
       trackRight,
       size.height,
-      const Radius.circular(3),
+      const Radius.circular(2),
     );
     canvas.drawRRect(trackRect, trackPaint);
 
@@ -214,42 +214,25 @@ class _FaderPainter extends CustomPainter {
         fillTop,
         trackRight,
         fillBottom,
-        const Radius.circular(3),
+        const Radius.circular(2),
       );
       canvas.drawRRect(fillRect, fillPaint);
     }
 
-    // Draw center line (0dB indicator)
+    // Draw center line (0dB indicator) - subtle
     final centerLinePaint = Paint()
-      ..color = PodColors.textSecondary
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawLine(
-      Offset(0, centerY),
-      Offset(size.width, centerY),
-      centerLinePaint,
-    );
-
-    // Draw small tick marks at center
-    final tickPaint = Paint()
-      ..color = PodColors.textSecondary
+      ..color = PodColors.textSecondary.withValues(alpha: 0.5)
       ..strokeWidth = 1;
 
     canvas.drawLine(
-      Offset(0, centerY),
-      Offset(trackLeft - 2, centerY),
-      tickPaint,
-    );
-    canvas.drawLine(
-      Offset(trackRight + 2, centerY),
-      Offset(size.width, centerY),
-      tickPaint,
+      Offset(trackLeft - 4, centerY),
+      Offset(trackRight + 4, centerY),
+      centerLinePaint,
     );
 
-    // Draw handle
+    // Draw handle - simple rectangle
     final handlePaint = Paint()
-      ..color = PodColors.knobHighlight
+      ..color = PodColors.textPrimary
       ..style = PaintingStyle.fill;
 
     final handleRect = RRect.fromLTRBR(
@@ -260,32 +243,6 @@ class _FaderPainter extends CustomPainter {
       const Radius.circular(2),
     );
     canvas.drawRRect(handleRect, handlePaint);
-
-    // Draw handle border for better visibility
-    final handleBorderPaint = Paint()
-      ..color = PodColors.textPrimary.withValues(alpha: 0.3)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawRRect(handleRect, handleBorderPaint);
-
-    // Draw handle grip lines
-    final gripPaint = Paint()
-      ..color = PodColors.textSecondary
-      ..strokeWidth = 1;
-
-    final double gripSpacing = 3;
-    final double gripLength = handleWidth * 0.5;
-    final double gripLeft = (size.width - gripLength) / 2;
-    final double gripRight = gripLeft + gripLength;
-
-    for (int i = -1; i <= 1; i++) {
-      canvas.drawLine(
-        Offset(gripLeft, handleY + i * gripSpacing),
-        Offset(gripRight, handleY + i * gripSpacing),
-        gripPaint,
-      );
-    }
   }
 
   @override
