@@ -7,12 +7,16 @@ import '../theme/pod_theme.dart';
 /// - Left/right arrows for previous/next patch
 /// - Center area shows bank + number + patch name
 /// - Tap center to open full patch list modal
+/// - Modified indicator when patch has unsaved changes
 class PatchBrowser extends StatelessWidget {
   /// Current patch bank (e.g., "01A", "16D")
   final String bank;
 
   /// Current patch name
   final String patchName;
+
+  /// Whether the current patch has unsaved changes
+  final bool isModified;
 
   /// Callback for previous patch
   final VoidCallback onPrevious;
@@ -27,6 +31,7 @@ class PatchBrowser extends StatelessWidget {
     super.key,
     required this.bank,
     required this.patchName,
+    this.isModified = false,
     required this.onPrevious,
     required this.onNext,
     required this.onTap,
@@ -99,6 +104,18 @@ class PatchBrowser extends StatelessWidget {
                         maxLines: 1,
                       ),
                     ),
+                    // Modified indicator
+                    if (isModified) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: PodColors.accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

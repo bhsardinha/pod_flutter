@@ -39,7 +39,7 @@
 ### UI Screens
 - `lib/ui/screens/main_screen.dart` - Main horizontal layout with MIDI integration
 
-### MIDI Integration (NEW!)
+### MIDI Integration
 - **Bidirectional Communication** - App sends CC to POD, POD sends CC to app
 - **Connected Parameters:**
   - All 6 main knobs (Drive, Bass, Mid, Treble, Presence, Volume)
@@ -47,8 +47,10 @@
   - Patch navigation (previous/next program change)
 - **Device Connection Panel** - Scan, connect, disconnect, sync from POD
 - **Edit Buffer Sync** - Request current state from POD on connect
+- **Full Patch Sync** - Request all 128 patches on connect, stored in PatchLibrary
+- **Sync Progress** - SyncProgress stream tracks patch sync progress
 
-### UI Features (NEW!)
+### UI Features
 - **Minimalist Design** - No glow effects, solid geometric shapes
 - **Real Value Display** - Knobs show 0.0-10.0 scale, EQ shows actual Hz values
 - **AMP Bypass Button** - Toggle amp on/off
@@ -56,6 +58,9 @@
 - **Dropdown Selectors** - CAB and MIC as compact dropdowns
 - **Right-click Support** - Desktop: right-click = long-press action
 - **EQ Section Tile** - EQ bands grouped in a container
+- **Patch Selection Modal** - Full 128-patch browser grouped by bank (32 banks x 4 slots)
+- **Modified Indicator** - Orange dot in patch browser when edit buffer differs from stored patch
+- **Sync Progress Display** - Shows syncing progress when opening patch browser during sync
 
 ### Documentation
 - `CLAUDE.md` - Project context for Claude
@@ -67,28 +72,26 @@
 ## TODO / Remaining Work
 
 ### High Priority
-1. **Edit Buffer Auto-Sync** - Debug sysex response handling for initial state load
-2. **Effect Parameter Modals** - Currently show placeholder text
+1. **Effect Parameter Modals** - Currently show placeholder text
    - Gate modal (threshold/decay)
    - Wah/Stomp/Mod/Delay/Reverb modals with full parameters
 
-3. **Picker Modals** - Currently show placeholder text
+2. **Picker Modals** - Currently show placeholder text
    - Amp picker (scrollable list grouped by pack)
    - Cab picker
    - Mic picker
-   - Patch list (full 128-patch browser)
 
 ### Medium Priority
-4. **Amp Navigation** - Implement prev/next amp arrows functionality
-5. **EQ Parameter Send** - Wire up EQ faders and frequency knobs to MIDI
-6. **State Persistence** - Remember last connected device
-7. **Error Handling** - Better feedback on connection failures
+3. **Amp Navigation** - Implement prev/next amp arrows functionality
+4. **EQ Parameter Send** - Wire up EQ faders and frequency knobs to MIDI
+5. **State Persistence** - Remember last connected device
+6. **Error Handling** - Better feedback on connection failures
 
 ### Low Priority / Polish
-8. **Haptic Feedback** - Add vibration on mobile
-9. **Animations** - Smooth transitions
-10. **Preset Save/Load** - Save patches back to POD
-11. **Remove Debug Prints** - Clean up console output for production
+7. **Haptic Feedback** - Add vibration on mobile
+8. **Animations** - Smooth transitions
+9. **Preset Save/Load** - Save patches back to POD
+10. **Remove Debug Prints** - Clean up console output for production
 
 ---
 

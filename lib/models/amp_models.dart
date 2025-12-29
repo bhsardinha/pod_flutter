@@ -51,7 +51,7 @@ class AmpModels {
     AmpModel(30, 'Super O'),
     AmpModel(31, 'Class A-15'),
     AmpModel(32, 'Class A-30 TB'),
-    AmpModel(33, 'Line 6 Argo'),
+    AmpModel(33, 'Line 6 Agro'),
     AmpModel(34, 'Line 6 Lunatic'),
     AmpModel(35, 'Line 6 Treadplate'),
     AmpModel(36, 'Variax Acoustic'),

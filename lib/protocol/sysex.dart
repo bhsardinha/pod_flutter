@@ -43,6 +43,11 @@ class PodXtSysex {
     return buildMessage(SysexCommand.installedPacks);
   }
 
+  /// Request current program state
+  static Uint8List requestProgramState() {
+    return buildMessage(SysexCommand.programState);
+  }
+
   /// Parse incoming sysex message
   static SysexMessage? parse(Uint8List data) {
     if (data.length < 6) return null;

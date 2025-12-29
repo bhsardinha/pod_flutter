@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/pod_theme.dart';
@@ -30,11 +31,11 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  // EQ frequency ranges (Hz) for each band
-  static const _eq1FreqRange = (min: 60.0, max: 240.0); // LOW
-  static const _eq2FreqRange = (min: 140.0, max: 1400.0); // LO MID
-  static const _eq3FreqRange = (min: 360.0, max: 3600.0); // HI MID
-  static const _eq4FreqRange = (min: 500.0, max: 7200.0); // HIGH
+  // EQ frequency ranges (Hz) for each band - from pod-ui config
+  static const _eq1FreqRange = (min: 50.0, max: 690.0); // LOW
+  static const _eq2FreqRange = (min: 50.0, max: 6050.0); // LO MID
+  static const _eq3FreqRange = (min: 100.0, max: 11300.0); // HI MID
+  static const _eq4FreqRange = (min: 500.0, max: 9300.0); // HIGH
 
   // MIDI Services
   late final BleMidiService _midiService;
@@ -47,9 +48,13 @@ class _MainScreenState extends State<MainScreen> {
     return scaled.toStringAsFixed(1);
   }
 
-  /// Format EQ frequency value based on the band's range
+  /// Format EQ frequency value based on the band's range (logarithmic)
   String _formatEqFreq(int midiValue, ({double min, double max}) range) {
-    final freq = range.min + (midiValue / 127.0) * (range.max - range.min);
+    // Logarithmic interpolation: freq = min * (max/min)^(midi/127)
+    final logMin = math.log(range.min);
+    final logMax = math.log(range.max);
+    final logFreq = logMin + (midiValue / 127.0) * (logMax - logMin);
+    final freq = math.exp(logFreq);
     if (freq >= 1000) {
       return '${(freq / 1000).toStringAsFixed(1)}k';
     }
@@ -71,7 +76,7 @@ class _MainScreenState extends State<MainScreen> {
 
   // Effect states
   bool _gateEnabled = false;
-  bool _ampEnabled = true; // Amp bypass (inverted: true = amp ON)
+  bool _ampEnabled = true; // Amp enabled (true = amp ON)
   bool _wahEnabled = false;
   bool _stompEnabled = false;
   bool _modEnabled = false;
@@ -106,6 +111,13 @@ class _MainScreenState extends State<MainScreen> {
   int _eq3Freq = 70;
   int _eq4Freq = 90;
 
+  // Sync progress
+  bool _patchesSynced = false;
+  int _syncedCount = 0;
+
+  // Modified indicator
+  bool _isModified = false;
+
   @override
   void initState() {
     super.initState();
@@ -133,6 +145,10 @@ class _MainScreenState extends State<MainScreen> {
     _subscriptions.add(
       _podController.onEditBufferChanged.listen((buffer) {
         _updateFromEditBuffer(buffer);
+        // Check if buffer differs from stored patch
+        setState(() {
+          _isModified = _podController.editBufferModified;
+        });
       }),
     );
 
@@ -152,6 +168,21 @@ class _MainScreenState extends State<MainScreen> {
         });
       }),
     );
+
+    // Listen for sync progress
+    _subscriptions.add(
+      _podController.onSyncProgress.listen((progress) {
+        setState(() {
+          _patchesSynced = progress.isComplete;
+          _syncedCount = progress.current;
+        });
+      }),
+    );
+
+    // Open connection screen on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showConnectionScreen();
+    });
   }
 
   @override
@@ -173,6 +204,12 @@ class _MainScreenState extends State<MainScreen> {
 
   void _updateFromEditBuffer(EditBuffer buffer) {
     setState(() {
+      // Patch name
+      _currentPatchName = buffer.patch.name.isNotEmpty
+          ? buffer.patch.name
+          : 'Untitled';
+      _currentProgram = buffer.sourceProgram ?? _currentProgram;
+
       // Amp/Cab/Mic
       final amp = _podController.ampModel;
       final cab = _podController.cabModel;
@@ -191,7 +228,7 @@ class _MainScreenState extends State<MainScreen> {
 
       // Effect enables
       _gateEnabled = _podController.noiseGateEnabled;
-      _ampEnabled = !_podController.getSwitch(PodXtCC.ampEnable); // Inverted
+      _ampEnabled = _podController.getSwitch(PodXtCC.ampEnable);
       _wahEnabled = _podController.wahEnabled;
       _stompEnabled = _podController.stompEnabled;
       _modEnabled = _podController.modEnabled;
@@ -290,12 +327,16 @@ class _MainScreenState extends State<MainScreen> {
   void _showPatchList() {
     showPodModal(
       context: context,
-      title: 'Patch Browser',
-      child: const Center(
-        child: Text(
-          'Patch list coming soon...',
-          style: TextStyle(color: PodColors.textSecondary),
-        ),
+      title: 'Select Patch',
+      child: _PatchListModal(
+        podController: _podController,
+        currentProgram: _currentProgram,
+        patchesSynced: _patchesSynced,
+        syncedCount: _syncedCount,
+        onSelectPatch: (program) {
+          _podController.selectProgram(program);
+          Navigator.of(context).pop();
+        },
       ),
     );
   }
@@ -327,17 +368,14 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               // Top Row: GATE | AMP SELECTOR | CAB/MIC
               _buildTopRow(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
               // Knobs Row: Drive, Bass, Mid, Treble, Presence, Vol
               _buildKnobsRow(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
               // EQ Row: 4-band faders + EQ button
-              Expanded(
-                flex: 2,
-                child: _buildEqRow(),
-              ),
+              Expanded(child: _buildEqRow()),
               const SizedBox(height: 12),
 
               // Effects Row: WAH, STOMP, MOD, DELAY, REVERB
@@ -357,62 +395,70 @@ class _MainScreenState extends State<MainScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // GATE button
-        SizedBox(
-          width: 80,
-          height: 48,
-          child: EffectButton(
-            label: 'GATE',
-            isOn: _gateEnabled,
-            onTap: () {
-              final newState = !_gateEnabled;
-              setState(() => _gateEnabled = newState);
-              if (_isConnected) _podController.setNoiseGateEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Gate'),
-            color: PodColors.buttonOnGreen,
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // AMP Selector with arrows at extremes
+        // GATE button - 1/6
         Expanded(
-          child: _buildAmpSelector(),
-        ),
-        const SizedBox(width: 8),
-
-        // AMP Bypass button
-        SizedBox(
-          width: 70,
-          height: 48,
-          child: EffectButton(
-            label: 'AMP',
-            isOn: _ampEnabled,
-            onTap: () {
-              final newState = !_ampEnabled;
-              setState(() => _ampEnabled = newState);
-              // ampEnable CC is inverted: 127 = bypass (off), 0 = amp on
-              if (_isConnected) _podController.setSwitch(PodXtCC.ampEnable, !newState);
-            },
-            onLongPress: () {},
-            color: PodColors.buttonOnAmber,
+          flex: 2,
+          child: SizedBox(
+            height: 60,
+            child: EffectButton(
+              label: 'GATE',
+              isOn: _gateEnabled,
+              onTap: () {
+                final newState = !_gateEnabled;
+                setState(() => _gateEnabled = newState);
+                if (_isConnected) _podController.setNoiseGateEnabled(newState);
+              },
+              onLongPress: () => _showEffectModal('Gate'),
+              color: PodColors.buttonOnGreen,
+            ),
           ),
         ),
         const SizedBox(width: 8),
 
-        // CAB selector
-        _buildDropdown(
-          label: 'CAB',
-          value: _currentCab,
-          onTap: _showCabPicker,
+        // AMP Selector and AMP Bypass (button extracted)
+        // Amp selector (larger area)
+        Expanded(flex: 6, child: _buildAmpSelector()),
+        const SizedBox(width: 6),
+        // AMP on/off button as its own flex=2 column
+        Expanded(
+          flex: 2,
+          child: SizedBox(
+            height: 60,
+            child: EffectButton(
+              label: 'AMP',
+              isOn: _ampEnabled,
+              onTap: () {
+                final newState = !_ampEnabled;
+                setState(() => _ampEnabled = newState);
+                if (_isConnected)
+                  _podController.setSwitch(PodXtCC.ampEnable, newState);
+              },
+              onLongPress: () {},
+              color: PodColors.buttonOnAmber,
+            ),
+          ),
         ),
         const SizedBox(width: 8),
 
-        // MIC selector
-        _buildDropdown(
-          label: 'MIC',
-          value: _currentMic,
-          onTap: _showMicPicker,
+        // CAB selector - 1/6
+        Expanded(
+          flex: 2,
+          child: _buildDropdown(
+            label: 'CAB',
+            value: _currentCab,
+            onTap: _showCabPicker,
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // MIC selector - 1/6
+        Expanded(
+          flex: 2,
+          child: _buildDropdown(
+            label: 'MIC',
+            value: _currentMic,
+            onTap: _showMicPicker,
+          ),
         ),
       ],
     );
@@ -420,7 +466,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildAmpSelector() {
     return Container(
-      height: 40,
+      height: 60,
       decoration: BoxDecoration(
         color: PodColors.surface,
         borderRadius: BorderRadius.circular(4),
@@ -611,70 +657,111 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildEqRow() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // EQ Section in a tile
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: PodColors.surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: PodColors.surfaceLight,
-                width: 1,
+        // EQ Section in a tile (narrower)
+        Container(
+          width: 280,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: PodColors.surface,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: PodColors.surfaceLight, width: 1),
+          ),
+          child: Row(
+            children: [
+              // Band 1
+              Expanded(
+                child: _buildEqBand(
+                  label: 'LOW',
+                  gain: _eq1Gain,
+                  onGainChanged: (v) {
+                    setState(() => _eq1Gain = v);
+                    if (_isConnected)
+                      _podController.setParameter(
+                        PodXtCC.eq1Gain,
+                        _dbToMidi(v),
+                      );
+                  },
+                  freq: _eq1Freq,
+                  onFreqChanged: (v) {
+                    setState(() => _eq1Freq = v);
+                    if (_isConnected)
+                      _podController.setParameter(PodXtCC.eq1Freq, v);
+                  },
+                  freqRange: _eq1FreqRange,
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                // Band 1
-                Expanded(
-                  child: _buildEqBand(
-                    label: 'LOW',
-                    gain: _eq1Gain,
-                    onGainChanged: (v) => setState(() => _eq1Gain = v),
-                    freq: _eq1Freq,
-                    onFreqChanged: (v) => setState(() => _eq1Freq = v),
-                    freqRange: _eq1FreqRange,
-                  ),
+              // Band 2
+              Expanded(
+                child: _buildEqBand(
+                  label: 'LO MID',
+                  gain: _eq2Gain,
+                  onGainChanged: (v) {
+                    setState(() => _eq2Gain = v);
+                    if (_isConnected)
+                      _podController.setParameter(
+                        PodXtCC.eq2Gain,
+                        _dbToMidi(v),
+                      );
+                  },
+                  freq: _eq2Freq,
+                  onFreqChanged: (v) {
+                    setState(() => _eq2Freq = v);
+                    if (_isConnected)
+                      _podController.setParameter(PodXtCC.eq2Freq, v);
+                  },
+                  freqRange: _eq2FreqRange,
                 ),
-                // Band 2
-                Expanded(
-                  child: _buildEqBand(
-                    label: 'LO MID',
-                    gain: _eq2Gain,
-                    onGainChanged: (v) => setState(() => _eq2Gain = v),
-                    freq: _eq2Freq,
-                    onFreqChanged: (v) => setState(() => _eq2Freq = v),
-                    freqRange: _eq2FreqRange,
-                  ),
+              ),
+              // Band 3
+              Expanded(
+                child: _buildEqBand(
+                  label: 'HI MID',
+                  gain: _eq3Gain,
+                  onGainChanged: (v) {
+                    setState(() => _eq3Gain = v);
+                    if (_isConnected)
+                      _podController.setParameter(
+                        PodXtCC.eq3Gain,
+                        _dbToMidi(v),
+                      );
+                  },
+                  freq: _eq3Freq,
+                  onFreqChanged: (v) {
+                    setState(() => _eq3Freq = v);
+                    if (_isConnected)
+                      _podController.setParameter(PodXtCC.eq3Freq, v);
+                  },
+                  freqRange: _eq3FreqRange,
                 ),
-                // Band 3
-                Expanded(
-                  child: _buildEqBand(
-                    label: 'HI MID',
-                    gain: _eq3Gain,
-                    onGainChanged: (v) => setState(() => _eq3Gain = v),
-                    freq: _eq3Freq,
-                    onFreqChanged: (v) => setState(() => _eq3Freq = v),
-                    freqRange: _eq3FreqRange,
-                  ),
+              ),
+              // Band 4
+              Expanded(
+                child: _buildEqBand(
+                  label: 'HIGH',
+                  gain: _eq4Gain,
+                  onGainChanged: (v) {
+                    setState(() => _eq4Gain = v);
+                    if (_isConnected)
+                      _podController.setParameter(
+                        PodXtCC.eq4Gain,
+                        _dbToMidi(v),
+                      );
+                  },
+                  freq: _eq4Freq,
+                  onFreqChanged: (v) {
+                    setState(() => _eq4Freq = v);
+                    if (_isConnected)
+                      _podController.setParameter(PodXtCC.eq4Freq, v);
+                  },
+                  freqRange: _eq4FreqRange,
                 ),
-                // Band 4
-                Expanded(
-                  child: _buildEqBand(
-                    label: 'HIGH',
-                    gain: _eq4Gain,
-                    onGainChanged: (v) => setState(() => _eq4Gain = v),
-                    freq: _eq4Freq,
-                    onFreqChanged: (v) => setState(() => _eq4Freq = v),
-                    freqRange: _eq4FreqRange,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         // EQ Enable button
         SizedBox(
           width: 60,
@@ -706,23 +793,24 @@ class _MainScreenState extends State<MainScreen> {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Fader
+        // Fader (compact)
         Expanded(
           child: VerticalFader(
             value: gain,
-            min: -12.0,
-            max: 12.0,
+            min: -12.8,
+            max: 12.8,
             onChanged: onGainChanged,
-            width: 24,
-            showValue: true,
+            width: 20,
+            showValue: false,
           ),
         ),
-        // Frequency knob (no gap)
+        const SizedBox(height: 2),
+        // Frequency knob (compact)
         RotaryKnob(
           label: label,
           value: freq,
           onValueChanged: onFreqChanged,
-          size: 32,
+          size: 28,
           showTickMarks: false,
           valueFormatter: (v) => _formatEqFreq(v, freqRange),
         ),
@@ -820,6 +908,7 @@ class _MainScreenState extends State<MainScreen> {
           child: PatchBrowser(
             bank: _formatProgramName(_currentProgram),
             patchName: _currentPatchName,
+            isModified: _isModified,
             onPrevious: () {
               if (_isConnected && _currentProgram > 0) {
                 _podController.selectProgram(_currentProgram - 1);
@@ -950,10 +1039,7 @@ class _ConnectionPanelState extends State<_ConnectionPanel> {
         children: [
           CircularProgressIndicator(),
           SizedBox(height: 16),
-          Text(
-            'Connecting...',
-            style: TextStyle(color: PodColors.textPrimary),
-          ),
+          Text('Connecting...', style: TextStyle(color: PodColors.textPrimary)),
         ],
       );
     }
@@ -1003,51 +1089,187 @@ class _ConnectionPanelState extends State<_ConnectionPanel> {
             children: [
               const Text(
                 'Available Devices:',
-                style: TextStyle(
-                  color: PodColors.textSecondary,
-                  fontSize: 12,
+                style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              ..._devices.map(
+                (device) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: ElevatedButton(
+                    onPressed: () => _connectToDevice(device),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PodColors.surfaceLight,
+                      foregroundColor: PodColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          device.isBleMidi ? Icons.bluetooth : Icons.usb,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            device.name,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
-              ..._devices.map((device) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ElevatedButton(
-                      onPressed: () => _connectToDevice(device),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PodColors.surfaceLight,
-                        foregroundColor: PodColors.textPrimary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            device.isBleMidi
-                                ? Icons.bluetooth
-                                : Icons.usb,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              device.name,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _scanDevices,
-                child: const Text('Refresh'),
-              ),
+              TextButton(onPressed: _scanDevices, child: const Text('Refresh')),
             ],
           ),
       ],
+    );
+  }
+}
+
+/// Patch list modal widget for selecting patches
+class _PatchListModal extends StatelessWidget {
+  final PodController podController;
+  final int currentProgram;
+  final bool patchesSynced;
+  final int syncedCount;
+  final ValueChanged<int> onSelectPatch;
+
+  const _PatchListModal({
+    required this.podController,
+    required this.currentProgram,
+    required this.patchesSynced,
+    required this.syncedCount,
+    required this.onSelectPatch,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Show sync progress if not complete
+    if (!patchesSynced && syncedCount < 128) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 20),
+          CircularProgressIndicator(
+            value: syncedCount / 128,
+            backgroundColor: PodColors.surfaceLight,
+            color: PodColors.accent,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Syncing patches... $syncedCount/128',
+            style: const TextStyle(
+              color: PodColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      );
+    }
+
+    // Group patches by bank (32 banks, 4 patches each)
+    return SizedBox(
+      height: 400,
+      child: ListView.builder(
+        itemCount: 32, // 32 banks
+        itemBuilder: (context, bankIndex) {
+          final bankNum = bankIndex + 1;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Bank header
+              Padding(
+                padding: const EdgeInsets.only(left: 8, top: 12, bottom: 4),
+                child: Text(
+                  'Bank ${bankNum.toString().padLeft(2, '0')}',
+                  style: const TextStyle(
+                    color: PodColors.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              // 4 patches per bank (A, B, C, D)
+              Row(
+                children: List.generate(4, (slotIndex) {
+                  final program = bankIndex * 4 + slotIndex;
+                  final patch = podController.patchLibrary[program];
+                  final isSelected = program == currentProgram;
+                  final letter = String.fromCharCode(
+                    'A'.codeUnitAt(0) + slotIndex,
+                  );
+
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => onSelectPatch(program),
+                      child: Container(
+                        margin: const EdgeInsets.all(2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? PodColors.accent.withValues(alpha: 0.2)
+                              : PodColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isSelected
+                                ? PodColors.accent
+                                : PodColors.surfaceLight,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Program number
+                            Text(
+                              letter,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? PodColors.accent
+                                    : PodColors.textSecondary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            // Patch name
+                            Text(
+                              patch.name.isEmpty ? '(empty)' : patch.name,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? PodColors.textPrimary
+                                    : patch.name.isEmpty
+                                    ? PodColors.textSecondary
+                                    : PodColors.textPrimary,
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

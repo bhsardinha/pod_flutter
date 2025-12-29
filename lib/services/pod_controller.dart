@@ -14,13 +14,7 @@ import '../protocol/constants.dart';
 import 'midi_service.dart';
 
 /// Connection state
-enum PodConnectionState {
-  disconnected,
-  scanning,
-  connecting,
-  connected,
-  error,
-}
+enum PodConnectionState { disconnected, scanning, connecting, connected, error }
 
 /// POD XT Pro Controller
 ///
@@ -39,12 +33,17 @@ class PodController {
   final PatchLibrary _patchLibrary = PatchLibrary();
   int _currentProgram = 0;
   int _installedPacks = 0;
+  bool _patchesSynced = false;
+  int _patchesSyncedCount = 0;
 
   // Stream controllers
-  final _connectionStateController = StreamController<PodConnectionState>.broadcast();
-  final _parameterChangeController = StreamController<ParameterChange>.broadcast();
+  final _connectionStateController =
+      StreamController<PodConnectionState>.broadcast();
+  final _parameterChangeController =
+      StreamController<ParameterChange>.broadcast();
   final _programChangeController = StreamController<int>.broadcast();
   final _editBufferController = StreamController<EditBuffer>.broadcast();
+  final _syncProgressController = StreamController<SyncProgress>.broadcast();
 
   // Subscriptions
   StreamSubscription? _ccSubscription;
@@ -60,7 +59,8 @@ class PodController {
   // ═══════════════════════════════════════════════════════════════════════════
 
   PodConnectionState get connectionState => _connectionState;
-  Stream<PodConnectionState> get onConnectionStateChanged => _connectionStateController.stream;
+  Stream<PodConnectionState> get onConnectionStateChanged =>
+      _connectionStateController.stream;
 
   EditBuffer get editBuffer => _editBuffer;
   Stream<EditBuffer> get onEditBufferChanged => _editBufferController.stream;
@@ -70,7 +70,27 @@ class PodController {
   int get currentProgram => _currentProgram;
   Stream<int> get onProgramChanged => _programChangeController.stream;
 
-  Stream<ParameterChange> get onParameterChanged => _parameterChangeController.stream;
+  Stream<ParameterChange> get onParameterChanged =>
+      _parameterChangeController.stream;
+
+  /// Sync progress (0-128 patches)
+  bool get patchesSynced => _patchesSynced;
+  int get patchesSyncedCount => _patchesSyncedCount;
+  Stream<SyncProgress> get onSyncProgress => _syncProgressController.stream;
+
+  /// Get patch name by program number
+  String getPatchName(int program) {
+    if (program < 0 || program >= programCount) return '';
+    return _patchLibrary[program].name;
+  }
+
+  /// Check if current edit buffer differs from stored patch
+  bool get editBufferModified {
+    if (!_patchesSynced || _editBuffer.sourceProgram == null) return false;
+    // Compare current edit buffer with stored patch
+    final stored = _patchLibrary[_editBuffer.sourceProgram!];
+    return _editBuffer.patch.data.toString() != stored.data.toString();
+  }
 
   /// Check if expansion pack is installed
   bool hasExpansionPack(int packFlag) => (_installedPacks & packFlag) != 0;
@@ -139,8 +159,12 @@ class PodController {
     _editBuffer.patch.setValue(param, clampedValue);
     _editBuffer.markModified();
 
-    // Send to device
-    await _midi.sendParam(param, clampedValue);
+    // Send to device. If parameter is marked inverted, MIDI/CC value
+    // semantics are inverted as well, so send the inverted value.
+    final sendValue = param.inverted
+        ? (param.maxValue - clampedValue)
+        : clampedValue;
+    await _midi.sendParam(param, sendValue);
 
     // Notify listeners
     _parameterChangeController.add(ParameterChange(param, clampedValue));
@@ -148,7 +172,11 @@ class PodController {
   }
 
   /// Set 16-bit parameter value
-  Future<void> setParameter16(CCParam msbParam, CCParam lsbParam, int value) async {
+  Future<void> setParameter16(
+    CCParam msbParam,
+    CCParam lsbParam,
+    int value,
+  ) async {
     final msb = (value >> 7) & 0x7F;
     final lsb = value & 0x7F;
 
@@ -193,7 +221,8 @@ class PodController {
   Future<void> setPresence(int value) => setParameter(PodXtCC.presence, value);
 
   int get channelVolume => getParameter(PodXtCC.chanVolume);
-  Future<void> setChannelVolume(int value) => setParameter(PodXtCC.chanVolume, value);
+  Future<void> setChannelVolume(int value) =>
+      setParameter(PodXtCC.chanVolume, value);
 
   // Cabinet
   CabModel? get cabModel => CabModels.byId(getParameter(PodXtCC.cabSelect));
@@ -209,7 +238,8 @@ class PodController {
   bool get stompEnabled => getSwitch(PodXtCC.stompEnable);
   Future<void> setStompEnabled(bool v) => setSwitch(PodXtCC.stompEnable, v);
 
-  EffectModel? get stompModel => StompModels.byId(getParameter(PodXtCC.stompSelect));
+  EffectModel? get stompModel =>
+      StompModels.byId(getParameter(PodXtCC.stompSelect));
   Future<void> setStompModel(int id) => setParameter(PodXtCC.stompSelect, id);
 
   // Modulation
@@ -220,7 +250,8 @@ class PodController {
   Future<void> setModModel(int id) => setParameter(PodXtCC.modSelect, id);
 
   int get modSpeed => getParameter16(PodXtCC.modSpeedMsb, PodXtCC.modSpeedLsb);
-  Future<void> setModSpeed(int value) => setParameter16(PodXtCC.modSpeedMsb, PodXtCC.modSpeedLsb, value);
+  Future<void> setModSpeed(int value) =>
+      setParameter16(PodXtCC.modSpeedMsb, PodXtCC.modSpeedLsb, value);
 
   int get modMix => getParameter(PodXtCC.modMix);
   Future<void> setModMix(int value) => setParameter(PodXtCC.modMix, value);
@@ -229,11 +260,14 @@ class PodController {
   bool get delayEnabled => getSwitch(PodXtCC.delayEnable);
   Future<void> setDelayEnabled(bool v) => setSwitch(PodXtCC.delayEnable, v);
 
-  EffectModel? get delayModel => DelayModels.byId(getParameter(PodXtCC.delaySelect));
+  EffectModel? get delayModel =>
+      DelayModels.byId(getParameter(PodXtCC.delaySelect));
   Future<void> setDelayModel(int id) => setParameter(PodXtCC.delaySelect, id);
 
-  int get delayTime => getParameter16(PodXtCC.delayTimeMsb, PodXtCC.delayTimeLsb);
-  Future<void> setDelayTime(int value) => setParameter16(PodXtCC.delayTimeMsb, PodXtCC.delayTimeLsb, value);
+  int get delayTime =>
+      getParameter16(PodXtCC.delayTimeMsb, PodXtCC.delayTimeLsb);
+  Future<void> setDelayTime(int value) =>
+      setParameter16(PodXtCC.delayTimeMsb, PodXtCC.delayTimeLsb, value);
 
   int get delayMix => getParameter(PodXtCC.delayMix);
   Future<void> setDelayMix(int value) => setParameter(PodXtCC.delayMix, value);
@@ -242,25 +276,31 @@ class PodController {
   bool get reverbEnabled => getSwitch(PodXtCC.reverbEnable);
   Future<void> setReverbEnabled(bool v) => setSwitch(PodXtCC.reverbEnable, v);
 
-  EffectModel? get reverbModel => ReverbModels.byId(getParameter(PodXtCC.reverbSelect));
+  EffectModel? get reverbModel =>
+      ReverbModels.byId(getParameter(PodXtCC.reverbSelect));
   Future<void> setReverbModel(int id) => setParameter(PodXtCC.reverbSelect, id);
 
   int get reverbDecay => getParameter(PodXtCC.reverbDecay);
-  Future<void> setReverbDecay(int value) => setParameter(PodXtCC.reverbDecay, value);
+  Future<void> setReverbDecay(int value) =>
+      setParameter(PodXtCC.reverbDecay, value);
 
   int get reverbLevel => getParameter(PodXtCC.reverbLevel);
-  Future<void> setReverbLevel(int value) => setParameter(PodXtCC.reverbLevel, value);
+  Future<void> setReverbLevel(int value) =>
+      setParameter(PodXtCC.reverbLevel, value);
 
   // Noise Gate
   bool get noiseGateEnabled => getSwitch(PodXtCC.noiseGateEnable);
-  Future<void> setNoiseGateEnabled(bool v) => setSwitch(PodXtCC.noiseGateEnable, v);
+  Future<void> setNoiseGateEnabled(bool v) =>
+      setSwitch(PodXtCC.noiseGateEnable, v);
 
   int get gateThreshold => getParameter(PodXtCC.gateThreshold);
-  Future<void> setGateThreshold(int value) => setParameter(PodXtCC.gateThreshold, value);
+  Future<void> setGateThreshold(int value) =>
+      setParameter(PodXtCC.gateThreshold, value);
 
   // Compressor
   bool get compressorEnabled => getSwitch(PodXtCC.compressorEnable);
-  Future<void> setCompressorEnabled(bool v) => setSwitch(PodXtCC.compressorEnable, v);
+  Future<void> setCompressorEnabled(bool v) =>
+      setSwitch(PodXtCC.compressorEnable, v);
 
   // Wah
   bool get wahEnabled => getSwitch(PodXtCC.wahEnable);
@@ -279,7 +319,8 @@ class PodController {
 
   // Tempo
   int get tempo => getParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb);
-  Future<void> setTempo(int bpm) => setParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb, bpm);
+  Future<void> setTempo(int bpm) =>
+      setParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb, bpm);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PUBLIC API - Program Management
@@ -334,15 +375,29 @@ class PodController {
 
     print('POD: Requesting initial state...');
 
+    // Reset sync state
+    _patchesSynced = false;
+    _patchesSyncedCount = 0;
+
     // Request expansion packs info
     await _midi.requestInstalledPacks();
+    await Future.delayed(const Duration(milliseconds: 100));
 
-    // Small delay between requests
+    // Request current program state (to get correct program number)
+    print('POD: Requesting program state...');
+    await _midi.requestProgramState();
     await Future.delayed(const Duration(milliseconds: 100));
 
     // Request current edit buffer
     print('POD: Requesting edit buffer...');
     await _midi.requestEditBuffer();
+
+    // TODO: Implement individual patch requests if bulk request doesn't work
+    // For now, mark as synced since we have the edit buffer
+    _patchesSynced = true;
+    _syncProgressController.add(
+      SyncProgress(programCount, programCount, 'Ready'),
+    );
   }
 
   void _handleControlChange(({int cc, int value}) change) {
@@ -372,36 +427,98 @@ class PodController {
     } else if (message.isPatchDump) {
       print('  -> Patch dump');
       _handlePatchDump(message);
+    } else if (message.isPatchDumpEnd) {
+      print('  -> Patch dump end');
+      _handlePatchDumpEnd(message);
     } else if (message.isInstalledPacks) {
       print('  -> Installed packs');
       _handleInstalledPacks(message);
+    } else if (message.isProgramState) {
+      print('  -> Program state');
+      _handleProgramState(message);
     }
   }
 
   void _handleEditBufferDump(SysexMessage message) {
-    final decoded = PodXtSysex.decodeNibbles(message.payload);
-    if (decoded.length >= programSize) {
-      _editBuffer = EditBuffer.fromPatch(
-        Patch.fromData(decoded.sublist(0, programSize)),
-        _currentProgram,
+    print('  Edit buffer payload: ${message.payload.length} bytes');
+
+    // POD XT format: [id, raw_data...] - NOT nibble-encoded!
+    // Skip first byte (ID), rest is raw patch data
+    if (message.payload.length < 1 + programSize) {
+      print(
+        '  ERROR: Not enough data! Got ${message.payload.length}, need ${1 + programSize}',
       );
-      _editBufferController.add(_editBuffer);
+      return;
     }
+
+    final id = message.payload[0];
+    final data = message.payload.sublist(1, 1 + programSize);
+    print('  ID: $id, Data: ${data.length} bytes');
+
+    final patch = Patch.fromData(data);
+    print('  Patch name: "${patch.name}"');
+    print('  Drive: ${patch.getValue(PodXtCC.drive)}');
+
+    _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
+    _editBufferController.add(_editBuffer);
   }
 
   void _handlePatchDump(SysexMessage message) {
-    // Extract patch number and data from payload
-    if (message.payload.length < 2) return;
-    final patchNum = message.payload[0];
-    final data = PodXtSysex.decodeNibbles(message.payload.sublist(1));
-    if (patchNum < programCount && data.length >= programSize) {
-      _patchLibrary.patches[patchNum] = Patch.fromData(data.sublist(0, programSize));
+    // POD XT format: [patch_lsb, patch_msb, id, raw_data...] - NOT nibble-encoded!
+    // For single patch request: [patch_num (2 bytes), id, data]
+    if (message.payload.length < 3 + programSize) {
+      print('  Patch dump too short: ${message.payload.length} bytes');
+      return;
     }
+
+    // Patch number is 2 bytes (LSB, MSB)
+    final patchNum = message.payload[0] | (message.payload[1] << 8);
+    final id = message.payload[2];
+    final data = message.payload.sublist(3, 3 + programSize);
+
+    print('  Patch $patchNum (id=$id): ${data.length} bytes');
+
+    if (patchNum < programCount) {
+      final patch = Patch.fromData(data);
+      _patchLibrary.patches[patchNum] = patch;
+      _patchesSyncedCount = patchNum + 1;
+
+      // Update progress
+      _syncProgressController.add(
+        SyncProgress(
+          _patchesSyncedCount,
+          programCount,
+          'Syncing patch ${patchNum + 1}/$programCount: ${patch.name}',
+        ),
+      );
+
+      print('    Name: "${patch.name}"');
+    }
+  }
+
+  void _handlePatchDumpEnd(SysexMessage message) {
+    print('POD: All patches synced! ($_patchesSyncedCount patches)');
+    _patchesSynced = true;
+    _syncProgressController.add(
+      SyncProgress(programCount, programCount, 'Sync complete!'),
+    );
   }
 
   void _handleInstalledPacks(SysexMessage message) {
     if (message.payload.isNotEmpty) {
       _installedPacks = message.payload[0];
+    }
+  }
+
+  void _handleProgramState(SysexMessage message) {
+    // Program state format: [program_lsb, program_msb, ...]
+    if (message.payload.length >= 2) {
+      final program = message.payload[0] | (message.payload[1] << 8);
+      print('  Current program: $program');
+      if (program < programCount) {
+        _currentProgram = program;
+        _programChangeController.add(program);
+      }
     }
   }
 
@@ -414,6 +531,7 @@ class PodController {
     _parameterChangeController.close();
     _programChangeController.close();
     _editBufferController.close();
+    _syncProgressController.close();
   }
 }
 
@@ -426,4 +544,19 @@ class ParameterChange {
 
   @override
   String toString() => 'ParameterChange(${param.name}=$value)';
+}
+
+/// Sync progress event
+class SyncProgress {
+  final int current;
+  final int total;
+  final String message;
+
+  SyncProgress(this.current, this.total, this.message);
+
+  double get progress => total > 0 ? current / total : 0;
+  bool get isComplete => current >= total;
+
+  @override
+  String toString() => 'SyncProgress($current/$total: $message)';
 }

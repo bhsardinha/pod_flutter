@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../theme/pod_theme.dart';
 
@@ -118,16 +119,18 @@ class _RotaryKnobState extends State<RotaryKnob> {
     double normalizedValue = deltaFromStart / _totalArc;
 
     // Convert to value range
-    int value = (widget.minValue +
-            normalizedValue * (widget.maxValue - widget.minValue))
-        .round();
+    int value =
+        (widget.minValue +
+                normalizedValue * (widget.maxValue - widget.minValue))
+            .round();
 
     return value.clamp(widget.minValue, widget.maxValue);
   }
 
   void _handleVerticalDrag(DragUpdateDetails details) {
     // Vertical drag: up = increase, down = decrease
-    _accumulatedDelta += -details.delta.dy;
+    // Inverted sign so gestures map as expected for natural scroll settings
+    _accumulatedDelta += details.delta.dy;
 
     // Sensitivity: pixels per value step
     const sensitivity = 2.0;
@@ -136,8 +139,10 @@ class _RotaryKnobState extends State<RotaryKnob> {
       final steps = (_accumulatedDelta / sensitivity).floor();
       _accumulatedDelta -= steps * sensitivity;
 
-      final newValue =
-          (_currentValue + steps).clamp(widget.minValue, widget.maxValue);
+      final newValue = (_currentValue + steps).clamp(
+        widget.minValue,
+        widget.maxValue,
+      );
 
       if (newValue != _currentValue) {
         setState(() {
@@ -184,6 +189,26 @@ class _RotaryKnobState extends State<RotaryKnob> {
     _accumulatedDelta = 0.0;
   }
 
+  void _handleScroll(PointerScrollEvent event) {
+    // Scroll handling: map scroll delta directly (adjusted for natural scroll)
+    final delta = event.scrollDelta.dy;
+    const sensitivity = 20.0; // pixels per value step
+
+    final steps = (delta / sensitivity).round();
+    if (steps != 0) {
+      final newValue = (_currentValue + steps).clamp(
+        widget.minValue,
+        widget.maxValue,
+      );
+      if (newValue != _currentValue) {
+        setState(() {
+          _currentValue = newValue;
+        });
+        widget.onValueChanged(newValue);
+      }
+    }
+  }
+
   String _getDisplayValue() {
     if (widget.valueFormatter != null) {
       return widget.valueFormatter!(_currentValue);
@@ -193,55 +218,62 @@ class _RotaryKnobState extends State<RotaryKnob> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanUpdate: (details) {
-        final RenderBox box = context.findRenderObject() as RenderBox;
-        final center = Offset(box.size.width / 2, widget.size / 2);
-        _handleDragUpdate(details, center);
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) {
+          _handleScroll(event);
+        }
       },
-      onPanEnd: _handleDragEnd,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Value display above knob
-          SizedBox(
-            height: 16,
-            child: Text(
-              _getDisplayValue(),
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          final RenderBox box = context.findRenderObject() as RenderBox;
+          final center = Offset(box.size.width / 2, widget.size / 2);
+          _handleDragUpdate(details, center);
+        },
+        onPanEnd: _handleDragEnd,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Value display above knob
+            SizedBox(
+              height: 16,
+              child: Text(
+                _getDisplayValue(),
+                style: const TextStyle(
+                  color: PodColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Knob
+            SizedBox(
+              width: widget.size,
+              height: widget.size,
+              child: CustomPaint(
+                painter: _RotaryKnobPainter(
+                  value: _currentValue,
+                  minValue: widget.minValue,
+                  maxValue: widget.maxValue,
+                  angle: _valueToAngle(_currentValue),
+                  showTickMarks: widget.showTickMarks,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            // Label
+            Text(
+              widget.label,
               style: const TextStyle(
-                color: PodColors.textPrimary,
-                fontSize: 11,
+                color: PodColors.textSecondary,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          // Knob
-          SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: CustomPaint(
-              painter: _RotaryKnobPainter(
-                value: _currentValue,
-                minValue: widget.minValue,
-                maxValue: widget.maxValue,
-                angle: _valueToAngle(_currentValue),
-                showTickMarks: widget.showTickMarks,
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Label
-          Text(
-            widget.label,
-            style: const TextStyle(
-              color: PodColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -310,16 +342,15 @@ class _RotaryKnobPainter extends CustomPainter {
 
     for (int i = 0; i < tickCount; i++) {
       final tickAngle = _startAngle + (i / (tickCount - 1)) * _totalArc;
-      final tickStart = center +
+      final tickStart =
+          center +
           Offset(
             math.cos(tickAngle) * (radius * 0.92),
             math.sin(tickAngle) * (radius * 0.92),
           );
-      final tickEnd = center +
-          Offset(
-            math.cos(tickAngle) * radius,
-            math.sin(tickAngle) * radius,
-          );
+      final tickEnd =
+          center +
+          Offset(math.cos(tickAngle) * radius, math.sin(tickAngle) * radius);
 
       canvas.drawLine(tickStart, tickEnd, tickPaint);
     }
@@ -332,13 +363,15 @@ class _RotaryKnobPainter extends CustomPainter {
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
-    final startPoint = center +
+    final startPoint =
+        center +
         Offset(
           math.cos(angle) * (radius * 0.3),
           math.sin(angle) * (radius * 0.3),
         );
 
-    final endPoint = center +
+    final endPoint =
+        center +
         Offset(
           math.cos(angle) * (radius * 0.7),
           math.sin(angle) * (radius * 0.7),

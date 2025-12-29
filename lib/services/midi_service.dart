@@ -137,6 +137,11 @@ abstract class MidiService {
     return sendSysex(PodXtSysex.requestInstalledPacks());
   }
 
+  /// Request current program state
+  Future<void> requestProgramState() {
+    return sendSysex(PodXtSysex.requestProgramState());
+  }
+
   /// Dispose resources
   void dispose();
 }

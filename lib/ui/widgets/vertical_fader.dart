@@ -76,7 +76,8 @@ class _VerticalFaderState extends State<VerticalFader> {
       // Convert vertical drag to value change
       // Negative dy means dragging up (increase value)
       final double sensitivity = (widget.max - widget.min) / widget.height;
-      _currentValue -= details.delta.dy * sensitivity;
+      // Invert mapping so upward drag increases the fader value
+      _currentValue += details.delta.dy * sensitivity;
       _currentValue = _currentValue.clamp(widget.min, widget.max);
       widget.onChanged(_currentValue);
     });
@@ -90,7 +91,8 @@ class _VerticalFaderState extends State<VerticalFader> {
     setState(() {
       // Convert tap position to value
       final double normalizedPosition = 1.0 - (dy / widget.height);
-      _currentValue = widget.min + (normalizedPosition * (widget.max - widget.min));
+      _currentValue =
+          widget.min + (normalizedPosition * (widget.max - widget.min));
       _currentValue = _currentValue.clamp(widget.min, widget.max);
       widget.onChanged(_currentValue);
     });
@@ -136,10 +138,7 @@ class _VerticalFaderState extends State<VerticalFader> {
             padding: const EdgeInsets.only(top: 8.0),
             child: Text(
               widget.label!,
-              style: TextStyle(
-                color: PodColors.textLabel,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: PodColors.textLabel, fontSize: 11),
             ),
           ),
       ],

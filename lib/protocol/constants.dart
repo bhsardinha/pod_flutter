@@ -28,7 +28,7 @@ class SysexCommand {
 
 /// Program/Patch storage constants
 const int programCount = 128;
-const int programSize = 152; // 72*2 + 16 bytes
+const int programSize = 160; // 72*2 + 16 bytes = 144 + 16 = 160
 const int programNameLength = 16;
 const int programNameAddress = 0;
 

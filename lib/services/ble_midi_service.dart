@@ -65,11 +65,15 @@ class BleMidiService implements MidiService {
     // Stop scanning
     _midiCommand.stopScanningForBluetoothDevices();
 
-    return devices.map((d) => MidiDeviceInfo(
-      id: d.id,
-      name: d.name,
-      isBleMidi: d.type == 'BLE',
-    )).toList();
+    return devices
+        .map(
+          (d) => MidiDeviceInfo(
+            id: d.id,
+            name: d.name,
+            isBleMidi: d.type == 'BLE',
+          ),
+        )
+        .toList();
   }
 
   @override
@@ -113,7 +117,9 @@ class BleMidiService implements MidiService {
   }
 
   void _startListening() {
-    _dataSubscription = _midiCommand.onMidiDataReceived?.listen(_handleMidiData);
+    _dataSubscription = _midiCommand.onMidiDataReceived?.listen(
+      _handleMidiData,
+    );
   }
 
   void _handleMidiData(MidiPacket packet) {
@@ -163,11 +169,9 @@ class BleMidiService implements MidiService {
       }
 
       // Also emit as regular message
-      _messageController.add(MidiMessage(
-        type: MidiMessageType.sysex,
-        channel: 0,
-        data: sysexData,
-      ));
+      _messageController.add(
+        MidiMessage(type: MidiMessageType.sysex, channel: 0, data: sysexData),
+      );
     }
   }
 
@@ -225,6 +229,11 @@ class BleMidiService implements MidiService {
   @override
   Future<void> requestInstalledPacks() {
     return sendSysex(PodXtSysex.requestInstalledPacks());
+  }
+
+  @override
+  Future<void> requestProgramState() {
+    return sendSysex(PodXtSysex.requestProgramState());
   }
 
   Future<void> _send(Uint8List data) async {
