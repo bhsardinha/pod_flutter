@@ -48,17 +48,91 @@ class _MainScreenState extends State<MainScreen> {
     return scaled.toStringAsFixed(1);
   }
 
-  /// Format EQ frequency value based on the band's range (logarithmic)
-  String _formatEqFreq(int midiValue, ({double min, double max}) range) {
-    // Logarithmic interpolation: freq = min * (max/min)^(midi/127)
-    final logMin = math.log(range.min);
-    final logMax = math.log(range.max);
-    final logFreq = logMin + (midiValue / 127.0) * (logMax - logMin);
-    final freq = math.exp(logFreq);
+  /// Format EQ frequency value using the device's stepped scaling per band.
+  ///
+  /// The mapping follows the piecewise increments you described for each band.
+  String _formatEqFreq(
+    int midiValue,
+    int band,
+    ({double min, double max}) range,
+  ) {
+    int freq = _midiEqFreqToHz(midiValue, band, range);
     if (freq >= 1000) {
       return '${(freq / 1000).toStringAsFixed(1)}k';
     }
-    return '${freq.round()}';
+    return '$freq';
+  }
+
+  /// Convert a MIDI 0-127 EQ frequency value to Hz using stepped rules.
+  int _midiEqFreqToHz(
+    int midiValue,
+    int band,
+    ({double min, double max}) range,
+  ) {
+    // Ensure midiValue in [0,127]
+    final steps = midiValue.clamp(0, 127);
+
+    // Starting frequency depends on band (use provided range.min where appropriate)
+    int freq;
+    if (band == 1) {
+      // Band 1: start 50 Hz, +5 Hz per step
+      // Special-case: ensure maximum step (127) maps to 690 Hz
+      if (steps >= 127) {
+        return 690;
+      }
+      freq = 50 + steps * 5;
+      return freq.clamp(range.min.toInt(), range.max.toInt());
+    }
+
+    // For bands 2-4 start from the band's minimum frequency
+    freq = range.min.toInt();
+
+    for (int i = 0; i < steps; i++) {
+      int stepSize;
+      if (band == 2) {
+        // Band 2: 5Hz until <130, then 10Hz until <450, then 50Hz until <2900, then 100Hz afterwards
+        if (freq < 130) {
+          stepSize = 5;
+        } else if (freq < 450) {
+          stepSize = 10;
+        } else if (freq < 2900) {
+          stepSize = 50;
+        } else if (freq < 5800) {
+          stepSize = 100;
+        } else {
+          stepSize = 200;
+        }
+      } else if (band == 3) {
+        // Band 3: 50Hz steps until <1700, then 100Hz
+        stepSize = freq < 1700 ? 50 : 100;
+      } else if (band == 4) {
+        // Band 4: four lanes with arbitrary thresholds for manual tuning.
+        // Lane thresholds are intentionally 'random' so you can adjust them.
+        if (freq < 1300) {
+          // lane 1: fine-grain first step
+          stepSize = 25;
+        } else if (freq < 2900) {
+          // lane 2
+          stepSize = 50;
+        } else if (freq < 9100) {
+          stepSize = 100;
+        } else {
+          stepSize = 200;
+        }
+      } else {
+        // Fallback: linear logarithmic-ish step
+        stepSize = 1;
+      }
+
+      freq += stepSize;
+      // Cap at band's max
+      if (freq >= range.max) {
+        freq = range.max.toInt();
+        break;
+      }
+    }
+
+    return freq;
   }
 
   // Connection state
@@ -690,6 +764,7 @@ class _MainScreenState extends State<MainScreen> {
                       _podController.setParameter(PodXtCC.eq1Freq, v);
                   },
                   freqRange: _eq1FreqRange,
+                  band: 1,
                 ),
               ),
               // Band 2
@@ -712,6 +787,7 @@ class _MainScreenState extends State<MainScreen> {
                       _podController.setParameter(PodXtCC.eq2Freq, v);
                   },
                   freqRange: _eq2FreqRange,
+                  band: 2,
                 ),
               ),
               // Band 3
@@ -734,6 +810,7 @@ class _MainScreenState extends State<MainScreen> {
                       _podController.setParameter(PodXtCC.eq3Freq, v);
                   },
                   freqRange: _eq3FreqRange,
+                  band: 3,
                 ),
               ),
               // Band 4
@@ -756,6 +833,7 @@ class _MainScreenState extends State<MainScreen> {
                       _podController.setParameter(PodXtCC.eq4Freq, v);
                   },
                   freqRange: _eq4FreqRange,
+                  band: 4,
                 ),
               ),
             ],
@@ -788,6 +866,7 @@ class _MainScreenState extends State<MainScreen> {
     required int freq,
     required ValueChanged<int> onFreqChanged,
     required ({double min, double max}) freqRange,
+    required int band,
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -812,7 +891,7 @@ class _MainScreenState extends State<MainScreen> {
           onValueChanged: onFreqChanged,
           size: 28,
           showTickMarks: false,
-          valueFormatter: (v) => _formatEqFreq(v, freqRange),
+          valueFormatter: (v) => _formatEqFreq(v, band, freqRange),
         ),
       ],
     );
