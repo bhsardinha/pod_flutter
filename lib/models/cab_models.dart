@@ -1,5 +1,5 @@
 /// Cabinet model definitions for POD XT Pro
-/// Extracted from pod-ui mod-xt/src/config.rs
+/// Based on official POD XT Models reference (page 2 POD.pdf)
 
 library;
 
@@ -17,12 +17,12 @@ class CabModel {
 /// All available cabinet models
 class CabModels {
   static const List<CabModel> all = [
-    // Stock cabs (IDs 0-24)
+    // Stock Guitar Cabs (IDs 0-24)
     CabModel(0, 'No Cab'),
     CabModel(1, '1x6 Super O'),
     CabModel(2, '1x8 Tweed'),
     CabModel(3, '1x10 Gibtone'),
-    CabModel(4, '1x10 G-Band'),
+    CabModel(4, '1x10 G-Brand'),
     CabModel(5, '1x12 Line 6'),
     CabModel(6, '1x12 Tweed'),
     CabModel(7, '1x12 Blackface'),
@@ -44,7 +44,7 @@ class CabModels {
     CabModel(23, '1x15 Thunder'),
     CabModel(24, '2x12 Wishbook'),
 
-    // BX Pack (IDs 25-46)
+    // Bass Expansion Cabs (IDs 25-46)
     CabModel(25, '1x12 Boutique', 'BX'),
     CabModel(26, '1x12 Motor City', 'BX'),
     CabModel(27, '1x15 Flip Top', 'BX'),
@@ -54,7 +54,7 @@ class CabModels {
     CabModel(31, '1x18 California', 'BX'),
     CabModel(32, '1x18+12 Stadium', 'BX'),
     CabModel(33, '2x10 Modern UK', 'BX'),
-    CabModel(34, '2x15 Double Show', 'BX'),
+    CabModel(34, '2x15 Doubleshow', 'BX'),
     CabModel(35, '2x15 California', 'BX'),
     CabModel(36, '2x15 Class A', 'BX'),
     CabModel(37, '4x10 Line 6', 'BX'),
@@ -64,7 +64,7 @@ class CabModels {
     CabModel(41, '4x10 Session', 'BX'),
     CabModel(42, '4x12 Hiway', 'BX'),
     CabModel(43, '4x12 Green 20\'s', 'BX'),
-    CabModel(44, '4x12 Green 25\'s', 'BX'),
+    CabModel(44, '2x12 Green 25\'s', 'BX'),
     CabModel(45, '4x15 Big Boy', 'BX'),
     CabModel(46, '8x10 Classic', 'BX'),
   ];
