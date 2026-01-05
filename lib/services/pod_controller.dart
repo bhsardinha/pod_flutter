@@ -386,7 +386,7 @@ class PodController {
     // Request current program state (to get correct program number)
     print('POD: Requesting program state...');
     await _midi.requestProgramState();
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future.delayed(const Duration(milliseconds: 400));
 
     // Request current edit buffer
     print('POD: Requesting edit buffer...');
@@ -458,6 +458,7 @@ class PodController {
     final patch = Patch.fromData(data);
     print('  Patch name: "${patch.name}"');
     print('  Drive: ${patch.getValue(PodXtCC.drive)}');
+    print('  EQ Gains (MIDI): [${patch.getValue(PodXtCC.eq1Gain)}, ${patch.getValue(PodXtCC.eq2Gain)}, ${patch.getValue(PodXtCC.eq3Gain)}, ${patch.getValue(PodXtCC.eq4Gain)}]');
 
     _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
     _editBufferController.add(_editBuffer);
@@ -512,13 +513,21 @@ class PodController {
 
   void _handleProgramState(SysexMessage message) {
     // Program state format: [program_lsb, program_msb, ...]
+    print('  Program state payload length: ${message.payload.length}');
     if (message.payload.length >= 2) {
-      final program = message.payload[0] | (message.payload[1] << 8);
-      print('  Current program: $program');
+      final programLsb = message.payload[0];
+      final programMsb = message.payload[1];
+      final program = programLsb | (programMsb << 8);
+      print('  Program bytes: LSB=$programLsb MSB=$programMsb -> Program #$program');
       if (program < programCount) {
+        print('  Setting current program to: $program');
         _currentProgram = program;
         _programChangeController.add(program);
+      } else {
+        print('  ERROR: Program $program is out of range (max: ${programCount - 1})');
       }
+    } else {
+      print('  ERROR: Program state payload too short');
     }
   }
 

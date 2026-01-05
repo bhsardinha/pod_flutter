@@ -37,6 +37,12 @@ class VerticalFader extends StatefulWidget {
   /// Custom fill color (defaults to accent color)
   final Color? fillColor;
 
+  /// Snap threshold in dB - values within this range snap to zero
+  final double snapThreshold;
+
+  /// Drag sensitivity multiplier (lower = more precise, default 0.3)
+  final double sensitivity;
+
   const VerticalFader({
     super.key,
     required this.value,
@@ -48,6 +54,8 @@ class VerticalFader extends StatefulWidget {
     this.height = 100.0,
     this.showValue = true,
     this.fillColor,
+    this.snapThreshold = 0.8,
+    this.sensitivity = 0.3,
   });
 
   @override
@@ -75,10 +83,19 @@ class _VerticalFaderState extends State<VerticalFader> {
     setState(() {
       // Convert vertical drag to value change
       // Negative dy means dragging up (increase value)
-      final double sensitivity = (widget.max - widget.min) / widget.height;
+      // Apply sensitivity multiplier for more precise control
+      final double baseSensitivity = (widget.max - widget.min) / widget.height;
+      final double adjustedSensitivity = baseSensitivity * widget.sensitivity;
+
       // Invert mapping so upward drag increases the fader value
-      _currentValue += details.delta.dy * sensitivity;
+      _currentValue += details.delta.dy * adjustedSensitivity;
       _currentValue = _currentValue.clamp(widget.min, widget.max);
+
+      // Snap to zero if within threshold
+      if (_currentValue.abs() <= widget.snapThreshold) {
+        _currentValue = 0.0;
+      }
+
       widget.onChanged(_currentValue);
     });
   }
@@ -94,6 +111,12 @@ class _VerticalFaderState extends State<VerticalFader> {
       _currentValue =
           widget.min + (normalizedPosition * (widget.max - widget.min));
       _currentValue = _currentValue.clamp(widget.min, widget.max);
+
+      // Snap to zero if within threshold
+      if (_currentValue.abs() <= widget.snapThreshold) {
+        _currentValue = 0.0;
+      }
+
       widget.onChanged(_currentValue);
     });
   }

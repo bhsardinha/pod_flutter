@@ -56,20 +56,18 @@ class Patch {
 
   /// Get parameter value by CC param definition
   int getValue(CCParam param) {
-    final addr = param.address;
-    if (addr == null) return 0; // MIDI-only params have no buffer storage
-    return getValueAt(addr);
+    // Use bufferAddress which falls back to (32 + cc) if address is not explicitly set
+    return getValueAt(param.bufferAddress);
   }
 
   /// Set parameter value by CC param definition
   void setValue(CCParam param, int value) {
-    final addr = param.address;
-    if (addr == null) return;
+    // Use bufferAddress which falls back to (32 + cc) if address is not explicitly set
     int finalValue = value.clamp(param.minValue, param.maxValue);
     if (param.inverted) {
       finalValue = param.maxValue - finalValue;
     }
-    setValueAt(addr, finalValue);
+    setValueAt(param.bufferAddress, finalValue);
   }
 
   /// Get a 16-bit value from MSB/LSB pair

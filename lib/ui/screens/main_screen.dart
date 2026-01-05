@@ -173,7 +173,7 @@ class _MainScreenState extends State<MainScreen> {
   int _presence = 64;
   int _volume = 100;
 
-  // EQ gain values (-12 to +12 dB)
+  // EQ gain values (-12.8 to +12.6 dB)
   double _eq1Gain = 0.0;
   double _eq2Gain = 0.0;
   double _eq3Gain = 0.0;
@@ -323,11 +323,18 @@ class _MainScreenState extends State<MainScreen> {
       _eq3Freq = _podController.getParameter(PodXtCC.eq3Freq);
       _eq4Freq = _podController.getParameter(PodXtCC.eq4Freq);
 
-      // EQ gains (convert 0-127 to -12 to +12 dB)
-      _eq1Gain = _midiToDb(_podController.getParameter(PodXtCC.eq1Gain));
-      _eq2Gain = _midiToDb(_podController.getParameter(PodXtCC.eq2Gain));
-      _eq3Gain = _midiToDb(_podController.getParameter(PodXtCC.eq3Gain));
-      _eq4Gain = _midiToDb(_podController.getParameter(PodXtCC.eq4Gain));
+      // EQ gains (convert 0-127 to -12.8 to +12.6 dB)
+      final eq1Midi = _podController.getParameter(PodXtCC.eq1Gain);
+      final eq2Midi = _podController.getParameter(PodXtCC.eq2Gain);
+      final eq3Midi = _podController.getParameter(PodXtCC.eq3Gain);
+      final eq4Midi = _podController.getParameter(PodXtCC.eq4Gain);
+
+      _eq1Gain = _midiToDb(eq1Midi);
+      _eq2Gain = _midiToDb(eq2Midi);
+      _eq3Gain = _midiToDb(eq3Midi);
+      _eq4Gain = _midiToDb(eq4Midi);
+
+      print('UI: EQ gains - MIDI: [$eq1Midi, $eq2Midi, $eq3Midi, $eq4Midi] -> dB: [${_eq1Gain.toStringAsFixed(1)}, ${_eq2Gain.toStringAsFixed(1)}, ${_eq3Gain.toStringAsFixed(1)}, ${_eq4Gain.toStringAsFixed(1)}]');
     });
   }
 
@@ -336,14 +343,16 @@ class _MainScreenState extends State<MainScreen> {
     // This is for any additional real-time handling if needed
   }
 
-  // Convert MIDI value (0-127) to dB (-12 to +12)
+  // Convert MIDI value (0-127) to dB (-12.8 to +12.6)
+  // Formula from pod-ui: dB = (25.4 / 127.0) * midi - 12.8
   double _midiToDb(int midi) {
-    return ((midi / 127.0) * 24.0) - 12.0;
+    return (25.4 / 127.0) * midi - 12.8;
   }
 
-  // Convert dB (-12 to +12) to MIDI value (0-127)
+  // Convert dB (-12.8 to +12.6) to MIDI value (0-127)
+  // Formula: midi = (dB + 12.8) * 127.0 / 25.4
   int _dbToMidi(double db) {
-    return (((db + 12.0) / 24.0) * 127.0).round().clamp(0, 127);
+    return ((db + 12.8) * 127.0 / 25.4).round().clamp(0, 127);
   }
 
   void _showEffectModal(String effectName) {
@@ -877,10 +886,11 @@ class _MainScreenState extends State<MainScreen> {
           child: VerticalFader(
             value: gain,
             min: -12.8,
-            max: 12.8,
+            max: 12.6,
             onChanged: onGainChanged,
             width: 20,
-            showValue: false,
+            showValue: true,
+            snapThreshold: 0.3,
           ),
         ),
         const SizedBox(height: 2),
