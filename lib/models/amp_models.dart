@@ -8,49 +8,72 @@ class AmpModel {
   final int id;
   final String name;
   final String? pack; // null = stock, otherwise expansion pack code
+  final String? realName; // Real-world amp name (manufacturer + model)
 
-  const AmpModel(this.id, this.name, [this.pack]);
+  const AmpModel(this.id, this.name, [this.pack, this.realName]);
 
   bool get isStock => pack == null;
+
+  /// Get display name based on mode
+  String getDisplayName(AmpNameDisplayMode mode) {
+    switch (mode) {
+      case AmpNameDisplayMode.factory:
+        return pack != null ? '$pack-$name' : name;
+      case AmpNameDisplayMode.realAmp:
+        return realName ?? name;
+      case AmpNameDisplayMode.both:
+        return name; // UI will handle showing both
+    }
+  }
+
+  /// Get real name for "both" mode (smaller, top line)
+  String? getRealNameForBothMode() => realName;
+}
+
+/// Amp name display mode
+enum AmpNameDisplayMode {
+  factory,
+  realAmp,
+  both,
 }
 
 /// All available amp models
 class AmpModels {
   static const List<AmpModel> all = [
     // Standard & Power Pack Amps (IDs 0-36, 101-106)
-    AmpModel(0, 'Bypass'),
+    AmpModel(0, 'Bypass', null, 'No Amp'),
     AmpModel(1, 'Tube Preamp'),
     AmpModel(2, 'Line 6 Clean'),
     AmpModel(3, 'Line 6 JTS-45'),
     AmpModel(4, 'Line 6 Class A'),
     AmpModel(5, 'Line 6 Mood'),
-    AmpModel(6, 'Spinal Puppet'),
+    AmpModel(6, 'Spinal Puppet', null, 'Spinal Tap'),
     AmpModel(7, 'Line 6 Chem X'),
     AmpModel(8, 'Line 6 Insane'),
     AmpModel(9, 'Line 6 Aco 2'),
-    AmpModel(10, 'Zen Master'),
-    AmpModel(11, 'Small Tweed'),
-    AmpModel(12, 'Tweed B-Man'),
-    AmpModel(13, 'Tiny Tweed'),
-    AmpModel(14, 'Blackface Lux'),
-    AmpModel(15, 'Double Verb'),
-    AmpModel(16, 'Two-Tone'),
-    AmpModel(17, 'Hiway 100'),
-    AmpModel(18, 'Plexi 45 PP'),
-    AmpModel(19, 'Plexi Lead 100'),
-    AmpModel(20, 'Plexi Jump Lead'),
-    AmpModel(21, 'Plexi Variac'),
-    AmpModel(22, 'Brit J-800'),
-    AmpModel(23, 'Brit JM Pre'),
-    AmpModel(24, 'Match Chief'),
-    AmpModel(25, 'Match D-30'),
-    AmpModel(26, 'Treadplate Dual'),
-    AmpModel(27, 'Cali Crunch'),
-    AmpModel(28, 'Jazz Clean'),
-    AmpModel(29, 'Solo 100'),
-    AmpModel(30, 'Super O'),
-    AmpModel(31, 'Class A-15'),
-    AmpModel(32, 'Class A-30 TB'),
+    AmpModel(10, 'Zen Master', null, 'Budda Twinmaster'),
+    AmpModel(11, 'Small Tweed', null, 'Fender Champ'),
+    AmpModel(12, 'Tweed B-Man', null, 'Fender Bassman'),
+    AmpModel(13, 'Tiny Tweed', null, 'Fender Deluxe'),
+    AmpModel(14, 'Blackface Lux', null, 'Fender Deluxe Reverb'),
+    AmpModel(15, 'Double Verb', null, 'Fender Twin Reverb'),
+    AmpModel(16, 'Two-Tone', null, 'Fender Tone Master'),
+    AmpModel(17, 'Hiway 100', null, 'Hiwatt DR-103'),
+    AmpModel(18, 'Plexi 45 PP', null, 'Marshall JTM-45'),
+    AmpModel(19, 'Plexi Lead 100', null, 'Marshall Super Lead'),
+    AmpModel(20, 'Plexi Jump Lead', null, 'Marshall Jumped'),
+    AmpModel(21, 'Plexi Variac', null, 'Marshall Variac'),
+    AmpModel(22, 'Brit J-800', null, 'Marshall JCM800'),
+    AmpModel(23, 'Brit JM Pre', null, 'Marshall JMP-1'),
+    AmpModel(24, 'Match Chief', null, 'Matchless Chieftain'),
+    AmpModel(25, 'Match D-30', null, 'Matchless DC-30'),
+    AmpModel(26, 'Treadplate Dual', null, 'Mesa Dual Rectifier'),
+    AmpModel(27, 'Cali Crunch', null, 'Mesa Mark I'),
+    AmpModel(28, 'Jazz Clean', null, 'Roland JC-120'),
+    AmpModel(29, 'Solo 100', null, 'Soldano SLO-100'),
+    AmpModel(30, 'Super O', null, 'Supro S6616'),
+    AmpModel(31, 'Class A-15', null, 'Vox AC-15'),
+    AmpModel(32, 'Class A-30 TB', null, 'Vox AC-30 Top Boost'),
     AmpModel(33, 'L6 Agro'),
     AmpModel(34, 'L6 Lunatic'),
     AmpModel(35, 'L6 Treadplate'),

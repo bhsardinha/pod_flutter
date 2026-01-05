@@ -9,11 +9,14 @@ import '../widgets/vertical_fader.dart';
 import '../widgets/connection_indicator.dart';
 import '../widgets/patch_browser.dart';
 import '../widgets/pod_modal.dart';
+import 'settings_screen.dart';
 import '../../services/ble_midi_service.dart';
 import '../../services/pod_controller.dart';
 import '../../services/midi_service.dart';
 import '../../protocol/cc_map.dart';
 import '../../models/patch.dart';
+import '../../models/app_settings.dart';
+import '../../models/amp_models.dart';
 
 /// Main screen of the POD XT Pro controller app.
 ///
@@ -192,6 +195,9 @@ class _MainScreenState extends State<MainScreen> {
   // Modified indicator
   bool _isModified = false;
 
+  // App settings
+  AppSettings _settings = AppSettings();
+
   @override
   void initState() {
     super.initState();
@@ -200,6 +206,9 @@ class _MainScreenState extends State<MainScreen> {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+
+    // Load settings
+    _loadSettings();
 
     // Initialize MIDI services
     _midiService = BleMidiService();
@@ -274,6 +283,29 @@ class _MainScreenState extends State<MainScreen> {
     final bank = (program ~/ 4) + 1;
     final letter = String.fromCharCode('A'.codeUnitAt(0) + (program % 4));
     return '${bank.toString().padLeft(2, '0')}$letter';
+  }
+
+  Future<void> _loadSettings() async {
+    final settings = await AppSettings.load();
+    setState(() {
+      _settings = settings;
+    });
+  }
+
+  void _showSettings() {
+    showPodModal(
+      context: context,
+      title: 'Settings',
+      child: SettingsScreen(
+        settings: _settings,
+        onSettingsChanged: (newSettings) async {
+          setState(() {
+            _settings = newSettings;
+          });
+          await newSettings.save();
+        },
+      ),
+    );
   }
 
   void _updateFromEditBuffer(EditBuffer buffer) {
@@ -582,15 +614,7 @@ class _MainScreenState extends State<MainScreen> {
             child: GestureDetector(
               onTap: _showAmpPicker,
               child: Center(
-                child: Text(
-                  _currentAmp,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: PodColors.textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                child: _buildAmpDisplay(),
               ),
             ),
           ),
@@ -988,12 +1012,84 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  Widget _buildAmpDisplay() {
+    final amp = _podController.ampModel;
+    if (amp == null) return Text(_currentAmp);
+
+    switch (_settings.ampNameDisplayMode) {
+      case AmpNameDisplayMode.factory:
+        return Text(
+          amp.getDisplayName(AmpNameDisplayMode.factory),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: PodColors.textPrimary,
+          ),
+          overflow: TextOverflow.ellipsis,
+        );
+
+      case AmpNameDisplayMode.realAmp:
+        return Text(
+          amp.getDisplayName(AmpNameDisplayMode.realAmp),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: PodColors.textPrimary,
+          ),
+          overflow: TextOverflow.ellipsis,
+        );
+
+      case AmpNameDisplayMode.both:
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (amp.realName != null)
+              Text(
+                amp.realName!,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: PodColors.textSecondary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            Text(
+              amp.getDisplayName(AmpNameDisplayMode.factory),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: PodColors.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        );
+    }
+  }
+
   Widget _buildBottomBar() {
     return Row(
       children: [
-        // Patch Browser (4/5)
+        // Settings button (gear icon)
+        GestureDetector(
+          onTap: _showSettings,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: PodColors.surface,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: PodColors.surfaceLight, width: 1),
+            ),
+            child: const Icon(
+              Icons.settings,
+              color: PodColors.textSecondary,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // Patch Browser (center)
         Expanded(
-          flex: 4,
           child: PatchBrowser(
             bank: _formatProgramName(_currentProgram),
             patchName: _currentPatchName,
@@ -1012,7 +1108,8 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        // Connection Indicator (1/5)
+
+        // Connection Indicator (right)
         ConnectionIndicator(
           isConnected: _isConnected,
           onTap: _showConnectionScreen,
