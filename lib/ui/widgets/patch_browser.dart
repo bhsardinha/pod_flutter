@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/pod_theme.dart';
+import 'dot_matrix_lcd.dart';
 
 /// A horizontal patch browser widget for navigating patches.
 ///
@@ -40,7 +41,6 @@ class PatchBrowser extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
       decoration: BoxDecoration(
         color: PodColors.surface,
         borderRadius: BorderRadius.circular(8),
@@ -62,61 +62,57 @@ class PatchBrowser extends StatelessWidget {
             child: GestureDetector(
               onTap: onTap,
               behavior: HitTestBehavior.opaque,
-              child: Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Bank indicator
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: DotMatrixLCD(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Center(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: bank,
+                            style: const TextStyle(
+                              fontFamily: 'Doto',
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFFF7A00),
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const TextSpan(
+                            text: ': ',
+                            style: TextStyle(
+                              fontFamily: 'Doto',
+                              fontSize: 18,
+                              color: Color(0xFFFF7A00),
+                            ),
+                          ),
+                          TextSpan(
+                            text: patchName,
+                            style: const TextStyle(
+                              fontFamily: 'Doto',
+                              fontSize: 18,
+                              color: Color(0xFFFF7A00),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          if (isModified)
+                            const TextSpan(
+                              text: ' *',
+                              style: TextStyle(
+                                fontFamily: 'Doto',
+                                fontSize: 18,
+                                color: Color(0xFFFF7A00),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
                       ),
-                      decoration: BoxDecoration(
-                        color: PodColors.accent.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: PodColors.accent.withValues(alpha: 0.5),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        bank,
-                        style: const TextStyle(
-                          color: PodColors.accent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
-                    const SizedBox(width: 12),
-                    // Patch name
-                    Flexible(
-                      child: Text(
-                        '"$patchName"',
-                        style: const TextStyle(
-                          color: PodColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
-                    ),
-                    // Modified indicator
-                    if (isModified) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: PodColors.accent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -148,7 +144,6 @@ class _NavButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 48,
-        height: 48,
         decoration: BoxDecoration(
           border: Border(
             left: icon == Icons.chevron_right

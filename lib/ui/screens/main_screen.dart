@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/pod_theme.dart';
@@ -175,6 +174,7 @@ class _MainScreenState extends State<MainScreen> {
   int _treble = 64;
   int _presence = 64;
   int _volume = 100;
+  int _reverbMix = 64; // REVERB knob for Row 2
 
   // EQ gain values (-12.8 to +12.6 dB)
   double _eq1Gain = 0.0;
@@ -478,27 +478,23 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: PodColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              // Top Row: GATE | AMP SELECTOR | CAB/MIC
-              _buildTopRow(),
-              const SizedBox(height: 20),
+              // Row 1: GATE/AMP | LCD | CAB/MIC (22.22%)
+              Expanded(flex: 2, child: _buildRow1()),
+              const SizedBox(height: 8),
 
-              // Knobs Row: Drive, Bass, Mid, Treble, Presence, Vol
-              _buildKnobsRow(),
-              const SizedBox(height: 20),
+              // Row 2: 7 Knobs (22.22%)
+              Expanded(flex: 2, child: _buildRow2()),
+              const SizedBox(height: 8),
 
-              // EQ Row: 4-band faders + EQ button
-              Expanded(child: _buildEqRow()),
-              const SizedBox(height: 12),
+              // Row 3: Effects | EQ | Effects (44.44%)
+              Expanded(flex: 4, child: _buildRow3()),
+              const SizedBox(height: 8),
 
-              // Effects Row: WAH, STOMP, MOD, DELAY, REVERB
-              _buildEffectsRow(),
-              const SizedBox(height: 12),
-
-              // Bottom Bar: Patch Browser | Connection
-              _buildBottomBar(),
+              // Row 4: Settings | WAH | FX | Presets | TAP | MIDI (11.11%)
+              Expanded(flex: 1, child: _buildRow4()),
             ],
           ),
         ),
@@ -506,73 +502,526 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildTopRow() {
+  // Helper for CAB/MIC dropdown buttons (no fixed height)
+  Widget _buildDropdownButton({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: PodColors.surface,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: PodColors.surfaceLight, width: 1),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: PodColors.textSecondary,
+                letterSpacing: 1.1,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: PodColors.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            const Icon(
+              Icons.arrow_drop_down,
+              color: PodColors.textSecondary,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Row 1: 3/10/3 layout - GATE/AMP stacked | LCD | CAB/MIC stacked
+  Widget _buildRow1() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // GATE button - 1/6
+        // Left: GATE and AMP stacked (flex 3)
         Expanded(
-          flex: 2,
-          child: SizedBox(
-            height: 60,
-            child: EffectButton(
-              label: 'GATE',
-              isOn: _gateEnabled,
-              onTap: () {
-                final newState = !_gateEnabled;
-                setState(() => _gateEnabled = newState);
-                if (_isConnected) _podController.setNoiseGateEnabled(newState);
-              },
-              onLongPress: () => _showEffectModal('Gate'),
-              color: PodColors.buttonOnGreen,
-            ),
+          flex: 3,
+          child: Column(
+            children: [
+              Expanded(
+                child: EffectButton(
+                  label: 'GATE',
+                  isOn: _gateEnabled,
+                  onTap: () {
+                    final newState = !_gateEnabled;
+                    setState(() => _gateEnabled = newState);
+                    if (_isConnected) _podController.setNoiseGateEnabled(newState);
+                  },
+                  onLongPress: () => _showEffectModal('Gate'),
+                  color: PodColors.buttonOnGreen,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: EffectButton(
+                  label: 'AMP',
+                  isOn: _ampEnabled,
+                  onTap: () {
+                    final newState = !_ampEnabled;
+                    setState(() => _ampEnabled = newState);
+                    if (_isConnected)
+                      _podController.setSwitch(PodXtCC.ampEnable, newState);
+                  },
+                  onLongPress: () {},
+                  color: PodColors.buttonOnAmber,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 8),
 
-        // AMP Selector and AMP Bypass (button extracted)
-        // Amp selector (larger area)
-        Expanded(flex: 6, child: _buildAmpSelector()),
-        const SizedBox(width: 6),
-        // AMP on/off button as its own flex=2 column
+        // Center: Large LCD selector (flex 10)
+        Expanded(flex: 10, child: _buildAmpSelector()),
+        const SizedBox(width: 8),
+
+        // Right: CAB and MIC stacked (flex 3)
         Expanded(
-          flex: 2,
-          child: SizedBox(
-            height: 60,
-            child: EffectButton(
-              label: 'AMP',
-              isOn: _ampEnabled,
-              onTap: () {
-                final newState = !_ampEnabled;
-                setState(() => _ampEnabled = newState);
+          flex: 3,
+          child: Column(
+            children: [
+              Expanded(
+                child: _buildDropdownButton(
+                  label: 'CAB',
+                  value: _currentCab,
+                  onTap: _showCabPicker,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: _buildDropdownButton(
+                  label: 'MIC',
+                  value: _currentMic,
+                  onTap: _showMicPicker,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Row 2: 1/14/1 layout - 7 Knobs with spacers
+  Widget _buildRow2() {
+    return Row(
+      children: [
+        const Expanded(flex: 1, child: SizedBox()),
+        Expanded(
+          flex: 14,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              RotaryKnob(
+                label: 'GAIN',
+                value: _drive,
+                onValueChanged: (v) {
+                  setState(() => _drive = v);
+                  if (_isConnected) _podController.setDrive(v);
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+              RotaryKnob(
+                label: 'BASS',
+                value: _bass,
+                onValueChanged: (v) {
+                  setState(() => _bass = v);
+                  if (_isConnected) _podController.setBass(v);
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+              RotaryKnob(
+                label: 'MID',
+                value: _mid,
+                onValueChanged: (v) {
+                  setState(() => _mid = v);
+                  if (_isConnected) _podController.setMid(v);
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+              RotaryKnob(
+                label: 'TREBLE',
+                value: _treble,
+                onValueChanged: (v) {
+                  setState(() => _treble = v);
+                  if (_isConnected) _podController.setTreble(v);
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+              RotaryKnob(
+                label: 'PRES',
+                value: _presence,
+                onValueChanged: (v) {
+                  setState(() => _presence = v);
+                  if (_isConnected) _podController.setPresence(v);
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+              RotaryKnob(
+                label: 'VOL',
+                value: _volume,
+                onValueChanged: (v) {
+                  setState(() => _volume = v);
+                  if (_isConnected) _podController.setChannelVolume(v);
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+              RotaryKnob(
+                label: 'REVERB',
+                value: _reverbMix,
+                onValueChanged: (v) {
+                  setState(() => _reverbMix = v);
+                  // TODO: Connect to reverb mix parameter when available
+                },
+                size: 50,
+                valueFormatter: _formatKnobValue,
+              ),
+            ],
+          ),
+        ),
+        const Expanded(flex: 1, child: SizedBox()),
+      ],
+    );
+  }
+
+  // Row 3: 4/8/4 layout - Effects | EQ | Effects
+  Widget _buildRow3() {
+    return Row(
+      children: [
+        // Left effects column (flex 4)
+        Expanded(
+          flex: 4,
+          child: Column(
+            children: [
+              Expanded(
+                child: EffectButton(
+                  label: 'STOMP',
+                  modelName: _stompModel,
+                  isOn: _stompEnabled,
+                  onTap: () {
+                    final newState = !_stompEnabled;
+                    setState(() => _stompEnabled = newState);
+                    if (_isConnected) _podController.setStompEnabled(newState);
+                  },
+                  onLongPress: () => _showEffectModal('Stomp'),
+                  color: PodColors.buttonOnGreen,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: EffectButton(
+                  label: 'EQ',
+                  isOn: _eqEnabled,
+                  onTap: () {
+                    final newState = !_eqEnabled;
+                    setState(() => _eqEnabled = newState);
+                    if (_isConnected) _podController.setEqEnabled(newState);
+                  },
+                  onLongPress: () => _showEffectModal('EQ'),
+                  color: PodColors.buttonOnAmber,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: EffectButton(
+                  label: 'COMP',
+                  isOn: false, // TODO: Add compressor state
+                  onTap: () {
+                    // TODO: Add compressor toggle
+                  },
+                  onLongPress: () => _showEffectModal('Comp'),
+                  color: PodColors.buttonOnGreen,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // Center EQ section (flex 8)
+        Expanded(
+          flex: 8,
+          child: _buildEqSection(),
+        ),
+        const SizedBox(width: 8),
+
+        // Right effects column (flex 4)
+        Expanded(
+          flex: 4,
+          child: Column(
+            children: [
+              Expanded(
+                child: EffectButton(
+                  label: 'MOD',
+                  modelName: _modModel,
+                  isOn: _modEnabled,
+                  onTap: () {
+                    final newState = !_modEnabled;
+                    setState(() => _modEnabled = newState);
+                    if (_isConnected) _podController.setModEnabled(newState);
+                  },
+                  onLongPress: () => _showEffectModal('Mod'),
+                  color: PodColors.buttonOnGreen,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: EffectButton(
+                  label: 'DELAY',
+                  modelName: _delayModel,
+                  isOn: _delayEnabled,
+                  onTap: () {
+                    final newState = !_delayEnabled;
+                    setState(() => _delayEnabled = newState);
+                    if (_isConnected) _podController.setDelayEnabled(newState);
+                  },
+                  onLongPress: () => _showEffectModal('Delay'),
+                  color: PodColors.buttonOnGreen,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: EffectButton(
+                  label: 'REVERB',
+                  modelName: _reverbModel,
+                  isOn: _reverbEnabled,
+                  onTap: () {
+                    final newState = !_reverbEnabled;
+                    setState(() => _reverbEnabled = newState);
+                    if (_isConnected) _podController.setReverbEnabled(newState);
+                  },
+                  onLongPress: () => _showEffectModal('Reverb'),
+                  color: PodColors.buttonOnGreen,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEqSection() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: PodColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: PodColors.surfaceLight, width: 1),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildEqBand(
+              label: 'LOW',
+              gain: _eq1Gain,
+              onGainChanged: (v) {
+                setState(() => _eq1Gain = v);
                 if (_isConnected)
-                  _podController.setSwitch(PodXtCC.ampEnable, newState);
+                  _podController.setParameter(PodXtCC.eq1Gain, _dbToMidi(v));
               },
-              onLongPress: () {},
-              color: PodColors.buttonOnAmber,
+              freq: _eq1Freq,
+              onFreqChanged: (v) {
+                setState(() => _eq1Freq = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq1Freq, v);
+              },
+              freqRange: _eq1FreqRange,
+              band: 1,
+            ),
+          ),
+          Expanded(
+            child: _buildEqBand(
+              label: 'LO MID',
+              gain: _eq2Gain,
+              onGainChanged: (v) {
+                setState(() => _eq2Gain = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq2Gain, _dbToMidi(v));
+              },
+              freq: _eq2Freq,
+              onFreqChanged: (v) {
+                setState(() => _eq2Freq = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq2Freq, v);
+              },
+              freqRange: _eq2FreqRange,
+              band: 2,
+            ),
+          ),
+          Expanded(
+            child: _buildEqBand(
+              label: 'HI MID',
+              gain: _eq3Gain,
+              onGainChanged: (v) {
+                setState(() => _eq3Gain = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq3Gain, _dbToMidi(v));
+              },
+              freq: _eq3Freq,
+              onFreqChanged: (v) {
+                setState(() => _eq3Freq = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq3Freq, v);
+              },
+              freqRange: _eq3FreqRange,
+              band: 3,
+            ),
+          ),
+          Expanded(
+            child: _buildEqBand(
+              label: 'HIGH',
+              gain: _eq4Gain,
+              onGainChanged: (v) {
+                setState(() => _eq4Gain = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq4Gain, _dbToMidi(v));
+              },
+              freq: _eq4Freq,
+              onFreqChanged: (v) {
+                setState(() => _eq4Freq = v);
+                if (_isConnected)
+                  _podController.setParameter(PodXtCC.eq4Freq, v);
+              },
+              freqRange: _eq4FreqRange,
+              band: 4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Row 4: 1/1/1/10/2/1 layout - Settings | WAH | FX LOOP | Presets | TAP | MIDI
+  Widget _buildRow4() {
+    return Row(
+      children: [
+        // Settings (flex 1)
+        Expanded(
+          flex: 1,
+          child: GestureDetector(
+            onTap: _showSettings,
+            child: Container(
+              decoration: BoxDecoration(
+                color: PodColors.surface,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: PodColors.surfaceLight, width: 1),
+              ),
+              child: const Center(
+                child: Icon(Icons.settings, color: PodColors.textSecondary, size: 20),
+              ),
             ),
           ),
         ),
         const SizedBox(width: 8),
 
-        // CAB selector - 1/6
+        // WAH (flex 1)
         Expanded(
-          flex: 2,
-          child: _buildDropdown(
-            label: 'CAB',
-            value: _currentCab,
-            onTap: _showCabPicker,
+          flex: 1,
+          child: EffectButton(
+            label: 'WAH',
+            modelName: _wahModel,
+            isOn: _wahEnabled,
+            onTap: () {
+              final newState = !_wahEnabled;
+              setState(() => _wahEnabled = newState);
+              if (_isConnected) _podController.setWahEnabled(newState);
+            },
+            onLongPress: () => _showEffectModal('Wah'),
+            color: PodColors.buttonOnGreen,
           ),
         ),
         const SizedBox(width: 8),
 
-        // MIC selector - 1/6
+        // FX LOOP (flex 1)
+        Expanded(
+          flex: 1,
+          child: Container(
+            decoration: BoxDecoration(
+              color: PodColors.surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: PodColors.surfaceLight, width: 1),
+            ),
+            child: const Center(
+              child: Text('FX LOOP', style: TextStyle(color: PodColors.textSecondary, fontSize: 11, letterSpacing: 1.1)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // Preset bar (flex 10)
+        Expanded(
+          flex: 10,
+          child: PatchBrowser(
+            bank: _formatProgramName(_currentProgram),
+            patchName: _currentPatchName,
+            isModified: _isModified,
+            onPrevious: () {
+              if (_isConnected && _currentProgram > 0) {
+                _podController.selectProgram(_currentProgram - 1);
+              }
+            },
+            onNext: () {
+              if (_isConnected && _currentProgram < 127) {
+                _podController.selectProgram(_currentProgram + 1);
+              }
+            },
+            onTap: _showPatchList,
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // TAP (flex 2)
         Expanded(
           flex: 2,
-          child: _buildDropdown(
-            label: 'MIC',
-            value: _currentMic,
-            onTap: _showMicPicker,
+          child: Container(
+            decoration: BoxDecoration(
+              color: PodColors.surface,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: PodColors.surfaceLight, width: 1),
+            ),
+            child: const Center(
+              child: Text('TAP', style: TextStyle(color: PodColors.textSecondary, fontSize: 14, letterSpacing: 1.2)),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+
+        // MIDI status (flex 1)
+        Expanded(
+          flex: 1,
+          child: ConnectionIndicator(
+            isConnected: _isConnected,
+            onTap: _showConnectionScreen,
           ),
         ),
       ],
@@ -581,7 +1030,6 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildAmpSelector() {
     return Container(
-      height: 60,
       decoration: BoxDecoration(
         color: PodColors.surface,
         borderRadius: BorderRadius.circular(4),
@@ -643,255 +1091,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: PodColors.surface,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: PodColors.surfaceLight, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
-                    color: PodColors.textSecondary,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: PodColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 4),
-            const Icon(
-              Icons.arrow_drop_down,
-              color: PodColors.textSecondary,
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildKnobsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        RotaryKnob(
-          label: 'DRIVE',
-          value: _drive,
-          onValueChanged: (v) {
-            setState(() => _drive = v);
-            if (_isConnected) _podController.setDrive(v);
-          },
-          size: 50,
-          valueFormatter: _formatKnobValue,
-        ),
-        RotaryKnob(
-          label: 'BASS',
-          value: _bass,
-          onValueChanged: (v) {
-            setState(() => _bass = v);
-            if (_isConnected) _podController.setBass(v);
-          },
-          size: 50,
-          valueFormatter: _formatKnobValue,
-        ),
-        RotaryKnob(
-          label: 'MID',
-          value: _mid,
-          onValueChanged: (v) {
-            setState(() => _mid = v);
-            if (_isConnected) _podController.setMid(v);
-          },
-          size: 50,
-          valueFormatter: _formatKnobValue,
-        ),
-        RotaryKnob(
-          label: 'TREBLE',
-          value: _treble,
-          onValueChanged: (v) {
-            setState(() => _treble = v);
-            if (_isConnected) _podController.setTreble(v);
-          },
-          size: 50,
-          valueFormatter: _formatKnobValue,
-        ),
-        RotaryKnob(
-          label: 'PRES',
-          value: _presence,
-          onValueChanged: (v) {
-            setState(() => _presence = v);
-            if (_isConnected) _podController.setPresence(v);
-          },
-          size: 50,
-          valueFormatter: _formatKnobValue,
-        ),
-        RotaryKnob(
-          label: 'VOL',
-          value: _volume,
-          onValueChanged: (v) {
-            setState(() => _volume = v);
-            if (_isConnected) _podController.setChannelVolume(v);
-          },
-          size: 50,
-          valueFormatter: _formatKnobValue,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEqRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // EQ Section in a tile (narrower)
-        Container(
-          width: 280,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: PodColors.surface,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: PodColors.surfaceLight, width: 1),
-          ),
-          child: Row(
-            children: [
-              // Band 1
-              Expanded(
-                child: _buildEqBand(
-                  label: 'LOW',
-                  gain: _eq1Gain,
-                  onGainChanged: (v) {
-                    setState(() => _eq1Gain = v);
-                    if (_isConnected)
-                      _podController.setParameter(
-                        PodXtCC.eq1Gain,
-                        _dbToMidi(v),
-                      );
-                  },
-                  freq: _eq1Freq,
-                  onFreqChanged: (v) {
-                    setState(() => _eq1Freq = v);
-                    if (_isConnected)
-                      _podController.setParameter(PodXtCC.eq1Freq, v);
-                  },
-                  freqRange: _eq1FreqRange,
-                  band: 1,
-                ),
-              ),
-              // Band 2
-              Expanded(
-                child: _buildEqBand(
-                  label: 'LO MID',
-                  gain: _eq2Gain,
-                  onGainChanged: (v) {
-                    setState(() => _eq2Gain = v);
-                    if (_isConnected)
-                      _podController.setParameter(
-                        PodXtCC.eq2Gain,
-                        _dbToMidi(v),
-                      );
-                  },
-                  freq: _eq2Freq,
-                  onFreqChanged: (v) {
-                    setState(() => _eq2Freq = v);
-                    if (_isConnected)
-                      _podController.setParameter(PodXtCC.eq2Freq, v);
-                  },
-                  freqRange: _eq2FreqRange,
-                  band: 2,
-                ),
-              ),
-              // Band 3
-              Expanded(
-                child: _buildEqBand(
-                  label: 'HI MID',
-                  gain: _eq3Gain,
-                  onGainChanged: (v) {
-                    setState(() => _eq3Gain = v);
-                    if (_isConnected)
-                      _podController.setParameter(
-                        PodXtCC.eq3Gain,
-                        _dbToMidi(v),
-                      );
-                  },
-                  freq: _eq3Freq,
-                  onFreqChanged: (v) {
-                    setState(() => _eq3Freq = v);
-                    if (_isConnected)
-                      _podController.setParameter(PodXtCC.eq3Freq, v);
-                  },
-                  freqRange: _eq3FreqRange,
-                  band: 3,
-                ),
-              ),
-              // Band 4
-              Expanded(
-                child: _buildEqBand(
-                  label: 'HIGH',
-                  gain: _eq4Gain,
-                  onGainChanged: (v) {
-                    setState(() => _eq4Gain = v);
-                    if (_isConnected)
-                      _podController.setParameter(
-                        PodXtCC.eq4Gain,
-                        _dbToMidi(v),
-                      );
-                  },
-                  freq: _eq4Freq,
-                  onFreqChanged: (v) {
-                    setState(() => _eq4Freq = v);
-                    if (_isConnected)
-                      _podController.setParameter(PodXtCC.eq4Freq, v);
-                  },
-                  freqRange: _eq4FreqRange,
-                  band: 4,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        // EQ Enable button
-        SizedBox(
-          width: 60,
-          child: EffectButton(
-            label: 'EQ',
-            isOn: _eqEnabled,
-            onTap: () {
-              final newState = !_eqEnabled;
-              setState(() => _eqEnabled = newState);
-              if (_isConnected) _podController.setEqEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('EQ'),
-            color: PodColors.buttonOnAmber,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildEqBand({
     required String label,
     required double gain,
@@ -926,87 +1125,6 @@ class _MainScreenState extends State<MainScreen> {
           size: 28,
           showTickMarks: false,
           valueFormatter: (v) => _formatEqFreq(v, band, freqRange),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEffectsRow() {
-    return Row(
-      children: [
-        Expanded(
-          child: EffectButton(
-            label: 'WAH',
-            modelName: _wahModel,
-            isOn: _wahEnabled,
-            onTap: () {
-              final newState = !_wahEnabled;
-              setState(() => _wahEnabled = newState);
-              if (_isConnected) _podController.setWahEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Wah'),
-            color: PodColors.buttonOnGreen,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: EffectButton(
-            label: 'STOMP',
-            modelName: _stompModel,
-            isOn: _stompEnabled,
-            onTap: () {
-              final newState = !_stompEnabled;
-              setState(() => _stompEnabled = newState);
-              if (_isConnected) _podController.setStompEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Stomp'),
-            color: PodColors.buttonOnGreen,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: EffectButton(
-            label: 'MOD',
-            modelName: _modModel,
-            isOn: _modEnabled,
-            onTap: () {
-              final newState = !_modEnabled;
-              setState(() => _modEnabled = newState);
-              if (_isConnected) _podController.setModEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Mod'),
-            color: PodColors.buttonOnGreen,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: EffectButton(
-            label: 'DELAY',
-            modelName: _delayModel,
-            isOn: _delayEnabled,
-            onTap: () {
-              final newState = !_delayEnabled;
-              setState(() => _delayEnabled = newState);
-              if (_isConnected) _podController.setDelayEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Delay'),
-            color: PodColors.buttonOnGreen,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: EffectButton(
-            label: 'REVERB',
-            modelName: _reverbModel,
-            isOn: _reverbEnabled,
-            onTap: () {
-              final newState = !_reverbEnabled;
-              setState(() => _reverbEnabled = newState);
-              if (_isConnected) _podController.setReverbEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Reverb'),
-            color: PodColors.buttonOnGreen,
-          ),
         ),
       ],
     );
@@ -1064,58 +1182,6 @@ class _MainScreenState extends State<MainScreen> {
           ],
         );
     }
-  }
-
-  Widget _buildBottomBar() {
-    return Row(
-      children: [
-        // Settings button (gear icon)
-        GestureDetector(
-          onTap: _showSettings,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: PodColors.surface,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: PodColors.surfaceLight, width: 1),
-            ),
-            child: const Icon(
-              Icons.settings,
-              color: PodColors.textSecondary,
-              size: 20,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-
-        // Patch Browser (center)
-        Expanded(
-          child: PatchBrowser(
-            bank: _formatProgramName(_currentProgram),
-            patchName: _currentPatchName,
-            isModified: _isModified,
-            onPrevious: () {
-              if (_isConnected && _currentProgram > 0) {
-                _podController.selectProgram(_currentProgram - 1);
-              }
-            },
-            onNext: () {
-              if (_isConnected && _currentProgram < 127) {
-                _podController.selectProgram(_currentProgram + 1);
-              }
-            },
-            onTap: _showPatchList,
-          ),
-        ),
-        const SizedBox(width: 12),
-
-        // Connection Indicator (right)
-        ConnectionIndicator(
-          isConnected: _isConnected,
-          onTap: _showConnectionScreen,
-        ),
-      ],
-    );
   }
 }
 

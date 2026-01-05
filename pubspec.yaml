@@ -91,3 +91,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  fonts:
+    - family: Doto
+      fonts:
+        - asset: assets/fonts/Doto-Regular.ttf
