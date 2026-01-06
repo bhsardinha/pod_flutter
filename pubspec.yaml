@@ -96,3 +96,8 @@ flutter:
     - family: Doto
       fonts:
         - asset: assets/fonts/Doto-Regular.ttf
+        - asset: assets/fonts/Doto-SemiBold.ttf
+          weight: 600
+    - family: OPTICopperplate
+      fonts:
+        - asset: assets/fonts/OPTICopperplate-Heavy.otf

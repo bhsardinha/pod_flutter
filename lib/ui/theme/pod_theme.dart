@@ -319,7 +319,8 @@ class PodTheme {
         space: 1,
       ),
 
-      // Text theme
+      // Text theme - OPTICopperplate as default font
+      fontFamily: 'OPTICopperplate',
       textTheme: const TextTheme(
         displayLarge: PodTextStyles.header,
         displayMedium: PodTextStyles.subheader,
@@ -332,7 +333,7 @@ class PodTheme {
         labelLarge: PodTextStyles.labelLarge,
         labelMedium: PodTextStyles.labelMedium,
         labelSmall: PodTextStyles.labelSmall,
-      ),
+      ).apply(fontFamily: 'OPTICopperplate'),
 
       // Floating Action Button
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
