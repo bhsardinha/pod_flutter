@@ -57,50 +57,50 @@ class EffectButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(6),
-          // Black hole recessed effect - inverted shadows for sunken look
+          // Thick black void with deep recession
           boxShadow: [
-            // Inner shadow top-left (dark, creates depth going IN)
+            // Inner shadow top-left (very dark, creates deep void)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.9),
-              offset: const Offset(-2, -3),
-              blurRadius: 6,
-              spreadRadius: -2,
+              color: Colors.black.withValues(alpha: 0.95),
+              offset: const Offset(-3, -4),
+              blurRadius: 10,
+              spreadRadius: -3,
             ),
             // Inner shadow bottom-right (subtle light from below)
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.03),
-              offset: const Offset(2, 3),
-              blurRadius: 4,
-              spreadRadius: -1,
+              color: Colors.white.withValues(alpha: 0.04),
+              offset: const Offset(3, 4),
+              blurRadius: 6,
+              spreadRadius: -2,
             ),
-            // Deep recess shadow (black hole effect)
+            // Deep central void shadow (black hole effect)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.95),
+              color: Colors.black.withValues(alpha: 0.98),
               offset: const Offset(0, 0),
-              blurRadius: 12,
-              spreadRadius: -4,
+              blurRadius: 16,
+              spreadRadius: -6,
             ),
           ],
-          // Dark vignette border to enhance black hole edge
+          // Thick dark vignette border to enhance black hole edge
           border: Border.all(
             color: const Color(0xFF000000),
-            width: 2,
+            width: 4,
           ),
         ),
         // Second container for the recessed surface
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            // Inverted gradient - darker at edges, slight light in center (like light at bottom of hole)
+            // Brighter gradient - more visible button surface
             gradient: const RadialGradient(
               center: Alignment.center,
               radius: 1.2,
               colors: [
-                Color(0xFF0A0A0A), // Slightly lighter in center
-                Color(0xFF020202), // Very dark at edges
-                Color(0xFF000000), // Pure black at outer edge
+                Color(0xFF181818), // Brighter center
+                Color(0xFF0D0D0D), // Mid-tone
+                Color(0xFF050505), // Dark edges
               ],
-              stops: [0.0, 0.7, 1.0],
+              stops: [0.0, 0.6, 1.0],
             ),
           ),
           child: Column(
