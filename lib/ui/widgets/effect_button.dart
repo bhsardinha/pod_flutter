@@ -56,95 +56,101 @@ class EffectButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          // Piano black glossy gradient (darker)
-          gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F0F0F), // Darker highlight at top
-              Color(0xFF050505), // Very deep black in middle
-              Color(0xFF000000), // Pure black at bottom
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
           borderRadius: BorderRadius.circular(6),
-          // Steep outer bevel - soap bar effect
+          // Black hole recessed effect - inverted shadows for sunken look
           boxShadow: [
-            // Top edge highlight (very subtle, sharp)
+            // Inner shadow top-left (dark, creates depth going IN)
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.05),
-              offset: const Offset(-1.5, -2),
-              blurRadius: 1,
-              spreadRadius: 0,
-            ),
-            // Steep bottom-right shadow (deep, pronounced)
-            const BoxShadow(
-              color: Color(0xFF000000),
-              offset: Offset(3, 4),
+              color: Colors.black.withValues(alpha: 0.9),
+              offset: const Offset(-2, -3),
               blurRadius: 6,
-              spreadRadius: 1,
+              spreadRadius: -2,
             ),
-            // Deep ambient shadow for depth
+            // Inner shadow bottom-right (subtle light from below)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.8),
-              offset: const Offset(1, 2),
-              blurRadius: 8,
-              spreadRadius: 0,
+              color: Colors.white.withValues(alpha: 0.03),
+              offset: const Offset(2, 3),
+              blurRadius: 4,
+              spreadRadius: -1,
+            ),
+            // Deep recess shadow (black hole effect)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.95),
+              offset: const Offset(0, 0),
+              blurRadius: 12,
+              spreadRadius: -4,
             ),
           ],
-          // Darker border for steep edge definition
+          // Dark vignette border to enhance black hole edge
           border: Border.all(
-            color: const Color(0xFF151515),
-            width: 1,
+            color: const Color(0xFF000000),
+            width: 2,
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Effect name with minimal dark orange glow when ON
-            Text(
-              label,
-              style: TextStyle(
-                color: isOn ? const Color(0xFFCC6200) : const Color(0xFF4A4A4A), // Dark orange or dark gray
-                fontSize: labelFontSize ?? 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.8,
-                // Minimal glow when ON
-                shadows: isOn
-                    ? [
-                        Shadow(
-                          color: const Color(0xFFB85500).withValues(alpha: 0.4),
-                          blurRadius: 4,
-                        ),
-                      ]
-                    : null,
-              ),
+        // Second container for the recessed surface
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            // Inverted gradient - darker at edges, slight light in center (like light at bottom of hole)
+            gradient: const RadialGradient(
+              center: Alignment.center,
+              radius: 1.2,
+              colors: [
+                Color(0xFF0A0A0A), // Slightly lighter in center
+                Color(0xFF020202), // Very dark at edges
+                Color(0xFF000000), // Pure black at outer edge
+              ],
+              stops: [0.0, 0.7, 1.0],
             ),
-            // Model/preset name with barely visible glow when ON
-            if (modelName != null && modelName!.isNotEmpty) ...[
-              const SizedBox(height: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Effect name with minimal dark orange glow when ON
               Text(
-                modelName!,
+                label,
                 style: TextStyle(
-                  color: isOn
-                      ? const Color(0xFFCC6200).withValues(alpha: 0.7)
-                      : const Color(0xFF3A3A3A),
-                  fontSize: modelFontSize ?? 11,
+                  color: isOn ? const Color(0xFFCC6200) : const Color(0xFF4A4A4A), // Dark orange or dark gray
+                  fontSize: labelFontSize ?? 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                  // Minimal glow when ON
                   shadows: isOn
                       ? [
                           Shadow(
-                            color: const Color(0xFFB85500).withValues(alpha: 0.3),
-                            blurRadius: 3,
+                            color: const Color(0xFFB85500).withValues(alpha: 0.4),
+                            blurRadius: 4,
                           ),
                         ]
                       : null,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
               ),
+              // Model/preset name with barely visible glow when ON
+              if (modelName != null && modelName!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  modelName!,
+                  style: TextStyle(
+                    color: isOn
+                        ? const Color(0xFFCC6200).withValues(alpha: 0.7)
+                        : const Color(0xFF3A3A3A),
+                    fontSize: modelFontSize ?? 11,
+                    shadows: isOn
+                        ? [
+                            Shadow(
+                              color: const Color(0xFFB85500).withValues(alpha: 0.3),
+                              blurRadius: 3,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
