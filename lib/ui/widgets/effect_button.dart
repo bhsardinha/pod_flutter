@@ -91,17 +91,8 @@ class EffectButton extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            // Brighter gradient - more visible button surface
-            gradient: const RadialGradient(
-              center: Alignment.center,
-              radius: 1.2,
-              colors: [
-                Color(0xFF181818), // Brighter center
-                Color(0xFF0D0D0D), // Mid-tone
-                Color(0xFF050505), // Dark edges
-              ],
-              stops: [0.0, 0.6, 1.0],
-            ),
+            // Solid gray surface
+            color: const Color(0xFF1C1C1C),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
