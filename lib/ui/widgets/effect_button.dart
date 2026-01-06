@@ -93,10 +93,7 @@ class EffectButton extends StatelessWidget {
             ),
           ],
           // Subtle border for definition
-          border: Border.all(
-            color: const Color(0xFF2A2A2A),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFF2A2A2A), width: 1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -106,7 +103,9 @@ class EffectButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isOn ? const Color(0xFFFF7A00) : const Color(0xFF4A4A4A), // Orange or dark gray
+                color: isOn
+                    ? const Color(0xFFFF7A00)
+                    : const Color(0xFF4A4A4A), // Orange or dark gray
                 fontSize: labelFontSize ?? 14,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.8,
@@ -114,16 +113,20 @@ class EffectButton extends StatelessWidget {
                 shadows: isOn
                     ? [
                         Shadow(
-                          color: const Color(0xFFFF7A00).withValues(alpha: 0.9),
-                          blurRadius: 8,
-                        ),
-                        Shadow(
-                          color: const Color(0xFFFF7A00).withValues(alpha: 0.6),
-                          blurRadius: 16,
+                          color: const Color(
+                            0xFFFF7A00,
+                          ).withValues(alpha: 0.15),
+                          blurRadius: 4,
                         ),
                         Shadow(
                           color: const Color(0xFFFF7A00).withValues(alpha: 0.3),
-                          blurRadius: 24,
+                          blurRadius: 8,
+                        ),
+                        Shadow(
+                          color: const Color(
+                            0xFFFF7A00,
+                          ).withValues(alpha: 0.15),
+                          blurRadius: 4,
                         ),
                       ]
                     : null,
@@ -142,8 +145,10 @@ class EffectButton extends StatelessWidget {
                   shadows: isOn
                       ? [
                           Shadow(
-                            color: const Color(0xFFFF7A00).withValues(alpha: 0.6),
-                            blurRadius: 6,
+                            color: const Color(
+                              0xFFFF7A00,
+                            ).withValues(alpha: 0.3),
+                            blurRadius: 3,
                           ),
                         ]
                       : null,

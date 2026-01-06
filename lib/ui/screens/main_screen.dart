@@ -155,6 +155,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _gateEnabled = false;
   bool _ampEnabled = true; // Amp enabled (true = amp ON)
   bool _wahEnabled = false;
+  bool _compEnabled = false;
   bool _stompEnabled = false;
   bool _modEnabled = false;
   bool _delayEnabled = false;
@@ -332,11 +333,13 @@ class _MainScreenState extends State<MainScreen> {
       _treble = _podController.treble;
       _presence = _podController.presence;
       _volume = _podController.channelVolume;
+      _reverbMix = _podController.reverbLevel;
 
       // Effect enables
       _gateEnabled = _podController.noiseGateEnabled;
       _ampEnabled = _podController.getSwitch(PodXtCC.ampEnable);
       _wahEnabled = _podController.wahEnabled;
+      _compEnabled = _podController.compressorEnabled;
       _stompEnabled = _podController.stompEnabled;
       _modEnabled = _podController.modEnabled;
       _delayEnabled = _podController.delayEnabled;
@@ -699,7 +702,7 @@ class _MainScreenState extends State<MainScreen> {
                 value: _reverbMix,
                 onValueChanged: (v) {
                   setState(() => _reverbMix = v);
-                  // TODO: Connect to reverb mix parameter when available
+                  if (_isConnected) _podController.setReverbLevel(v);
                 },
                 size: 72,
                 valueFormatter: _formatKnobValue,
@@ -753,9 +756,11 @@ class _MainScreenState extends State<MainScreen> {
               Expanded(
                 child: EffectButton(
                   label: 'COMP',
-                  isOn: false, // TODO: Add compressor state
+                  isOn: _compEnabled,
                   onTap: () {
-                    // TODO: Add compressor toggle
+                    final newState = !_compEnabled;
+                    setState(() => _compEnabled = newState);
+                    if (_isConnected) _podController.setCompressorEnabled(newState);
                   },
                   onLongPress: () => _showEffectModal('Comp'),
                   color: PodColors.buttonOnGreen,

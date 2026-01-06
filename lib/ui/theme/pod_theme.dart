@@ -45,7 +45,7 @@ class PodTextStyles {
   // LCD Display styles
   static const lcdLarge = TextStyle(
     fontFamily: 'monospace',
-    fontSize: 24,
+    fontSize: 23,
     fontWeight: FontWeight.w600,
     color: PodColors.lcdText,
     letterSpacing: 1.5,
@@ -54,7 +54,7 @@ class PodTextStyles {
 
   static const lcdMedium = TextStyle(
     fontFamily: 'monospace',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: FontWeight.w500,
     color: PodColors.lcdText,
     letterSpacing: 1.2,
@@ -63,7 +63,7 @@ class PodTextStyles {
 
   static const lcdSmall = TextStyle(
     fontFamily: 'monospace',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: FontWeight.w500,
     color: PodColors.lcdText,
     letterSpacing: 1.0,
@@ -72,7 +72,7 @@ class PodTextStyles {
 
   // Parameter labels (printed on hardware)
   static const labelLarge = TextStyle(
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: FontWeight.w700,
     color: PodColors.textLabel,
     letterSpacing: 0.8,
@@ -80,7 +80,7 @@ class PodTextStyles {
   );
 
   static const labelMedium = TextStyle(
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w600,
     color: PodColors.textLabel,
     letterSpacing: 0.5,
@@ -88,7 +88,7 @@ class PodTextStyles {
   );
 
   static const labelSmall = TextStyle(
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: FontWeight.w600,
     color: PodColors.textLabel,
     letterSpacing: 0.3,
@@ -97,7 +97,7 @@ class PodTextStyles {
 
   // Parameter values
   static const valueLarge = TextStyle(
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: FontWeight.w600,
     color: PodColors.textPrimary,
     letterSpacing: 0.5,
@@ -105,7 +105,7 @@ class PodTextStyles {
   );
 
   static const valueMedium = TextStyle(
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: FontWeight.w500,
     color: PodColors.textPrimary,
     letterSpacing: 0.3,
@@ -113,7 +113,7 @@ class PodTextStyles {
   );
 
   static const valueSmall = TextStyle(
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: FontWeight.w500,
     color: PodColors.textPrimary,
     letterSpacing: 0.2,
@@ -122,7 +122,7 @@ class PodTextStyles {
 
   // Secondary text
   static const secondary = TextStyle(
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w400,
     color: PodColors.textSecondary,
     letterSpacing: 0.2,
@@ -131,7 +131,7 @@ class PodTextStyles {
 
   // Button text when off
   static const buttonOff = TextStyle(
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w600,
     color: PodColors.buttonOffText,
     letterSpacing: 0.5,
@@ -140,7 +140,7 @@ class PodTextStyles {
 
   // Button text when on (green)
   static const buttonOnGreen = TextStyle(
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w700,
     color: PodColors.buttonOnGreen,
     letterSpacing: 0.5,
@@ -149,7 +149,7 @@ class PodTextStyles {
 
   // Button text when on (amber)
   static const buttonOnAmber = TextStyle(
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w700,
     color: PodColors.buttonOnAmber,
     letterSpacing: 0.5,
@@ -158,7 +158,7 @@ class PodTextStyles {
 
   // Header/title text
   static const header = TextStyle(
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: FontWeight.w700,
     color: PodColors.textPrimary,
     letterSpacing: 1.0,
@@ -166,7 +166,7 @@ class PodTextStyles {
   );
 
   static const subheader = TextStyle(
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: FontWeight.w600,
     color: PodColors.textLabel,
     letterSpacing: 0.8,
