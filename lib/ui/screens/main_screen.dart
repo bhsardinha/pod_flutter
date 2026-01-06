@@ -8,6 +8,7 @@ import '../widgets/vertical_fader.dart';
 import '../widgets/connection_indicator.dart';
 import '../widgets/patch_browser.dart';
 import '../widgets/pod_modal.dart';
+import '../widgets/dot_matrix_lcd.dart';
 import 'settings_screen.dart';
 import '../../services/ble_midi_service.dart';
 import '../../services/pod_controller.dart';
@@ -365,8 +366,7 @@ class _MainScreenState extends State<MainScreen> {
       _eq2Gain = _midiToDb(eq2Midi);
       _eq3Gain = _midiToDb(eq3Midi);
       _eq4Gain = _midiToDb(eq4Midi);
-
-      print('UI: EQ gains - MIDI: [$eq1Midi, $eq2Midi, $eq3Midi, $eq4Midi] -> dB: [${_eq1Gain.toStringAsFixed(1)}, ${_eq2Gain.toStringAsFixed(1)}, ${_eq3Gain.toStringAsFixed(1)}, ${_eq4Gain.toStringAsFixed(1)}]');
+      // Debug print removed: EQ gain updates are applied to state.
     });
   }
 
@@ -478,20 +478,20 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: PodColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             children: [
               // Row 1: GATE/AMP | LCD | CAB/MIC (22.22%)
               Expanded(flex: 2, child: _buildRow1()),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Row 2: 7 Knobs (22.22%)
               Expanded(flex: 2, child: _buildRow2()),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Row 3: Effects | EQ | Effects (44.44%)
               Expanded(flex: 4, child: _buildRow3()),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
               // Row 4: Settings | WAH | FX | Presets | TAP | MIDI (11.11%)
               Expanded(flex: 1, child: _buildRow4()),
@@ -511,6 +511,7 @@ class _MainScreenState extends State<MainScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: PodColors.surface,
@@ -529,7 +530,7 @@ class _MainScreenState extends State<MainScreen> {
                 letterSpacing: 1.1,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               value,
               textAlign: TextAlign.center,
@@ -541,11 +542,7 @@ class _MainScreenState extends State<MainScreen> {
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
-            const Icon(
-              Icons.arrow_drop_down,
-              color: PodColors.textSecondary,
-              size: 16,
-            ),
+            // Dropdown arrow removed per UI update; whole button is tappable
           ],
         ),
       ),
@@ -568,13 +565,14 @@ class _MainScreenState extends State<MainScreen> {
                   onTap: () {
                     final newState = !_gateEnabled;
                     setState(() => _gateEnabled = newState);
-                    if (_isConnected) _podController.setNoiseGateEnabled(newState);
+                    if (_isConnected)
+                      _podController.setNoiseGateEnabled(newState);
                   },
                   onLongPress: () => _showEffectModal('Gate'),
                   color: PodColors.buttonOnGreen,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: EffectButton(
                   label: 'AMP',
@@ -592,11 +590,11 @@ class _MainScreenState extends State<MainScreen> {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
         // Center: Large LCD selector (flex 10)
         Expanded(flex: 10, child: _buildAmpSelector()),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
         // Right: CAB and MIC stacked (flex 3)
         Expanded(
@@ -610,7 +608,7 @@ class _MainScreenState extends State<MainScreen> {
                   onTap: _showCabPicker,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: _buildDropdownButton(
                   label: 'MIC',
@@ -629,9 +627,10 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildRow2() {
     return Row(
       children: [
-        const Expanded(flex: 1, child: SizedBox()),
+        // scaled flex: 0.2 / 15.6 / 0.2 -> multiply by 10 => 2 / 156 / 2
+        const Expanded(flex: 2, child: SizedBox()),
         Expanded(
-          flex: 14,
+          flex: 156,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -642,7 +641,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _drive = v);
                   if (_isConnected) _podController.setDrive(v);
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
               RotaryKnob(
@@ -652,7 +651,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _bass = v);
                   if (_isConnected) _podController.setBass(v);
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
               RotaryKnob(
@@ -662,7 +661,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _mid = v);
                   if (_isConnected) _podController.setMid(v);
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
               RotaryKnob(
@@ -672,7 +671,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _treble = v);
                   if (_isConnected) _podController.setTreble(v);
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
               RotaryKnob(
@@ -682,7 +681,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _presence = v);
                   if (_isConnected) _podController.setPresence(v);
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
               RotaryKnob(
@@ -692,7 +691,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _volume = v);
                   if (_isConnected) _podController.setChannelVolume(v);
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
               RotaryKnob(
@@ -702,13 +701,13 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() => _reverbMix = v);
                   // TODO: Connect to reverb mix parameter when available
                 },
-                size: 50,
+                size: 72,
                 valueFormatter: _formatKnobValue,
               ),
             ],
           ),
         ),
-        const Expanded(flex: 1, child: SizedBox()),
+        const Expanded(flex: 2, child: SizedBox()),
       ],
     );
   }
@@ -736,7 +735,7 @@ class _MainScreenState extends State<MainScreen> {
                   color: PodColors.buttonOnGreen,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: EffectButton(
                   label: 'EQ',
@@ -750,7 +749,7 @@ class _MainScreenState extends State<MainScreen> {
                   color: PodColors.buttonOnAmber,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: EffectButton(
                   label: 'COMP',
@@ -765,14 +764,11 @@ class _MainScreenState extends State<MainScreen> {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
         // Center EQ section (flex 8)
-        Expanded(
-          flex: 8,
-          child: _buildEqSection(),
-        ),
-        const SizedBox(width: 8),
+        Expanded(flex: 8, child: _buildEqSection()),
+        const SizedBox(width: 12),
 
         // Right effects column (flex 4)
         Expanded(
@@ -793,7 +789,7 @@ class _MainScreenState extends State<MainScreen> {
                   color: PodColors.buttonOnGreen,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: EffectButton(
                   label: 'DELAY',
@@ -808,7 +804,7 @@ class _MainScreenState extends State<MainScreen> {
                   color: PodColors.buttonOnGreen,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Expanded(
                 child: EffectButton(
                   label: 'REVERB',
@@ -925,11 +921,55 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildRow4() {
     return Row(
       children: [
-        // Settings (flex 1)
+        // Settings (flex 2)
         Expanded(
-          flex: 1,
+          flex: 2,
           child: GestureDetector(
             onTap: _showSettings,
+            child: SizedBox.expand(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: PodColors.surface,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: PodColors.surfaceLight, width: 1),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.settings,
+                    color: PodColors.textSecondary,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // WAH (flex 3) — restored EffectButton with smaller font, preserves on/off
+        Expanded(
+          flex: 3,
+          child: SizedBox.expand(
+            child: EffectButton(
+              label: 'WAH',
+              isOn: _wahEnabled,
+              onTap: () {
+                final newState = !_wahEnabled;
+                setState(() => _wahEnabled = newState);
+                if (_isConnected) _podController.setWahEnabled(newState);
+              },
+              onLongPress: () => _showEffectModal('Wah'),
+              labelFontSize: 11.5,
+              modelFontSize: null,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // FX LOOP (flex 3)
+        Expanded(
+          flex: 3,
+          child: SizedBox.expand(
             child: Container(
               decoration: BoxDecoration(
                 color: PodColors.surface,
@@ -937,91 +977,77 @@ class _MainScreenState extends State<MainScreen> {
                 border: Border.all(color: PodColors.surfaceLight, width: 1),
               ),
               child: const Center(
-                child: Icon(Icons.settings, color: PodColors.textSecondary, size: 20),
+                child: Text(
+                  'FX LOOP',
+                  style: TextStyle(
+                    color: PodColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 1.1,
+                  ),
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
-        // WAH (flex 1)
+        // Preset bar (flex 19)
         Expanded(
-          flex: 1,
-          child: EffectButton(
-            label: 'WAH',
-            modelName: _wahModel,
-            isOn: _wahEnabled,
-            onTap: () {
-              final newState = !_wahEnabled;
-              setState(() => _wahEnabled = newState);
-              if (_isConnected) _podController.setWahEnabled(newState);
-            },
-            onLongPress: () => _showEffectModal('Wah'),
-            color: PodColors.buttonOnGreen,
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // FX LOOP (flex 1)
-        Expanded(
-          flex: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              color: PodColors.surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: PodColors.surfaceLight, width: 1),
-            ),
-            child: const Center(
-              child: Text('FX LOOP', style: TextStyle(color: PodColors.textSecondary, fontSize: 11, letterSpacing: 1.1)),
+          flex: 19,
+          child: SizedBox.expand(
+            child: PatchBrowser(
+              bank: _formatProgramName(_currentProgram),
+              patchName: _currentPatchName,
+              isModified: _isModified,
+              onPrevious: () {
+                if (_isConnected && _currentProgram > 0) {
+                  _podController.selectProgram(_currentProgram - 1);
+                }
+              },
+              onNext: () {
+                if (_isConnected && _currentProgram < 127) {
+                  _podController.selectProgram(_currentProgram + 1);
+                }
+              },
+              onTap: _showPatchList,
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
-        // Preset bar (flex 10)
+        // TAP (flex 3)
         Expanded(
-          flex: 10,
-          child: PatchBrowser(
-            bank: _formatProgramName(_currentProgram),
-            patchName: _currentPatchName,
-            isModified: _isModified,
-            onPrevious: () {
-              if (_isConnected && _currentProgram > 0) {
-                _podController.selectProgram(_currentProgram - 1);
-              }
-            },
-            onNext: () {
-              if (_isConnected && _currentProgram < 127) {
-                _podController.selectProgram(_currentProgram + 1);
-              }
-            },
-            onTap: _showPatchList,
+          flex: 3,
+          child: SizedBox.expand(
+            child: Container(
+              decoration: BoxDecoration(
+                color: PodColors.surface,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: PodColors.surfaceLight, width: 1),
+              ),
+              child: const Center(
+                child: Text(
+                  'TAP',
+                  style: TextStyle(
+                    color: PodColors.textSecondary,
+                    fontSize: 14,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
 
-        // TAP (flex 2)
+        // MIDI status (flex 2)
         Expanded(
           flex: 2,
-          child: Container(
-            decoration: BoxDecoration(
-              color: PodColors.surface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: PodColors.surfaceLight, width: 1),
+          child: SizedBox.expand(
+            child: ConnectionIndicator(
+              isConnected: _isConnected,
+              onTap: _showConnectionScreen,
             ),
-            child: const Center(
-              child: Text('TAP', style: TextStyle(color: PodColors.textSecondary, fontSize: 14, letterSpacing: 1.2)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-
-        // MIDI status (flex 1)
-        Expanded(
-          flex: 1,
-          child: ConnectionIndicator(
-            isConnected: _isConnected,
-            onTap: _showConnectionScreen,
           ),
         ),
       ],
@@ -1037,13 +1063,11 @@ class _MainScreenState extends State<MainScreen> {
       ),
       child: Row(
         children: [
-          // Left arrow
+          // Left arrow — open amp picker (or replace with prev/next logic later)
           GestureDetector(
-            onTap: () {
-              // TODO: previous amp
-            },
+            onTap: _showAmpPicker,
             child: Container(
-              width: 32,
+              width: 40,
               height: double.infinity,
               decoration: BoxDecoration(
                 border: Border(
@@ -1057,22 +1081,75 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
           ),
-          // Amp name
+
+          // Center: Dot-matrix LCD showing amp and cabinet
           Expanded(
             child: GestureDetector(
               onTap: _showAmpPicker,
-              child: Center(
-                child: _buildAmpDisplay(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Builder(
+                  builder: (context) {
+                    final amp = _podController.ampModel;
+                    String line1;
+                    String? line2;
+
+                    if (amp == null) {
+                      line1 = _currentAmp;
+                      line2 = null;
+                    } else {
+                      switch (_settings.ampNameDisplayMode) {
+                        case AmpNameDisplayMode.factory:
+                          line1 = amp.getDisplayName(
+                            AmpNameDisplayMode.factory,
+                          );
+                          line2 = null;
+                          break;
+                        case AmpNameDisplayMode.realAmp:
+                          line1 = amp.getDisplayName(
+                            AmpNameDisplayMode.realAmp,
+                          );
+                          line2 = null;
+                          break;
+                        case AmpNameDisplayMode.both:
+                          if (amp.realName != null &&
+                              amp.realName!.isNotEmpty) {
+                            // Show factory name as the large primary line and real amp as the smaller secondary line
+                            line1 = amp.getDisplayName(
+                              AmpNameDisplayMode.factory,
+                            );
+                            line2 = amp.realName!;
+                          } else {
+                            line1 = amp.getDisplayName(
+                              AmpNameDisplayMode.factory,
+                            );
+                            line2 = null;
+                          }
+                          break;
+                      }
+                    }
+
+                    return DotMatrixLCD(
+                      line1: line1,
+                      line2: line2,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
+                      line1Size: 34,
+                      line2Size: 14,
+                    );
+                  },
+                ),
               ),
             ),
           ),
-          // Right arrow
+
+          // Right arrow — open amp picker (or replace with prev/next logic later)
           GestureDetector(
-            onTap: () {
-              // TODO: next amp
-            },
+            onTap: _showAmpPicker,
             child: Container(
-              width: 32,
+              width: 40,
               height: double.infinity,
               decoration: BoxDecoration(
                 border: Border(
@@ -1116,7 +1193,7 @@ class _MainScreenState extends State<MainScreen> {
             snapThreshold: 0.3,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         // Frequency knob (compact)
         RotaryKnob(
           label: label,
@@ -1343,7 +1420,7 @@ class _ConnectionPanelState extends State<_ConnectionPanel> {
                 'Available Devices:',
                 style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               ..._devices.map(
                 (device) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -1375,7 +1452,7 @@ class _ConnectionPanelState extends State<_ConnectionPanel> {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               TextButton(onPressed: _scanDevices, child: const Text('Refresh')),
             ],
           ),

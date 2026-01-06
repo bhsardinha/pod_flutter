@@ -29,7 +29,7 @@ class VerticalFader extends StatefulWidget {
   final double width;
 
   /// Height of the fader track
-  final double height;
+  final double? height;
 
   /// Whether to show the value display
   final bool showValue;
@@ -50,8 +50,9 @@ class VerticalFader extends StatefulWidget {
     this.min = -12.0,
     this.max = 12.0,
     this.label,
-    this.width = 32.0,
-    this.height = 100.0,
+    // Slightly larger defaults for better touch targets
+    this.width = 40.0,
+    this.height,
     this.showValue = true,
     this.fillColor,
     this.snapThreshold = 0.8,
@@ -79,12 +80,12 @@ class _VerticalFaderState extends State<VerticalFader> {
     }
   }
 
-  void _handleDragUpdate(DragUpdateDetails details) {
+  void _handleDragUpdate(DragUpdateDetails details, double height) {
     setState(() {
       // Convert vertical drag to value change
       // Negative dy means dragging up (increase value)
       // Apply sensitivity multiplier for more precise control
-      final double baseSensitivity = (widget.max - widget.min) / widget.height;
+      final double baseSensitivity = (widget.max - widget.min) / height;
       final double adjustedSensitivity = baseSensitivity * widget.sensitivity;
 
       // Invert mapping so upward drag increases the fader value
@@ -100,14 +101,14 @@ class _VerticalFaderState extends State<VerticalFader> {
     });
   }
 
-  void _handleTapDown(TapDownDetails details) {
-    _updateValueFromPosition(details.localPosition.dy);
+  void _handleTapDown(TapDownDetails details, double height) {
+    _updateValueFromPosition(details.localPosition.dy, height);
   }
 
-  void _updateValueFromPosition(double dy) {
+  void _updateValueFromPosition(double dy, double height) {
     setState(() {
       // Convert tap position to value
-      final double normalizedPosition = 1.0 - (dy / widget.height);
+      final double normalizedPosition = 1.0 - (dy / height);
       _currentValue =
           widget.min + (normalizedPosition * (widget.max - widget.min));
       _currentValue = _currentValue.clamp(widget.min, widget.max);
@@ -140,19 +141,27 @@ class _VerticalFaderState extends State<VerticalFader> {
             ),
           ),
 
-        // Fader track
-        GestureDetector(
-          onVerticalDragUpdate: _handleDragUpdate,
-          onTapDown: _handleTapDown,
-          child: CustomPaint(
-            size: Size(widget.width, widget.height),
-            painter: _FaderPainter(
-              value: _currentValue,
-              min: widget.min,
-              max: widget.max,
-              fillColor: widget.fillColor ?? PodColors.accent,
-            ),
-          ),
+        // Fader track - adapt to available height when `height` is null
+        LayoutBuilder(
+          builder: (ctx, constraints) {
+            final availableHeight = widget.height ?? constraints.maxHeight;
+            final trackHeight = availableHeight.isFinite && availableHeight > 0
+                ? availableHeight
+                : 160.0;
+            return GestureDetector(
+              onVerticalDragUpdate: (d) => _handleDragUpdate(d, trackHeight),
+              onTapDown: (td) => _handleTapDown(td, trackHeight),
+              child: CustomPaint(
+                size: Size(widget.width, trackHeight),
+                painter: _FaderPainter(
+                  value: _currentValue,
+                  min: widget.min,
+                  max: widget.max,
+                  fillColor: widget.fillColor ?? PodColors.accent,
+                ),
+              ),
+            );
+          },
         ),
 
         // Label
@@ -194,12 +203,14 @@ class _FaderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double trackWidth = size.width * 0.25;
+    // Make track much wider (thicker) for improved visuals and touch targets
+    final double trackWidth = size.width * 0.72;
     final double trackLeft = (size.width - trackWidth) / 2;
     final double trackRight = trackLeft + trackWidth;
 
-    final double handleWidth = size.width * 0.7;
-    final double handleHeight = 8.0;
+    // Larger handle to match the thicker track
+    final double handleWidth = size.width * 0.98;
+    final double handleHeight = math.max(14.0, size.width * 0.40);
 
     // Calculate center position (where value = 0)
     final double centerY = size.height / 2;
@@ -244,7 +255,7 @@ class _FaderPainter extends CustomPainter {
     // Draw center line (0dB indicator) - subtle
     final centerLinePaint = Paint()
       ..color = PodColors.textSecondary.withValues(alpha: 0.5)
-      ..strokeWidth = 1;
+      ..strokeWidth = 1.5;
 
     canvas.drawLine(
       Offset(trackLeft - 4, centerY),
@@ -262,7 +273,7 @@ class _FaderPainter extends CustomPainter {
       handleY - handleHeight / 2,
       (size.width + handleWidth) / 2,
       handleY + handleHeight / 2,
-      const Radius.circular(2),
+      Radius.circular(handleHeight * 0.25),
     );
     canvas.drawRRect(handleRect, handlePaint);
   }

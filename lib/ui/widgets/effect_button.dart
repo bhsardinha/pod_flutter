@@ -56,92 +56,103 @@ class EffectButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
+          // Piano black glossy gradient
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF1A1A1A), // Subtle highlight at top
+              Color(0xFF0A0A0A), // Deep black in middle
+              Color(0xFF000000), // Pure black at bottom
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
           borderRadius: BorderRadius.circular(6),
-          // Thick black void with deep recession
+          // Outer bevel - raised button effect
           boxShadow: [
-            // Inner shadow top-left (very dark, creates deep void)
+            // Top-left highlight (light source from top-left)
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.95),
-              offset: const Offset(-3, -4),
-              blurRadius: 10,
-              spreadRadius: -3,
+              color: Colors.white.withValues(alpha: 0.08),
+              offset: const Offset(-1, -1),
+              blurRadius: 2,
+              spreadRadius: 0,
             ),
-            // Inner shadow bottom-right (subtle light from below)
-            BoxShadow(
-              color: Colors.white.withValues(alpha: 0.04),
-              offset: const Offset(3, 4),
-              blurRadius: 6,
-              spreadRadius: -2,
+            // Bottom-right shadow (depth)
+            const BoxShadow(
+              color: Colors.black,
+              offset: Offset(2, 2),
+              blurRadius: 4,
+              spreadRadius: 0,
             ),
-            // Deep central void shadow (black hole effect)
+            // Ambient shadow
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.98),
-              offset: const Offset(0, 0),
-              blurRadius: 16,
-              spreadRadius: -6,
+              color: Colors.black.withValues(alpha: 0.4),
+              offset: const Offset(0, 1),
+              blurRadius: 3,
+              spreadRadius: 0,
             ),
           ],
-          // Thick dark vignette border to enhance black hole edge
+          // Subtle border for definition
           border: Border.all(
-            color: const Color(0xFF000000),
-            width: 4,
+            color: const Color(0xFF2A2A2A),
+            width: 1,
           ),
         ),
-        // Second container for the recessed surface
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
-            // Solid gray surface
-            color: const Color(0xFF1C1C1C),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Effect name with minimal dark orange glow when ON
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Effect name with orange glow when ON
+            Text(
+              label,
+              style: TextStyle(
+                color: isOn ? const Color(0xFFFF7A00) : const Color(0xFF4A4A4A), // Orange or dark gray
+                fontSize: labelFontSize ?? 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                // Discrete orange glow when ON
+                shadows: isOn
+                    ? [
+                        Shadow(
+                          color: const Color(0xFFFF7A00).withValues(alpha: 0.9),
+                          blurRadius: 8,
+                        ),
+                        Shadow(
+                          color: const Color(0xFFFF7A00).withValues(alpha: 0.6),
+                          blurRadius: 16,
+                        ),
+                        Shadow(
+                          color: const Color(0xFFFF7A00).withValues(alpha: 0.3),
+                          blurRadius: 24,
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
+            // Model/preset name with subtle orange glow when ON
+            if (modelName != null && modelName!.isNotEmpty) ...[
+              const SizedBox(height: 2),
               Text(
-                label,
+                modelName!,
                 style: TextStyle(
-                  color: isOn ? const Color(0xFFCC6200) : const Color(0xFF4A4A4A), // Dark orange or dark gray
-                  fontSize: labelFontSize ?? 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  // Minimal glow when ON
+                  color: isOn
+                      ? const Color(0xFFFF7A00).withValues(alpha: 0.8)
+                      : const Color(0xFF3A3A3A),
+                  fontSize: modelFontSize ?? 11,
                   shadows: isOn
                       ? [
                           Shadow(
-                            color: const Color(0xFFB85500).withValues(alpha: 0.4),
-                            blurRadius: 4,
+                            color: const Color(0xFFFF7A00).withValues(alpha: 0.6),
+                            blurRadius: 6,
                           ),
                         ]
                       : null,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
-              // Model/preset name with barely visible glow when ON
-              if (modelName != null && modelName!.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  modelName!,
-                  style: TextStyle(
-                    color: isOn
-                        ? const Color(0xFFCC6200).withValues(alpha: 0.7)
-                        : const Color(0xFF3A3A3A),
-                    fontSize: modelFontSize ?? 11,
-                    shadows: isOn
-                        ? [
-                            Shadow(
-                              color: const Color(0xFFB85500).withValues(alpha: 0.3),
-                              blurRadius: 3,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

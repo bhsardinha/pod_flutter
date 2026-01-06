@@ -316,20 +316,87 @@ class _RotaryKnobPainter extends CustomPainter {
   }
 
   void _drawKnobBody(Canvas canvas, Offset center, double radius) {
-    // Solid dark circle
-    final bodyPaint = Paint()
-      ..color = PodColors.surfaceLight
-      ..style = PaintingStyle.fill;
+    // Neumorphic-style knob body: soft shadow, subtle highlight, radial
+    // gradient for a 3D appearance.
 
+    // Soft shadow (bottom-right)
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.28)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center.translate(3, 3), radius * 0.85, shadowPaint);
+
+    // Soft highlight (top-left)
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.06)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawCircle(center.translate(-2, -2), radius * 0.85, highlightPaint);
+
+    // Main knob body with radial gradient
+    final Rect knobRect = Rect.fromCircle(
+      center: center,
+      radius: radius * 0.85,
+    );
+    final Gradient grad = RadialGradient(
+      center: const Alignment(-0.3, -0.3),
+      radius: 0.9,
+      colors: [
+        PodColors.surfaceLight.withValues(alpha: 0.98),
+        PodColors.surface.withValues(alpha: 1.0),
+      ],
+      stops: const [0.0, 1.0],
+    );
+    final bodyPaint = Paint()..shader = grad.createShader(knobRect);
     canvas.drawCircle(center, radius * 0.85, bodyPaint);
 
-    // Thin border
-    final borderPaint = Paint()
-      ..color = PodColors.textSecondary.withValues(alpha: 0.3)
+    // Thin rim to define edge
+    final rimPaint = Paint()
+      ..color = PodColors.textSecondary.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+      ..strokeWidth = 1.2;
+    canvas.drawCircle(center, radius * 0.85, rimPaint);
 
-    canvas.drawCircle(center, radius * 0.85, borderPaint);
+    // Bevel effect: subtle top-left highlight and bottom-right shadow
+    final bevelOffset = radius * 0.04;
+    final rimHighlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.14)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
+    canvas.drawCircle(
+      center.translate(-bevelOffset, -bevelOffset),
+      radius * 0.87,
+      rimHighlightPaint,
+    );
+
+    final rimShadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6);
+    canvas.drawCircle(
+      center.translate(bevelOffset, bevelOffset),
+      radius * 0.87,
+      rimShadowPaint,
+    );
+
+    // Inner ring to emphasize protrusion (slightly darker inner border)
+    final innerRingRect = Rect.fromCircle(
+      center: center,
+      radius: radius * 0.65,
+    );
+    final innerRingPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.2, -0.2),
+        radius: 0.9,
+        colors: [
+          Colors.white.withOpacity(0.03),
+          Colors.black.withOpacity(0.06),
+        ],
+        stops: const [0.0, 1.0],
+      ).createShader(innerRingRect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = radius * 0.06;
+    canvas.drawCircle(center, radius * 0.62, innerRingPaint);
   }
 
   void _drawTickMarks(Canvas canvas, Offset center, double radius) {
@@ -358,9 +425,30 @@ class _RotaryKnobPainter extends CustomPainter {
 
   void _drawIndicator(Canvas canvas, Offset center, double radius) {
     // Simple line indicator from center outward
+    // Draw a subtle shadow for the indicator for depth
+    final indicatorShadow = Paint()
+      ..color = Colors.black.withOpacity(0.28)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    final shadowStart =
+        center +
+        Offset(
+          math.cos(angle) * (radius * 0.3 + 0.8),
+          math.sin(angle) * (radius * 0.3 + 0.8),
+        );
+    final shadowEnd =
+        center +
+        Offset(
+          math.cos(angle) * (radius * 0.7 + 0.8),
+          math.sin(angle) * (radius * 0.7 + 0.8),
+        );
+    canvas.drawLine(shadowStart, shadowEnd, indicatorShadow);
+
     final indicatorPaint = Paint()
       ..color = PodColors.textPrimary
-      ..strokeWidth = 2
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
 
     final startPoint =
@@ -369,7 +457,6 @@ class _RotaryKnobPainter extends CustomPainter {
           math.cos(angle) * (radius * 0.3),
           math.sin(angle) * (radius * 0.3),
         );
-
     final endPoint =
         center +
         Offset(
