@@ -8,6 +8,7 @@ import '../../models/amp_models.dart';
 import '../../models/cab_models.dart';
 import '../../protocol/cc_map.dart';
 import '../widgets/pod_modal.dart';
+import '../widgets/brushed_metal_background.dart';
 import '../theme/pod_theme.dart';
 import '../utils/value_formatters.dart';
 import '../modals/connection_modal.dart';
@@ -264,10 +265,11 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: PodColors.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
+      body: BrushedMetalBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Column(
             children: [
               // Row 1: Amp Selector
               Expanded(
@@ -386,6 +388,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),

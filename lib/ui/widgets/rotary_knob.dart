@@ -38,6 +38,12 @@ class RotaryKnob extends StatefulWidget {
   /// If null, displays the raw integer value
   final String Function(int value)? valueFormatter;
 
+  /// Font size for the label
+  final double labelFontSize;
+
+  /// Spacing between knob and text above/below
+  final double textSpacing;
+
   const RotaryKnob({
     super.key,
     required this.label,
@@ -48,6 +54,8 @@ class RotaryKnob extends StatefulWidget {
     this.size = 80.0,
     this.showTickMarks = true,
     this.valueFormatter,
+    this.labelFontSize = 10.0,
+    this.textSpacing = 4.0,
   });
 
   @override
@@ -234,19 +242,17 @@ class _RotaryKnobState extends State<RotaryKnob> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Value display above knob
-            SizedBox(
-              height: 16,
-              child: Text(
-                _getDisplayValue(),
-                style: const TextStyle(
-                  color: PodColors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
+            // Label above knob
+            Text(
+              widget.label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: widget.labelFontSize,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: widget.textSpacing),
             // Knob
             SizedBox(
               width: widget.size,
@@ -261,15 +267,17 @@ class _RotaryKnobState extends State<RotaryKnob> {
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            // Label
-            Text(
-              widget.label,
-              style: const TextStyle(
-                color: PodColors.textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.3,
+            SizedBox(height: widget.textSpacing),
+            // Value display below knob
+            SizedBox(
+              height: 16,
+              child: Text(
+                _getDisplayValue(),
+                style: const TextStyle(
+                  color: PodColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -316,20 +324,13 @@ class _RotaryKnobPainter extends CustomPainter {
   }
 
   void _drawKnobBody(Canvas canvas, Offset center, double radius) {
-    // Neumorphic-style knob body: soft shadow, subtle highlight, radial
-    // gradient for a 3D appearance.
+    // Neumorphic-style knob body: full black shadows
 
-    // Soft shadow (bottom-right)
+    // Full black shadow (bottom-right)
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.28)
+      ..color = Colors.black
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
     canvas.drawCircle(center.translate(3, 3), radius * 0.85, shadowPaint);
-
-    // Soft highlight (top-left)
-    final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-    canvas.drawCircle(center.translate(-2, -2), radius * 0.85, highlightPaint);
 
     // Main knob body with radial gradient
     final Rect knobRect = Rect.fromCircle(
@@ -355,21 +356,11 @@ class _RotaryKnobPainter extends CustomPainter {
       ..strokeWidth = 1.2;
     canvas.drawCircle(center, radius * 0.85, rimPaint);
 
-    // Bevel effect: subtle top-left highlight and bottom-right shadow
+    // Bevel effect: full black shadow
     final bevelOffset = radius * 0.04;
-    final rimHighlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.14)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
-    canvas.drawCircle(
-      center.translate(-bevelOffset, -bevelOffset),
-      radius * 0.87,
-      rimHighlightPaint,
-    );
 
     final rimShadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.22)
+      ..color = Colors.black
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6);
@@ -379,7 +370,7 @@ class _RotaryKnobPainter extends CustomPainter {
       rimShadowPaint,
     );
 
-    // Inner ring to emphasize protrusion (slightly darker inner border)
+    // Inner ring to emphasize protrusion (darker inner border)
     final innerRingRect = Rect.fromCircle(
       center: center,
       radius: radius * 0.65,
@@ -389,8 +380,8 @@ class _RotaryKnobPainter extends CustomPainter {
         center: const Alignment(0.2, -0.2),
         radius: 0.9,
         colors: [
-          Colors.white.withOpacity(0.03),
-          Colors.black.withOpacity(0.06),
+          Colors.transparent,
+          Colors.black.withValues(alpha: 0.15),
         ],
         stops: const [0.0, 1.0],
       ).createShader(innerRingRect)
@@ -403,7 +394,7 @@ class _RotaryKnobPainter extends CustomPainter {
     const tickCount = 11;
 
     final tickPaint = Paint()
-      ..color = PodColors.textSecondary.withValues(alpha: 0.4)
+      ..color = Colors.white
       ..strokeWidth = 1
       ..strokeCap = StrokeCap.round;
 
@@ -425,9 +416,9 @@ class _RotaryKnobPainter extends CustomPainter {
 
   void _drawIndicator(Canvas canvas, Offset center, double radius) {
     // Simple line indicator from center outward
-    // Draw a subtle shadow for the indicator for depth
+    // Draw a full black shadow for the indicator for depth
     final indicatorShadow = Paint()
-      ..color = Colors.black.withOpacity(0.28)
+      ..color = Colors.black
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);

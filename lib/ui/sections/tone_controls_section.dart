@@ -64,6 +64,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onDriveChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
               RotaryKnob(
                 label: 'BASS',
@@ -71,6 +73,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onBassChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
               RotaryKnob(
                 label: 'MID',
@@ -78,6 +82,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onMidChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
               RotaryKnob(
                 label: 'TREBLE',
@@ -85,6 +91,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onTrebleChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
               RotaryKnob(
                 label: 'PRES',
@@ -92,6 +100,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onPresenceChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
               RotaryKnob(
                 label: 'VOL',
@@ -99,6 +109,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onVolumeChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
               RotaryKnob(
                 label: 'REVERB',
@@ -106,6 +118,8 @@ class ToneControlsSection extends StatelessWidget {
                 onValueChanged: onReverbMixChanged,
                 size: 72,
                 valueFormatter: formatKnobValue,
+                labelFontSize: 13,
+                textSpacing: 8,
               ),
             ],
           ),

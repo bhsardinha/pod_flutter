@@ -43,10 +43,7 @@ class PatchBrowser extends StatelessWidget {
     return Row(
       children: [
         // Previous button (outside container)
-        _NavButton(
-          icon: Icons.chevron_left,
-          onTap: onPrevious,
-        ),
+        _NavButton(icon: Icons.chevron_left, onTap: onPrevious),
 
         // Patch info (tappable) with container styling
         Expanded(
@@ -56,11 +53,14 @@ class PatchBrowser extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
               child: DotMatrixLCD(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 child: Center(
                   child: Text.rich(
                     TextSpan(
@@ -114,10 +114,7 @@ class PatchBrowser extends StatelessWidget {
         ),
 
         // Next button (outside container)
-        _NavButton(
-          icon: Icons.chevron_right,
-          onTap: onNext,
-        ),
+        _NavButton(icon: Icons.chevron_right, onTap: onNext),
       ],
     );
   }
@@ -127,10 +124,7 @@ class _NavButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _NavButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _NavButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -138,11 +132,7 @@ class _NavButton extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Icon(
-          icon,
-          color: PodColors.textSecondary,
-          size: 28,
-        ),
+        child: Icon(icon, color: PodColors.textSecondary, size: 28),
       ),
     );
   }
