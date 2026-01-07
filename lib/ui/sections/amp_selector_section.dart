@@ -119,109 +119,99 @@ class AmpSelectorSection extends StatelessWidget {
   }
 
   Widget _buildAmpSelector() {
-    return Container(
-      decoration: BoxDecoration(
-        color: PodColors.surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: PodColors.surfaceLight, width: 1),
-      ),
-      child: Row(
-        children: [
-          // Left arrow — previous amp
-          GestureDetector(
-            onTap: onPreviousAmp,
-            child: Container(
-              width: 40,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                border: Border(
-                  right: BorderSide(color: PodColors.surfaceLight, width: 1),
-                ),
-              ),
-              child: const Icon(
-                Icons.chevron_left,
-                color: PodColors.textSecondary,
-                size: 20,
-              ),
+    return Row(
+      children: [
+        // Left arrow — independent button
+        GestureDetector(
+          onTap: onPreviousAmp,
+          child: Container(
+            width: 36,
+            height: double.infinity,
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.chevron_left,
+              color: PodColors.textSecondary,
+              size: 28,
             ),
           ),
+        ),
 
-          // Center: Dot-matrix LCD showing amp and cabinet with chain link icon
-          Expanded(
+        // Center: LCD display
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Stack(
               children: [
+                // LCD
                 GestureDetector(
                   onTap: onAmpTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 6,
-                    ),
-                    child: Builder(
-                      builder: (context) {
-                        final amp = podController.ampModel;
-                        String line1;
-                        String? line2;
+                  child: Builder(
+                    builder: (context) {
+                      final amp = podController.ampModel;
+                      String line1;
+                      String? line2;
 
-                        if (amp == null) {
-                          line1 = currentAmp;
-                          line2 = null;
-                        } else {
-                          switch (settings.ampNameDisplayMode) {
-                            case AmpNameDisplayMode.factory:
+                      if (amp == null) {
+                        line1 = currentAmp;
+                        line2 = null;
+                      } else {
+                        switch (settings.ampNameDisplayMode) {
+                          case AmpNameDisplayMode.factory:
+                            line1 = amp.getDisplayName(
+                              AmpNameDisplayMode.factory,
+                            );
+                            line2 = null;
+                            break;
+                          case AmpNameDisplayMode.realAmp:
+                            line1 = amp.getDisplayName(
+                              AmpNameDisplayMode.realAmp,
+                            );
+                            line2 = null;
+                            break;
+                          case AmpNameDisplayMode.both:
+                            if (amp.realName != null &&
+                                amp.realName!.isNotEmpty) {
+                              line1 = amp.getDisplayName(
+                                AmpNameDisplayMode.factory,
+                              );
+                              line2 = amp.realName!;
+                            } else {
                               line1 = amp.getDisplayName(
                                 AmpNameDisplayMode.factory,
                               );
                               line2 = null;
-                              break;
-                            case AmpNameDisplayMode.realAmp:
-                              line1 = amp.getDisplayName(
-                                AmpNameDisplayMode.realAmp,
-                              );
-                              line2 = null;
-                              break;
-                            case AmpNameDisplayMode.both:
-                              if (amp.realName != null &&
-                                  amp.realName!.isNotEmpty) {
-                                // Show factory name as the large primary line and real amp as the smaller secondary line
-                                line1 = amp.getDisplayName(
-                                  AmpNameDisplayMode.factory,
-                                );
-                                line2 = amp.realName!;
-                              } else {
-                                line1 = amp.getDisplayName(
-                                  AmpNameDisplayMode.factory,
-                                );
-                                line2 = null;
-                              }
-                              break;
-                          }
+                            }
+                            break;
                         }
+                      }
 
-                        return DotMatrixLCD(
-                          line1: line1,
-                          line2: line2,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          line1Size: 34,
-                          line2Size: 14,
-                        );
-                      },
-                    ),
+                      return DotMatrixLCD(
+                        line1: line1,
+                        line2: line2,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        line1Size: 40,
+                        line2Size: 20,
+                      );
+                    },
                   ),
                 ),
                 // Chain link toggle icon in top-right corner
                 Positioned(
-                  top: 4,
-                  right: 4,
+                  top: 2,
+                  right: 2,
                   child: GestureDetector(
                     onTap: onChainLinkToggle,
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: PodColors.background.withValues(alpha: 0.7),
+                        color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Icon(
@@ -237,27 +227,23 @@ class AmpSelectorSection extends StatelessWidget {
               ],
             ),
           ),
+        ),
 
-          // Right arrow — next amp
-          GestureDetector(
-            onTap: onNextAmp,
-            child: Container(
-              width: 40,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: PodColors.surfaceLight, width: 1),
-                ),
-              ),
-              child: const Icon(
-                Icons.chevron_right,
-                color: PodColors.textSecondary,
-                size: 20,
-              ),
+        // Right arrow — independent button
+        GestureDetector(
+          onTap: onNextAmp,
+          child: Container(
+            width: 36,
+            height: double.infinity,
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.chevron_right,
+              color: PodColors.textSecondary,
+              size: 28,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

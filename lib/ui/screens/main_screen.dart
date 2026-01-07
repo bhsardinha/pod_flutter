@@ -454,58 +454,10 @@ class _MainScreenState extends State<MainScreen> {
   void _showCabPicker() {
     showDialog(
       context: context,
-      barrierColor: PodColors.modalOverlay,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.zero,
-        child: Center(
-          child: Container(
-            decoration: BoxDecoration(
-              color: PodColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: PodColors.surfaceLight, width: 2),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title bar
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: PodColors.surfaceLight, width: 1),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Select Cabinet',
-                        style: TextStyle(
-                          color: PodColors.textPrimary,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: PodColors.textSecondary),
-                        onPressed: () => Navigator.of(context).pop(),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                    ],
-                  ),
-                ),
-                // Content
-                CabModal(
-                  currentCabId: widget.podController.getParameter(PodXtCC.cabSelect),
-                  podController: widget.podController,
-                  isConnected: _isConnected,
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (context) => CabModal(
+        currentCabId: widget.podController.getParameter(PodXtCC.cabSelect),
+        podController: widget.podController,
+        isConnected: _isConnected,
       ),
     );
   }

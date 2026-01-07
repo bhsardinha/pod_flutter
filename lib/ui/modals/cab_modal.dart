@@ -3,7 +3,7 @@ import '../../services/pod_controller.dart';
 import '../../models/cab_models.dart';
 import '../theme/pod_theme.dart';
 
-/// Cabinet picker modal with full-screen grid layout
+/// Cabinet picker modal
 class CabModal extends StatelessWidget {
   final int currentCabId;
   final PodController podController;
@@ -24,101 +24,125 @@ class CabModal extends StatelessWidget {
         .toList();
     final bxCabs = CabModels.all.where((cab) => cab.pack == 'BX').toList();
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final modalWidth = screenWidth * 0.95; // 95% of screen width
-
-    return SizedBox(
-      width: modalWidth,
-      height: MediaQuery.of(context).size.height * 0.8, // 80% of screen height
-      child: SingleChildScrollView(
+    return Dialog(
+      backgroundColor: PodColors.background,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95,
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Standard Cabinets Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'GUITAR CABINETS',
-                style: PodTextStyles.labelMedium.copyWith(
-                  color: PodColors.accent,
+        children: [
+          // Header with title and close button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Select Cabinet',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: PodColors.textPrimary,
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                  childAspectRatio: 2.35,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
+              IconButton(
+                icon: const Icon(
+                  Icons.close,
+                  color: PodColors.textSecondary,
                 ),
-                itemCount: standardCabs.length,
-                itemBuilder: (context, index) {
-                  final cab = standardCabs[index];
-                  final isSelected = cab.id == currentCabId;
-                  return _buildCabButton(context, cab, isSelected);
-                },
+                onPressed: () => Navigator.of(context).pop(),
               ),
-            ),
-
-            // Divider
-            const SizedBox(height: 16),
-            const Divider(height: 1, thickness: 2),
-            const SizedBox(height: 16),
-
-            // BX Cabinets Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Cabinet list
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'BASS CABINETS',
-                    style: PodTextStyles.labelMedium.copyWith(
-                      color: PodColors.accent,
+                  // Standard Cabinets Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: Text(
+                      'GUITAR CABINETS',
+                      style: PodTextStyles.labelMedium.copyWith(
+                        color: PodColors.accent,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 6,
+                      childAspectRatio: 2.35,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
                     ),
-                    decoration: BoxDecoration(
-                      color: PodColors.accent.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: const Text(
-                      'BX',
-                      style: TextStyle(fontSize: 10, color: PodColors.accent),
+                    itemCount: standardCabs.length,
+                    itemBuilder: (context, index) {
+                      final cab = standardCabs[index];
+                      final isSelected = cab.id == currentCabId;
+                      return _buildCabButton(context, cab, isSelected);
+                    },
+                  ),
+
+                  // Divider
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, thickness: 2),
+                  const SizedBox(height: 16),
+
+                  // BX Cabinets Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          'BASS CABINETS',
+                          style: PodTextStyles.labelMedium.copyWith(
+                            color: PodColors.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: PodColors.accent.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: const Text(
+                            'BX',
+                            style: TextStyle(fontSize: 10, color: PodColors.accent),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 6,
+                      childAspectRatio: 2.35,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: bxCabs.length,
+                    itemBuilder: (context, index) {
+                      final cab = bxCabs[index];
+                      final isSelected = cab.id == currentCabId;
+                      return _buildCabButton(context, cab, isSelected);
+                    },
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                  childAspectRatio: 2.35,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: bxCabs.length,
-                itemBuilder: (context, index) {
-                  final cab = bxCabs[index];
-                  final isSelected = cab.id == currentCabId;
-                  return _buildCabButton(context, cab, isSelected);
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
+          ),
+        ],
         ),
       ),
     );
