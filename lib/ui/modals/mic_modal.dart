@@ -110,12 +110,29 @@ class _MicModalState extends State<MicModal> {
                         vertical: 12,
                       ),
                     ),
-                    child: Text(
-                      mic.name,
-                      style: TextStyle(
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                    child: RichText(
+                      text: TextSpan(
+                        text: mic.name,
+                        style: TextStyle(
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? PodColors.accent
+                              : PodColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        children: [
+                          if (mic.realName != null)
+                            TextSpan(
+                              text: ' - ${mic.realName}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w400,
+                                color: PodColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

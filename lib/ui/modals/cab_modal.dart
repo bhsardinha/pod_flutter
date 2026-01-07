@@ -169,16 +169,35 @@ class CabModal extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(6),
         child: Center(
-          child: Text(
-            cab.name,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? PodColors.accent : PodColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                cab.name,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? PodColors.accent : PodColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (cab.realName != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  cab.realName!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 7,
+                    fontWeight: FontWeight.w300,
+                    color: PodColors.textSecondary.withValues(alpha: 0.7),
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
           ),
         ),
       ),
