@@ -137,7 +137,7 @@ class CabModal extends StatelessWidget {
           color: isSelected
               ? PodColors.accent.withValues(alpha: 0.3)
               : PodColors.surfaceLight,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? PodColors.accent : PodColors.knobBase,
             width: isSelected ? 2 : 1,

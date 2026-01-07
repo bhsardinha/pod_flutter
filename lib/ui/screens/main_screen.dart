@@ -201,14 +201,18 @@ class _MainScreenState extends State<MainScreen> {
     // Update all state from edit buffer
     final ampId = widget.podController.getParameter(PodXtCC.ampSelect);
     final cabId = widget.podController.getParameter(PodXtCC.cabSelect);
-    final micId = widget.podController.getParameter(PodXtCC.micSelect);
+    final micPosition = widget.podController.getParameter(PodXtCC.micSelect);
 
     // Sync program number from controller (fixes startup showing wrong program)
     _currentProgram = widget.podController.currentProgram;
 
+    // Determine cab type to get correct mic name
+    final cab = CabModels.byId(cabId);
+    final isBXCab = cab?.pack == 'BX';
+
     _currentAmp = AmpModels.byId(ampId)?.name ?? '--';
-    _currentCab = CabModels.byId(cabId)?.name ?? '--';
-    _currentMic = MicModels.byId(micId)?.name ?? '--';
+    _currentCab = cab?.name ?? '--';
+    _currentMic = MicModels.byPosition(micPosition, isBass: isBXCab)?.name ?? '--';
     _currentPatchName = widget.podController.editBuffer.patch.name.isEmpty
         ? 'Untitled'
         : widget.podController.editBuffer.patch.name;
@@ -507,13 +511,20 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showMicPicker() {
+    final micPosition = widget.podController.getParameter(PodXtCC.micSelect);
+    final currentCab = widget.podController.cabModel;
+    final isBXCab = currentCab?.pack == 'BX';
+
+    // Get the appropriate mic list based on cab type (guitar or bass)
+    final availableMics = MicModels.forCabType(isBass: isBXCab);
+
     showPodModal(
       context: context,
       title: 'Select Microphone',
       child: MicModal(
-        availableMics: MicModels.all,
-        currentMicId: widget.podController.getParameter(PodXtCC.micSelect),
-        currentRoomValue: widget.podController.getParameter(PodXtCC.room),
+        availableMics: availableMics,
+        currentMicPosition: micPosition, // Always 0-3
+        currentRoomValue: _roomValue,
         podController: widget.podController,
         isConnected: _isConnected,
       ),

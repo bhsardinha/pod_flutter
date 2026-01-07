@@ -242,8 +242,13 @@ class PodController {
   CabModel? get cabModel => CabModels.byId(getParameter(PodXtCC.cabSelect));
   Future<void> setCabModel(int id) => setParameter(PodXtCC.cabSelect, id);
 
-  MicModel? get micModel => MicModels.byId(getParameter(PodXtCC.micSelect));
-  Future<void> setMicModel(int id) => setParameter(PodXtCC.micSelect, id);
+  // Mic - POD uses 0-3, names differ based on cab type (guitar vs bass)
+  MicModel? get micModel {
+    final micPosition = getParameter(PodXtCC.micSelect);
+    final isBass = cabModel?.pack == 'BX';
+    return MicModels.byPosition(micPosition, isBass: isBass);
+  }
+  Future<void> setMicModel(int position) => setParameter(PodXtCC.micSelect, position);
 
   int get room => getParameter(PodXtCC.room);
   Future<void> setRoom(int value) => setParameter(PodXtCC.room, value);
@@ -421,6 +426,12 @@ class PodController {
       _editBuffer.markModified();
       _parameterChangeController.add(ParameterChange(param, change.value));
       _editBufferController.add(_editBuffer);
+
+      // When amp is changed via hardware, POD loads new default parameters
+      // Request full edit buffer to get all updated values
+      if (param == PodXtCC.ampSelect) {
+        _midi.requestEditBuffer();
+      }
     }
   }
 

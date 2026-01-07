@@ -377,7 +377,7 @@ class _AmpModalState extends State<AmpModal> {
                   color: isSelected
                       ? packColor.withValues(alpha: 0.3)
                       : PodColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected ? packColor : PodColors.knobBase,
                     width: isSelected ? 2 : 1,

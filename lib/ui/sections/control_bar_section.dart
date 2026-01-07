@@ -58,7 +58,7 @@ class ControlBarSection extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: PodColors.surface,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: PodColors.surfaceLight, width: 1),
                 ),
                 child: const Center(
@@ -100,7 +100,7 @@ class ControlBarSection extends StatelessWidget {
                   color: loopEnabled
                       ? PodColors.buttonOnAmber.withValues(alpha: 0.3)
                       : PodColors.surface,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: loopEnabled ? PodColors.buttonOnAmber : PodColors.surfaceLight,
                     width: loopEnabled ? 2 : 1,
@@ -162,7 +162,7 @@ class ControlBarSection extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   color: PodColors.surface,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: PodColors.surfaceLight, width: 1),
                 ),
                 child: const Center(

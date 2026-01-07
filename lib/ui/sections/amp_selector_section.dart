@@ -273,7 +273,7 @@ class AmpSelectorSection extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: PodColors.surface,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: PodColors.surfaceLight, width: 1),
         ),
         child: Column(

@@ -4,9 +4,10 @@ import '../../models/cab_models.dart';
 import '../theme/pod_theme.dart';
 
 /// Microphone picker modal with room percentage control
+/// POD always uses positions 0-3, mic names differ based on cab type
 class MicModal extends StatefulWidget {
   final List<MicModel> availableMics;
-  final int currentMicId;
+  final int currentMicPosition; // Always 0-3
   final int currentRoomValue;
   final PodController podController;
   final bool isConnected;
@@ -14,7 +15,7 @@ class MicModal extends StatefulWidget {
   const MicModal({
     super.key,
     required this.availableMics,
-    required this.currentMicId,
+    required this.currentMicPosition,
     required this.currentRoomValue,
     required this.podController,
     required this.isConnected,
@@ -81,7 +82,7 @@ class _MicModalState extends State<MicModal> {
               itemCount: widget.availableMics.length,
               itemBuilder: (context, index) {
                 final mic = widget.availableMics[index];
-                final isSelected = mic.id == widget.currentMicId;
+                final isSelected = mic.position == widget.currentMicPosition;
 
                 return Padding(
                   padding: const EdgeInsets.only(
@@ -92,11 +93,8 @@ class _MicModalState extends State<MicModal> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (widget.isConnected) {
-                        // BX mics (IDs 4-7) map to positions 0-3
-                        final micPosition = mic.pack == 'BX'
-                            ? mic.id - 4
-                            : mic.id;
-                        widget.podController.setMicModel(micPosition);
+                        // Position is always 0-3
+                        widget.podController.setMicModel(mic.position);
                       }
                       Navigator.of(context).pop();
                     },
@@ -112,37 +110,13 @@ class _MicModalState extends State<MicModal> {
                         vertical: 12,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            mic.name,
-                            style: TextStyle(
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                        if (mic.pack != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: PodColors.accent.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: Text(
-                              mic.pack!,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: PodColors.accent,
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: Text(
+                      mic.name,
+                      style: TextStyle(
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                      ),
                     ),
                   ),
                 );

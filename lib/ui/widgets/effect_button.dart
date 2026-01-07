@@ -67,7 +67,7 @@ class EffectButton extends StatelessWidget {
             ],
             stops: [0.0, 0.5, 1.0],
           ),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(12),
           // Outer bevel - raised button effect
           boxShadow: [
             // Top-left highlight (light source from top-left)

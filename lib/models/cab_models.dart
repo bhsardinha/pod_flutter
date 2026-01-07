@@ -78,30 +78,40 @@ class CabModels {
 }
 
 /// Microphone models
+/// POD always uses positions 0-3, but the mic names differ based on cab type
 class MicModel {
-  final int id;
+  final int position; // Always 0-3
   final String name;
-  final String? pack;
 
-  const MicModel(this.id, this.name, [this.pack]);
+  const MicModel(this.position, this.name);
 }
 
 class MicModels {
-  static const List<MicModel> all = [
-    // Stock mics
+  /// Guitar cabinet mics (positions 0-3)
+  static const List<MicModel> guitar = [
     MicModel(0, '57 On Axis'),
     MicModel(1, '57 Off Axis'),
     MicModel(2, '421 Dynamic'),
     MicModel(3, '67 Condenser'),
-    // BX Pack
-    MicModel(4, 'Tube 47 Close', 'BX'),
-    MicModel(5, 'Tube 47 Far', 'BX'),
-    MicModel(6, '112 Dynamic', 'BX'),
-    MicModel(7, '20 Dynamic', 'BX'),
   ];
 
-  static MicModel? byId(int id) {
-    if (id < 0 || id >= all.length) return null;
-    return all[id];
+  /// Bass cabinet mics (positions 0-3)
+  static const List<MicModel> bass = [
+    MicModel(0, 'Tube 47 Close'),
+    MicModel(1, 'Tube 47 Far'),
+    MicModel(2, '112 Dynamic'),
+    MicModel(3, '20 Dynamic'),
+  ];
+
+  /// Get mic by position for the appropriate cab type
+  static MicModel? byPosition(int position, {required bool isBass}) {
+    final list = isBass ? bass : guitar;
+    if (position < 0 || position >= list.length) return null;
+    return list[position];
+  }
+
+  /// Get the appropriate mic list based on cab type
+  static List<MicModel> forCabType({required bool isBass}) {
+    return isBass ? bass : guitar;
   }
 }

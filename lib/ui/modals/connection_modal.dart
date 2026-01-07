@@ -164,7 +164,7 @@ class _ConnectionModalState extends State<ConnectionModal> {
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: Colors.red.shade900.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.red.shade700, width: 1),
             ),
             child: Row(
