@@ -31,6 +31,7 @@ class AmpSelectorSection extends StatelessWidget {
   final VoidCallback onChainLinkToggle;
   final VoidCallback onCabTap;
   final VoidCallback onMicTap;
+  final VoidCallback onMidiTap;
 
   const AmpSelectorSection({
     super.key,
@@ -52,6 +53,7 @@ class AmpSelectorSection extends StatelessWidget {
     required this.onChainLinkToggle,
     required this.onCabTap,
     required this.onMicTap,
+    required this.onMidiTap,
   });
 
   @override
@@ -202,6 +204,41 @@ class AmpSelectorSection extends StatelessWidget {
                     },
                   ),
                 ),
+                // Connection status icon in top-left corner
+                Positioned(
+                  top: 2,
+                  left: 2,
+                  child: GestureDetector(
+                    onTap: onMidiTap,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Container(
+                        width: 13,
+                        height: 13,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isConnected
+                              ? PodColors.buttonOnGreen
+                              : const Color(0xFFCC0000),
+                          boxShadow: isConnected
+                              ? [
+                                  BoxShadow(
+                                    color: PodColors.buttonOnGreen
+                                        .withValues(alpha: 0.6),
+                                    blurRadius: 6,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 // Chain link toggle icon in top-right corner
                 Positioned(
                   top: 2,
@@ -211,12 +248,12 @@ class AmpSelectorSection extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: Colors.transparent,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Icon(
                         ampChainLinked ? Icons.link : Icons.link_off,
-                        size: 16,
+                        size: 17,
                         color: ampChainLinked
                             ? PodColors.accent
                             : PodColors.textSecondary,

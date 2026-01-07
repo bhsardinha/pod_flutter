@@ -291,6 +291,7 @@ class _MainScreenState extends State<MainScreen> {
                   onChainLinkToggle: () => setState(() => _ampChainLinked = !_ampChainLinked),
                   onCabTap: _showCabPicker,
                   onMicTap: _showMicPicker,
+                  onMidiTap: _showConnectionModal,
                 ),
               ),
               const SizedBox(height: 12),
@@ -369,7 +370,6 @@ class _MainScreenState extends State<MainScreen> {
               Expanded(
                 flex: 1,
                 child: ControlBarSection(
-                  isConnected: _isConnected,
                   wahEnabled: _wahEnabled,
                   loopEnabled: _loopEnabled,
                   isModified: _isModified,
@@ -383,7 +383,6 @@ class _MainScreenState extends State<MainScreen> {
                   onNextPatch: _nextPatch,
                   onPatchTap: _showPatchListModal,
                   onTap: () {}, // TODO: Tap tempo
-                  onMidiTap: _showConnectionModal,
                 ),
               ),
             ],

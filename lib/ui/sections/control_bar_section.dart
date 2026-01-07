@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import '../theme/pod_theme.dart';
 import '../widgets/effect_button.dart';
 import '../widgets/patch_browser.dart';
-import '../widgets/connection_indicator.dart';
 import '../utils/value_formatters.dart';
 
 /// Control bar section (Row 4) containing settings, WAH, FX LOOP,
-/// patch browser, TAP, and MIDI connection indicator.
+/// patch browser, and TAP.
 ///
 /// This is the bottom row of the main screen with all control functions.
 class ControlBarSection extends StatelessWidget {
-  final bool isConnected;
   final bool wahEnabled;
   final bool loopEnabled;
   final bool isModified;
@@ -24,11 +22,9 @@ class ControlBarSection extends StatelessWidget {
   final VoidCallback onNextPatch;
   final VoidCallback onPatchTap;
   final VoidCallback onTap;
-  final VoidCallback onMidiTap;
 
   const ControlBarSection({
     super.key,
-    required this.isConnected,
     required this.wahEnabled,
     required this.loopEnabled,
     required this.isModified,
@@ -42,41 +38,15 @@ class ControlBarSection extends StatelessWidget {
     required this.onNextPatch,
     required this.onPatchTap,
     required this.onTap,
-    required this.onMidiTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Settings (flex 2)
+        // WAH (flex 1.5) — EffectButton with smaller font, no model name
         Expanded(
-          flex: 2,
-          child: GestureDetector(
-            onTap: onSettings,
-            child: SizedBox.expand(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: PodColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: PodColors.surfaceLight, width: 1),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.settings,
-                    color: PodColors.textSecondary,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-
-        // WAH (flex 3) — EffectButton with smaller font, no model name
-        Expanded(
-          flex: 3,
+          flex: 15,
           child: SizedBox.expand(
             child: EffectButton(
               label: 'WAH',
@@ -89,9 +59,9 @@ class ControlBarSection extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // FX LOOP (flex 3) — Two-line label
+        // FX LOOP (flex 1.5) — Two-line label
         Expanded(
-          flex: 3,
+          flex: 15,
           child: SizedBox.expand(
             child: GestureDetector(
               onTap: onLoopToggle,
@@ -137,9 +107,9 @@ class ControlBarSection extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // Preset bar (flex 19)
+        // Preset bar (flex 10)
         Expanded(
-          flex: 19,
+          flex: 100,
           child: SizedBox.expand(
             child: PatchBrowser(
               bank: formatProgramName(currentProgram),
@@ -153,9 +123,9 @@ class ControlBarSection extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // TAP (flex 3)
+        // TAP (flex 1.5)
         Expanded(
-          flex: 3,
+          flex: 15,
           child: GestureDetector(
             onTap: onTap,
             child: SizedBox.expand(
@@ -181,13 +151,26 @@ class ControlBarSection extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // MIDI status (flex 2)
+        // Settings (flex 1.5)
         Expanded(
-          flex: 2,
-          child: SizedBox.expand(
-            child: ConnectionIndicator(
-              isConnected: isConnected,
-              onTap: onMidiTap,
+          flex: 15,
+          child: GestureDetector(
+            onTap: onSettings,
+            child: SizedBox.expand(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: PodColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: PodColors.surfaceLight, width: 1),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.settings,
+                    color: PodColors.textSecondary,
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
