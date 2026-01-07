@@ -1,5 +1,5 @@
-/// BLE MIDI Service implementation using flutter_midi_command
-/// Concrete implementation of MidiService for Bluetooth MIDI
+/// MIDI Service implementation using flutter_midi_command
+/// Supports both USB MIDI and Bluetooth (BLE) MIDI connections
 
 library;
 
@@ -10,13 +10,15 @@ import '../protocol/sysex.dart';
 import '../protocol/cc_map.dart';
 import 'midi_service.dart';
 
-/// BLE MIDI implementation of MidiService
+/// MIDI service implementation supporting both USB and BLE MIDI
 class BleMidiService implements MidiService {
   final MidiCommand _midiCommand = MidiCommand();
 
   MidiDevice? _connectedDevice;
   StreamSubscription? _dataSubscription;
   StreamSubscription? _setupSubscription;
+  StreamSubscription? _deviceMonitorSubscription;
+  bool _manualDisconnect = false;
 
   // Stream controllers
   final _messageController = StreamController<MidiMessage>.broadcast();
@@ -24,9 +26,35 @@ class BleMidiService implements MidiService {
   final _pcController = StreamController<int>.broadcast();
   final _sysexController = StreamController<SysexMessage>.broadcast();
   final _connectionController = StreamController<bool>.broadcast();
+  final _devicesController = StreamController<List<MidiDeviceInfo>>.broadcast();
 
   // Sysex buffer for multi-packet messages
   List<int>? _sysexBuffer;
+
+  /// Constructor - starts monitoring for device changes immediately
+  BleMidiService() {
+    _startDeviceMonitoring();
+  }
+
+  /// Start listening for MIDI setup changes (device connect/disconnect)
+  void _startDeviceMonitoring() {
+    _deviceMonitorSubscription = _midiCommand.onMidiSetupChanged?.listen(
+      (data) async {
+        // MIDI setup changed - refresh device list and notify listeners
+        final devices = await _getDevices();
+        final deviceInfos = devices
+            .map(
+              (d) => MidiDeviceInfo(
+                id: d.id,
+                name: d.name,
+                isBleMidi: d.type == 'BLE',
+              ),
+            )
+            .toList();
+        _devicesController.add(deviceInfos);
+      },
+    );
+  }
 
   @override
   Stream<MidiMessage> get onMessage => _messageController.stream;
@@ -46,6 +74,9 @@ class BleMidiService implements MidiService {
   @override
   Stream<bool> get onConnectionChanged => _connectionController.stream;
 
+  @override
+  Stream<List<MidiDeviceInfo>> get onDevicesChanged => _devicesController.stream;
+
   Future<List<MidiDevice>> _getDevices() async {
     final devices = await _midiCommand.devices;
     return devices ?? <MidiDevice>[];
@@ -53,18 +84,18 @@ class BleMidiService implements MidiService {
 
   @override
   Future<List<MidiDeviceInfo>> scanDevices() async {
-    // Start scanning for BLE devices
-    _midiCommand.startScanningForBluetoothDevices();
+    // USB MIDI devices are detected automatically via CoreMIDI (macOS/iOS)
+    // or android.media.midi (Android) and the onMidiSetupChanged stream.
+    // This method just returns the current device list.
+    //
+    // Note: BLE scanning is skipped due to bluetoothNotAvailable errors.
+    // BLE devices will still be detected if Bluetooth is available via
+    // the onMidiSetupChanged stream when they connect.
 
-    // Wait a bit for devices to be discovered
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Get all devices (both connected and discovered)
+    // Get current device list
     final devices = await _getDevices();
 
-    // Stop scanning
-    _midiCommand.stopScanningForBluetoothDevices();
-
+    // Return all found devices
     return devices
         .map(
           (d) => MidiDeviceInfo(
@@ -89,37 +120,135 @@ class BleMidiService implements MidiService {
       throw Exception('Device not found: ${device.name}');
     }
 
-    // Connect
-    _midiCommand.connectToDevice(midiDevice);
-
-    // Wait for connection
-    final completer = Completer<void>();
-
-    _setupSubscription = _midiCommand.onMidiSetupChanged?.listen((data) async {
-      final devices = await _getDevices();
-      final connected = devices.any((d) => d.id == device.id && d.connected);
-      if (connected && !completer.isCompleted) {
-        _connectedDevice = midiDevice;
-        _startListening();
-        _connectionController.add(true);
-        completer.complete();
+    // If device is already connected (stale connection), disconnect first
+    if (midiDevice.connected) {
+      try {
+        _manualDisconnect = true;
+        _midiCommand.disconnectDevice(midiDevice);
+        // Wait a bit for disconnect to complete
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        // Ignore disconnect errors, we'll try to connect anyway
       }
-    });
+    }
 
-    // Timeout after 10 seconds
-    return completer.future.timeout(
-      const Duration(seconds: 10),
-      onTimeout: () {
-        _setupSubscription?.cancel();
-        throw Exception('Connection timeout');
-      },
-    );
+    // Disconnect any existing connection we're tracking
+    if (_connectedDevice != null) {
+      await disconnect();
+      // Wait a bit to ensure clean state
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
+    // Reset flag before new connection
+    _manualDisconnect = false;
+
+    try {
+      // Connect
+      _midiCommand.connectToDevice(midiDevice);
+
+      // Wait for connection and monitor for disconnection
+      final completer = Completer<void>();
+
+      _setupSubscription = _midiCommand.onMidiSetupChanged?.listen((data) async {
+        final devices = await _getDevices();
+        final deviceStatus = devices.cast<MidiDevice?>().firstWhere(
+          (d) => d?.id == device.id,
+          orElse: () => null,
+        );
+
+        if (deviceStatus != null && deviceStatus.connected && !completer.isCompleted) {
+          // Device just connected
+          _connectedDevice = midiDevice;
+          _startListening();
+          _connectionController.add(true);
+          completer.complete();
+        } else if (deviceStatus == null || !deviceStatus.connected) {
+          // Device disconnected (physically unplugged or powered off)
+          if (_connectedDevice != null && _connectedDevice!.id == device.id) {
+            _handleUnexpectedDisconnection();
+          }
+        }
+      });
+
+      // Timeout after 10 seconds
+      return await completer.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          _setupSubscription?.cancel();
+          throw Exception('Connection timeout');
+        },
+      );
+    } catch (e) {
+      // If "already connected" error, force disconnect and retry once
+      if (e.toString().contains('already connected')) {
+        try {
+          _manualDisconnect = true;
+          _midiCommand.disconnectDevice(midiDevice);
+          await Future.delayed(const Duration(milliseconds: 500));
+          _manualDisconnect = false;
+
+          // Retry connection
+          _midiCommand.connectToDevice(midiDevice);
+
+          final completer = Completer<void>();
+
+          _setupSubscription = _midiCommand.onMidiSetupChanged?.listen((data) async {
+            final devices = await _getDevices();
+            final deviceStatus = devices.cast<MidiDevice?>().firstWhere(
+              (d) => d?.id == device.id,
+              orElse: () => null,
+            );
+
+            if (deviceStatus != null && deviceStatus.connected && !completer.isCompleted) {
+              // Device just connected
+              _connectedDevice = midiDevice;
+              _startListening();
+              _connectionController.add(true);
+              completer.complete();
+            } else if (deviceStatus == null || !deviceStatus.connected) {
+              // Device disconnected (physically unplugged or powered off)
+              if (_connectedDevice != null && _connectedDevice!.id == device.id) {
+                _handleUnexpectedDisconnection();
+              }
+            }
+          });
+
+          return await completer.future.timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              _setupSubscription?.cancel();
+              throw Exception('Connection timeout on retry');
+            },
+          );
+        } catch (retryError) {
+          throw Exception('Failed to reconnect: $retryError');
+        }
+      }
+      rethrow;
+    }
   }
 
   void _startListening() {
     _dataSubscription = _midiCommand.onMidiDataReceived?.listen(
       _handleMidiData,
     );
+  }
+
+  void _handleUnexpectedDisconnection() {
+    // Ignore if this was a manual disconnect
+    if (_manualDisconnect) {
+      _manualDisconnect = false;
+      return;
+    }
+
+    // Clean up state
+    _connectedDevice = null;
+    _dataSubscription?.cancel();
+    _dataSubscription = null;
+    _sysexBuffer = null;
+
+    // Notify listeners
+    _connectionController.add(false);
   }
 
   void _handleMidiData(MidiPacket packet) {
@@ -177,6 +306,9 @@ class BleMidiService implements MidiService {
 
   @override
   Future<void> disconnect() async {
+    // Mark as manual disconnect to prevent unexpected disconnection handler
+    _manualDisconnect = true;
+
     if (_connectedDevice != null) {
       _midiCommand.disconnectDevice(_connectedDevice!);
       _connectedDevice = null;
@@ -246,10 +378,12 @@ class BleMidiService implements MidiService {
   @override
   void dispose() {
     disconnect();
+    _deviceMonitorSubscription?.cancel();
     _messageController.close();
     _ccController.close();
     _pcController.close();
     _sysexController.close();
     _connectionController.close();
+    _devicesController.close();
   }
 }

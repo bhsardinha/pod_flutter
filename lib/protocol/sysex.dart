@@ -43,9 +43,10 @@ class PodXtSysex {
     return buildMessage(SysexCommand.installedPacks);
   }
 
-  /// Request current program state
+  /// Request current program number from POD
   static Uint8List requestProgramState() {
-    return buildMessage(SysexCommand.programState);
+    // Request format: [0x03, 0x57, 0x11] - the 0x11 is the program number subcommand
+    return buildMessage(SysexCommand.programNumberRequest, [SysexCommand.programNumberSubcmd]);
   }
 
   /// Parse incoming sysex message
@@ -142,8 +143,15 @@ class SysexMessage {
   bool get isInstalledPacks => isCommand(SysexCommand.installedPacks);
   bool get isStoreSuccess => isCommand(SysexCommand.storeSuccess);
   bool get isStoreFailure => isCommand(SysexCommand.storeFailure);
-  bool get isTunerData => isCommand(SysexCommand.tunerData);
-  bool get isProgramState => isCommand(SysexCommand.programState);
+  // Tuner data is 0x03, 0x56 WITHOUT 0x11 subcommand prefix
+  bool get isTunerData =>
+      isCommand(SysexCommand.tunerData) &&
+      (payload.isEmpty || payload[0] != SysexCommand.programNumberSubcmd);
+  // Program number is 0x03, 0x56 WITH 0x11 subcommand prefix
+  bool get isProgramState =>
+      isCommand(SysexCommand.programNumberResponse) &&
+      payload.isNotEmpty &&
+      payload[0] == SysexCommand.programNumberSubcmd;
 
   @override
   String toString() {

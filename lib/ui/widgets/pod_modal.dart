@@ -16,18 +16,22 @@ class PodModal extends StatelessWidget {
   /// Optional title to display at the top of the modal
   final String? title;
 
+  /// Optional custom max width (defaults to 500)
+  final double? maxWidth;
+
   const PodModal({
     super.key,
     required this.child,
     this.title,
+    this.maxWidth,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 500,
+        constraints: BoxConstraints(
+          maxWidth: maxWidth ?? 500,
           maxHeight: 600,
         ),
         margin: const EdgeInsets.all(24.0),
@@ -97,12 +101,14 @@ Future<T?> showPodModal<T>({
   required BuildContext context,
   required Widget child,
   String? title,
+  double? maxWidth,
 }) {
   return showDialog<T>(
     context: context,
     barrierColor: PodColors.modalOverlay,
     builder: (context) => PodModal(
       title: title,
+      maxWidth: maxWidth,
       child: child,
     ),
   );

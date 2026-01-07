@@ -94,6 +94,9 @@ abstract class MidiService {
   bool get isConnected;
   Stream<bool> get onConnectionChanged;
 
+  /// Stream of device list changes (fires when devices are connected/disconnected)
+  Stream<List<MidiDeviceInfo>> get onDevicesChanged;
+
   /// Available devices
   Future<List<MidiDeviceInfo>> scanDevices();
 

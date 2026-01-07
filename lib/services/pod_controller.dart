@@ -111,6 +111,10 @@ class PodController {
     }
   }
 
+  /// Stream of device changes (fires when devices are connected/disconnected)
+  /// Use this to auto-refresh device list when USB devices are hot-plugged
+  Stream<List<MidiDeviceInfo>> get onDevicesChanged => _midi.onDevicesChanged;
+
   /// Connect to a MIDI device
   Future<void> connect(MidiDeviceInfo device) async {
     _setConnectionState(PodConnectionState.connecting);
@@ -204,6 +208,16 @@ class PodController {
   // Amp
   AmpModel? get ampModel => AmpModels.byId(getParameter(PodXtCC.ampSelect));
   Future<void> setAmpModel(int id) => setParameter(PodXtCC.ampSelect, id);
+
+  /// Set amp model without loading defaults (preserves current parameters)
+  Future<void> setAmpModelNoDefaults(int id) async {
+    // Use CC 12 to change amp without resetting parameters
+    await _midi.sendParam(PodXtCC.ampSelectNoDefaults, id);
+    // Also update local state
+    _editBuffer.patch.setValue(PodXtCC.ampSelect, id);
+    _editBuffer.markModified();
+    _editBufferController.add(_editBuffer);
+  }
 
   int get drive => getParameter(PodXtCC.drive);
   Future<void> setDrive(int value) => setParameter(PodXtCC.drive, value);
@@ -512,13 +526,17 @@ class PodController {
   }
 
   void _handleProgramState(SysexMessage message) {
-    // Program state format: [program_lsb, program_msb, ...]
+    // Program number response format: [0x11, p1, p2, p3, p4]
+    // Where p1-p4 are 4-bit nibbles that combine to a 16-bit program number
     print('  Program state payload length: ${message.payload.length}');
-    if (message.payload.length >= 2) {
-      final programLsb = message.payload[0];
-      final programMsb = message.payload[1];
-      final program = programLsb | (programMsb << 8);
-      print('  Program bytes: LSB=$programLsb MSB=$programMsb -> Program #$program');
+    if (message.payload.length >= 5) {
+      // Skip first byte (0x11 subcommand), read 4 nibbles
+      final p1 = message.payload[1] & 0x0F;
+      final p2 = message.payload[2] & 0x0F;
+      final p3 = message.payload[3] & 0x0F;
+      final p4 = message.payload[4] & 0x0F;
+      final program = (p1 << 12) | (p2 << 8) | (p3 << 4) | p4;
+      print('  Program nibbles: $p1 $p2 $p3 $p4 -> Program #$program');
       if (program < programCount) {
         print('  Setting current program to: $program');
         _currentProgram = program;
@@ -527,7 +545,7 @@ class PodController {
         print('  ERROR: Program $program is out of range (max: ${programCount - 1})');
       }
     } else {
-      print('  ERROR: Program state payload too short');
+      print('  ERROR: Program state payload too short (need 5 bytes, got ${message.payload.length})');
     }
   }
 

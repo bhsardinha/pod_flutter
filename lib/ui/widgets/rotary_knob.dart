@@ -132,8 +132,8 @@ class _RotaryKnobState extends State<RotaryKnob> {
     // Inverted sign so gestures map as expected for natural scroll settings
     _accumulatedDelta += details.delta.dy;
 
-    // Sensitivity: pixels per value step
-    const sensitivity = 2.0;
+    // Sensitivity: pixels per value step (higher = less sensitive)
+    const sensitivity = 5.0;
 
     if (_accumulatedDelta.abs() >= sensitivity) {
       final steps = (_accumulatedDelta / sensitivity).floor();
@@ -192,7 +192,7 @@ class _RotaryKnobState extends State<RotaryKnob> {
   void _handleScroll(PointerScrollEvent event) {
     // Scroll handling: map scroll delta directly (adjusted for natural scroll)
     final delta = event.scrollDelta.dy;
-    const sensitivity = 20.0; // pixels per value step
+    const sensitivity = 50.0; // pixels per value step (higher = less sensitive)
 
     final steps = (delta / sensitivity).round();
     if (steps != 0) {

@@ -23,7 +23,11 @@ class SysexCommand {
   static const storeSuccess = [0x03, 0x50];
   static const storeFailure = [0x03, 0x51];
   static const tunerData = [0x03, 0x56];
-  static const programState = [0x03, 0x57];
+  // Program number query: request is 0x57 with subcommand 0x11, response is 0x56 with 0x11
+  static const programNumberRequest = [0x03, 0x57];
+  static const programNumberResponse = [0x03, 0x56];
+  // Subcommand for program number query
+  static const programNumberSubcmd = 0x11;
 }
 
 /// Program/Patch storage constants
