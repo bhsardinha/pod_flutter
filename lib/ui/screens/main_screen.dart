@@ -296,7 +296,7 @@ class _MainScreenState extends State<MainScreen> {
                   onMidiTap: _showConnectionModal,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
 
               // Row 2: Tone Controls
               Expanded(
@@ -318,7 +318,7 @@ class _MainScreenState extends State<MainScreen> {
                   onReverbMixChanged: (v) => widget.podController.setParameter(PodXtCC.reverbLevel, v),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
 
               // Row 3: Effects + EQ
               Expanded(

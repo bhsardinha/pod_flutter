@@ -124,56 +124,80 @@ class _VerticalFaderState extends State<VerticalFader> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Value display
-        if (widget.showValue)
-          SizedBox(
-            height: 24,
-            child: Text(
-              _formatValue(_currentValue),
-              style: TextStyle(
-                color: PodColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+    // Revolutionary approach: Use LayoutBuilder to measure available space first
+    return LayoutBuilder(
+      builder: (context, parentConstraints) {
+        // Calculate adaptive sizing based on parent constraints
+        final totalHeight = parentConstraints.maxHeight;
 
-        // Fader track - adapt to available height when `height` is null
-        LayoutBuilder(
-          builder: (ctx, constraints) {
-            final availableHeight = widget.height ?? constraints.maxHeight;
-            final trackHeight = availableHeight.isFinite && availableHeight > 0
-                ? availableHeight
-                : 160.0;
-            return GestureDetector(
-              onVerticalDragUpdate: (d) => _handleDragUpdate(d, trackHeight),
-              onTapDown: (td) => _handleTapDown(td, trackHeight),
-              child: CustomPaint(
-                size: Size(widget.width, trackHeight),
-                painter: _FaderPainter(
-                  value: _currentValue,
-                  min: widget.min,
-                  max: widget.max,
-                  fillColor: widget.fillColor ?? PodColors.accent,
+        // Dynamic value display height (scales with available space)
+        final valueHeight = widget.showValue
+            ? (totalHeight * 0.12).clamp(14.0, 20.0)
+            : 0.0;
+
+        // Dynamic font size based on value display height
+        final valueFontSize = widget.showValue
+            ? (valueHeight * 0.6).clamp(9.0, 12.0)
+            : 0.0;
+
+        // Label height if present
+        final labelHeight = widget.label != null ? 20.0 : 0.0;
+
+        // Track gets all remaining space
+        final trackHeight = totalHeight - valueHeight - labelHeight;
+
+        return Column(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            // Value display - flexible height
+            if (widget.showValue)
+              SizedBox(
+                height: valueHeight,
+                child: Center(
+                  child: Text(
+                    _formatValue(_currentValue),
+                    style: TextStyle(
+                      color: PodColors.textPrimary,
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-            );
-          },
-        ),
 
-        // Label
-        if (widget.label != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Text(
-              widget.label!,
-              style: TextStyle(color: PodColors.textLabel, fontSize: 11),
+            // Fader track - uses remaining space
+            SizedBox(
+              height: trackHeight,
+              child: GestureDetector(
+                onVerticalDragUpdate: (d) => _handleDragUpdate(d, trackHeight),
+                onTapDown: (td) => _handleTapDown(td, trackHeight),
+                child: CustomPaint(
+                  size: Size(widget.width, trackHeight),
+                  painter: _FaderPainter(
+                    value: _currentValue,
+                    min: widget.min,
+                    max: widget.max,
+                    fillColor: widget.fillColor ?? PodColors.accent,
+                  ),
+                ),
+              ),
             ),
-          ),
-      ],
+
+            // Label - fixed if present
+            if (widget.label != null)
+              SizedBox(
+                height: labelHeight,
+                child: Text(
+                  widget.label!,
+                  style: const TextStyle(
+                    color: PodColors.textLabel,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

@@ -63,59 +63,112 @@ class EqSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: PodColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: PodColors.surfaceLight, width: 1),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildEqBand(
-              label: 'LOW',
-              gain: eq1Gain,
-              onGainChanged: onEq1GainChanged,
-              freq: eq1Freq,
-              onFreqChanged: onEq1FreqChanged,
-              freqRange: EqFrequencyRanges.eq1,
-              band: 1,
-            ),
-          ),
-          Expanded(
-            child: _buildEqBand(
-              label: 'LO MID',
-              gain: eq2Gain,
-              onGainChanged: onEq2GainChanged,
-              freq: eq2Freq,
-              onFreqChanged: onEq2FreqChanged,
-              freqRange: EqFrequencyRanges.eq2,
-              band: 2,
-            ),
-          ),
-          Expanded(
-            child: _buildEqBand(
-              label: 'HI MID',
-              gain: eq3Gain,
-              onGainChanged: onEq3GainChanged,
-              freq: eq3Freq,
-              onFreqChanged: onEq3FreqChanged,
-              freqRange: EqFrequencyRanges.eq3,
-              band: 3,
-            ),
-          ),
-          Expanded(
-            child: _buildEqBand(
-              label: 'HIGH',
-              gain: eq4Gain,
-              onGainChanged: onEq4GainChanged,
-              freq: eq4Freq,
-              onFreqChanged: onEq4FreqChanged,
-              freqRange: EqFrequencyRanges.eq4,
-              band: 4,
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate adaptive sizes based on available height
+          final availableHeight = constraints.maxHeight - 12; // minus padding (6 top + 6 bottom)
+
+          // Start with minimum knob size and scale up if space allows
+          final knobSize = (availableHeight * 0.3).clamp(24.0, 36.0);
+
+          // Calculate font sizes and spacing
+          final labelFontSize = (knobSize * 0.28).clamp(7.0, 10.0);
+          final textSpacing = (knobSize * 0.12).clamp(2.0, 4.0);
+
+          // Calculate total knob component height:
+          // labelHeight + textSpacing + knobSize + textSpacing + valueHeight
+          final labelHeight = labelFontSize + 4; // approximate text height
+          final valueHeight = 16.0; // fixed height from knob widget
+          final totalKnobHeight = labelHeight + textSpacing + knobSize + textSpacing + valueHeight;
+
+          // Spacing between fader and knob
+          final verticalSpacing = textSpacing * 2;
+
+          // Account for fader padding (4px top + 4px bottom) and value display (18px + 4px spacing)
+          final faderPadding = 8.0;
+          final valueDisplayHeight = 22.0; // 18px text + 4px spacing
+
+          // Calculate fader height: available - knob - spacing - fader padding - value display
+          final faderHeight = (availableHeight - totalKnobHeight - verticalSpacing - faderPadding - valueDisplayHeight).clamp(60.0, 200.0);
+
+          // Adaptive fader width based on available horizontal space
+          final faderWidth = (constraints.maxWidth / 4 * 0.35).clamp(14.0, 20.0);
+
+          return Row(
+            children: [
+              Expanded(
+                child: _buildEqBand(
+                  label: 'LOW',
+                  gain: eq1Gain,
+                  onGainChanged: onEq1GainChanged,
+                  freq: eq1Freq,
+                  onFreqChanged: onEq1FreqChanged,
+                  freqRange: EqFrequencyRanges.eq1,
+                  band: 1,
+                  knobSize: knobSize,
+                  faderHeight: faderHeight,
+                  faderWidth: faderWidth,
+                  labelFontSize: labelFontSize,
+                  textSpacing: textSpacing,
+                ),
+              ),
+              Expanded(
+                child: _buildEqBand(
+                  label: 'LO MID',
+                  gain: eq2Gain,
+                  onGainChanged: onEq2GainChanged,
+                  freq: eq2Freq,
+                  onFreqChanged: onEq2FreqChanged,
+                  freqRange: EqFrequencyRanges.eq2,
+                  band: 2,
+                  knobSize: knobSize,
+                  faderHeight: faderHeight,
+                  faderWidth: faderWidth,
+                  labelFontSize: labelFontSize,
+                  textSpacing: textSpacing,
+                ),
+              ),
+              Expanded(
+                child: _buildEqBand(
+                  label: 'HI MID',
+                  gain: eq3Gain,
+                  onGainChanged: onEq3GainChanged,
+                  freq: eq3Freq,
+                  onFreqChanged: onEq3FreqChanged,
+                  freqRange: EqFrequencyRanges.eq3,
+                  band: 3,
+                  knobSize: knobSize,
+                  faderHeight: faderHeight,
+                  faderWidth: faderWidth,
+                  labelFontSize: labelFontSize,
+                  textSpacing: textSpacing,
+                ),
+              ),
+              Expanded(
+                child: _buildEqBand(
+                  label: 'HIGH',
+                  gain: eq4Gain,
+                  onGainChanged: onEq4GainChanged,
+                  freq: eq4Freq,
+                  onFreqChanged: onEq4FreqChanged,
+                  freqRange: EqFrequencyRanges.eq4,
+                  band: 4,
+                  knobSize: knobSize,
+                  faderHeight: faderHeight,
+                  faderWidth: faderWidth,
+                  labelFontSize: labelFontSize,
+                  textSpacing: textSpacing,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -129,34 +182,75 @@ class EqSection extends StatelessWidget {
     required ValueChanged<int> onFreqChanged,
     required ({double min, double max}) freqRange,
     required int band,
+    required double knobSize,
+    required double faderHeight,
+    required double faderWidth,
+    required double labelFontSize,
+    required double textSpacing,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Fader (compact)
-        Expanded(
-          child: VerticalFader(
-            value: gain,
-            min: -12.8,
-            max: 12.6,
-            onChanged: onGainChanged,
-            width: 20,
-            showValue: true,
-            snapThreshold: 0.3,
+    // Format the gain value for display
+    String formatGainValue(double value) {
+      if (value == 0.0) {
+        return '0dB';
+      } else if (value > 0) {
+        return '+${value.toStringAsFixed(1)}dB';
+      } else {
+        return '${value.toStringAsFixed(1)}dB';
+      }
+    }
+
+    return SizedBox(
+      height: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Value display outside the fader
+          SizedBox(
+            height: 18,
+            child: Center(
+              child: Text(
+                formatGainValue(gain),
+                style: TextStyle(
+                  color: PodColors.textPrimary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        // Frequency knob (compact)
-        RotaryKnob(
-          label: label,
-          value: freq,
-          onValueChanged: onFreqChanged,
-          size: 28,
-          showTickMarks: false,
-          valueFormatter: (v) => formatEqFreq(v, band, freqRange),
-        ),
-      ],
+          const SizedBox(height: 4),
+          // Fader with fixed calculated height
+          SizedBox(
+            height: faderHeight,
+            child: VerticalFader(
+              value: gain,
+              min: -12.8,
+              max: 12.6,
+              onChanged: onGainChanged,
+              width: faderWidth,
+              showValue: false,
+              snapThreshold: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(height: textSpacing * 2),
+          // Frequency knob with adaptive size
+          SizedBox(
+            height: labelFontSize + 4 + textSpacing + knobSize + textSpacing + 16,
+            child: RotaryKnob(
+              label: label,
+              value: freq,
+              onValueChanged: onFreqChanged,
+              size: knobSize,
+              showTickMarks: false,
+              valueFormatter: (v) => formatEqFreq(v, band, freqRange),
+              labelFontSize: labelFontSize,
+              textSpacing: textSpacing,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
