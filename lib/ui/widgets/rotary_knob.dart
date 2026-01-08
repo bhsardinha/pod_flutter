@@ -249,7 +249,7 @@ class _RotaryKnobState extends State<RotaryKnob> {
                 color: Colors.white,
                 fontSize: widget.labelFontSize,
                 fontWeight: FontWeight.w500,
-                letterSpacing: 0.3,
+                letterSpacing: 0.8,
               ),
             ),
             SizedBox(height: widget.textSpacing),
@@ -311,91 +311,123 @@ class _RotaryKnobPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Draw tick marks (optional)
-    if (showTickMarks) {
-      _drawTickMarks(canvas, center, radius);
+    // Outer ring with cast lighting (45°) - one side lighter, opposite darker
+    final outerR = radius * 0.99;
+    final outerRect = Rect.fromCircle(center: center, radius: outerR);
+    final outerPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color.fromARGB(255, 40, 1, 13), // lit side
+          Color.fromARGB(255, 54, 2, 12), // mid tone
+          Color.fromARGB(255, 39, 1, 8), // shadowed side
+        ],
+        stops: [0.0, 0.5, 1.0],
+      ).createShader(outerRect);
+    canvas.drawCircle(center, outerR, outerPaint);
+
+    // Draw eleven white dots along the knob's 270° arc on an outer transparent ring
+    const int dotCount = 11;
+    final double dotRadius = math.max(1.5, outerR * 0.015);
+    final double dotDistance = outerR * 1.12; // place outside the outer ring
+    final dotPaint = Paint()..color = Colors.white.withOpacity(0.95);
+    for (int i = 0; i < dotCount; i++) {
+      final double a = _startAngle + (i / (dotCount - 1)) * _totalArc;
+      final Offset p =
+          center + Offset(math.cos(a) * dotDistance, math.sin(a) * dotDistance);
+      canvas.drawCircle(p, dotRadius, dotPaint);
     }
 
-    // Draw main knob body (solid circle)
-    _drawKnobBody(canvas, center, radius);
-
-    // Draw indicator line
-    _drawIndicator(canvas, center, radius);
-  }
-
-  void _drawKnobBody(Canvas canvas, Offset center, double radius) {
-    // Neumorphic-style knob body: full black shadows
-
-    // Full black shadow (bottom-right)
-    final shadowPaint = Paint()
-      ..color = Colors.black
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawCircle(center.translate(3, 3), radius * 0.85, shadowPaint);
-
-    // Main knob body with radial gradient
-    final Rect knobRect = Rect.fromCircle(
-      center: center,
-      radius: radius * 0.85,
-    );
-    final Gradient grad = RadialGradient(
-      center: const Alignment(-0.3, -0.3),
-      radius: 0.9,
-      colors: [
-        PodColors.surfaceLight.withValues(alpha: 0.98),
-        PodColors.surface.withValues(alpha: 1.0),
-      ],
-      stops: const [0.0, 1.0],
-    );
-    final bodyPaint = Paint()..shader = grad.createShader(knobRect);
-    canvas.drawCircle(center, radius * 0.85, bodyPaint);
-
-    // Thin rim to define edge
-    final rimPaint = Paint()
-      ..color = PodColors.textSecondary.withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawCircle(center, radius * 0.85, rimPaint);
-
-    // Bevel effect: full black shadow
-    final bevelOffset = radius * 0.04;
-
-    final rimShadowPaint = Paint()
-      ..color = Colors.black
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.6);
-    canvas.drawCircle(
-      center.translate(bevelOffset, bevelOffset),
-      radius * 0.87,
-      rimShadowPaint,
-    );
-
-    // Inner ring to emphasize protrusion (darker inner border)
-    final innerRingRect = Rect.fromCircle(
-      center: center,
-      radius: radius * 0.65,
-    );
-    final innerRingPaint = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0.2, -0.2),
-        radius: 0.9,
+    // Inner circle (SVG innerGradient: #6b3638 -> #4a2426)
+    final innerR = outerR * 0.92; // maintain similar proportions to SVG
+    final innerRect = Rect.fromCircle(center: center, radius: innerR);
+    final innerPaint = Paint()
+      ..shader = const RadialGradient(
+        center: Alignment.center,
+        radius: 0.55,
         colors: [
-          Colors.transparent,
-          Colors.black.withValues(alpha: 0.15),
+          Color.fromARGB(255, 48, 3, 16),
+          Color.fromARGB(255, 65, 21, 27),
         ],
-        stops: const [0.0, 1.0],
-      ).createShader(innerRingRect)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = radius * 0.06;
-    canvas.drawCircle(center, radius * 0.62, innerRingPaint);
+      ).createShader(innerRect);
+    canvas.drawCircle(center, innerR, innerPaint);
+
+    // Black center circle
+    // Black center circle
+    // Scale group (center circle, pointer rectangle, and dash) together
+    const double groupScale = 1.32; // scale by 15%
+    final centerR =
+        outerR * 0.61 * groupScale; // matches SVG proportions (55/85)
+    final centerPaint = Paint()..color = Colors.black;
+    canvas.drawCircle(center, centerR, centerPaint);
+
+    // Soft shadow to ground the knob slightly
+    final shadowPaint = Paint()
+      ..color = PodColors.knobShadow.withValues(alpha: 0.92)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawCircle(center.translate(3, 3), centerR * 0.96, shadowPaint);
+
+    // Rounded rectangular pointer (concentric to the black center circle)
+    // Make pointer width exactly 40% of the black circle diameter (only width changed)
+    final ptrWidth = centerR * 2.0 * 0.45; // 40% of black circle diameter
+    final ptrHeight =
+        size.height *
+        0.6325 *
+        1.015 *
+        groupScale; // keep previous height scaling
+    // Slightly increase corner rounding for a softer look
+    final ptrRadius = ptrWidth * 0.22;
+
+    // Center the pointer on the knob center so it's concentric with the black circle
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    // Rotate so the pointer's 'up' direction aligns with the indicator angle
+    canvas.rotate(angle + math.pi / 2);
+    final ptrRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: ptrWidth,
+      height: ptrHeight,
+    );
+    final ptrRRect = RRect.fromRectAndRadius(
+      ptrRect,
+      Radius.circular(ptrRadius),
+    );
+
+    // Pointer paint: three-stage vertical gradient (black -> almost-black -> black)
+    final ptrPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color.fromARGB(255, 22, 22, 22), // slight lighter center
+          Color.fromARGB(255, 0, 0, 0), // top black
+          Color.fromARGB(255, 20, 20, 20), // slight lighter center
+        ],
+        stops: const [0.0, 0.5, 1.0],
+      ).createShader(ptrRect);
+    canvas.drawRRect(ptrRRect, ptrPaint);
+
+    // White dash aligned with the top of the rectangle (drawn in local rotated space)
+    final dashPaint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = math.max(2.0, ptrWidth * 0.12)
+      ..strokeCap = StrokeCap.round;
+    // Place the white dash completely inside the rectangle with small padding
+    final dashPadding = ptrHeight * 0.05;
+    final dashLength = ptrHeight * 0.18;
+    final dashStart = Offset(0, -ptrHeight * 0.5 + dashPadding);
+    final dashEnd = Offset(0, -ptrHeight * 0.5 + dashPadding + dashLength);
+    canvas.drawLine(dashStart, dashEnd, dashPaint);
+
+    canvas.restore();
   }
 
   void _drawTickMarks(Canvas canvas, Offset center, double radius) {
     const tickCount = 11;
-
     final tickPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1
+      ..color = PodColors.textSecondary.withValues(alpha: 0.12)
+      ..strokeWidth = 0.9
       ..strokeCap = StrokeCap.round;
 
     for (int i = 0; i < tickCount; i++) {
@@ -409,52 +441,47 @@ class _RotaryKnobPainter extends CustomPainter {
       final tickEnd =
           center +
           Offset(math.cos(tickAngle) * radius, math.sin(tickAngle) * radius);
-
       canvas.drawLine(tickStart, tickEnd, tickPaint);
     }
   }
 
   void _drawIndicator(Canvas canvas, Offset center, double radius) {
-    // Simple line indicator from center outward
-    // Draw a full black shadow for the indicator for depth
     final indicatorShadow = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 3
+      ..color = Colors.black.withOpacity(0.45)
+      ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
 
     final shadowStart =
         center +
         Offset(
-          math.cos(angle) * (radius * 0.3 + 0.8),
-          math.sin(angle) * (radius * 0.3 + 0.8),
+          math.cos(angle) * (radius * 0.28 + 1.2),
+          math.sin(angle) * (radius * 0.28 + 1.2),
         );
     final shadowEnd =
         center +
         Offset(
-          math.cos(angle) * (radius * 0.7 + 0.8),
-          math.sin(angle) * (radius * 0.7 + 0.8),
+          math.cos(angle) * (radius * 0.68 + 1.2),
+          math.sin(angle) * (radius * 0.68 + 1.2),
         );
     canvas.drawLine(shadowStart, shadowEnd, indicatorShadow);
 
     final indicatorPaint = Paint()
-      ..color = PodColors.textPrimary
-      ..strokeWidth = 2.2
+      ..color = PodColors.knobIndicator
+      ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
-
     final startPoint =
         center +
         Offset(
-          math.cos(angle) * (radius * 0.3),
-          math.sin(angle) * (radius * 0.3),
+          math.cos(angle) * (radius * 0.28),
+          math.sin(angle) * (radius * 0.28),
         );
     final endPoint =
         center +
         Offset(
-          math.cos(angle) * (radius * 0.7),
-          math.sin(angle) * (radius * 0.7),
+          math.cos(angle) * (radius * 0.68),
+          math.sin(angle) * (radius * 0.68),
         );
-
     canvas.drawLine(startPoint, endPoint, indicatorPaint);
   }
 

@@ -140,21 +140,24 @@ class _MainScreenState extends State<MainScreen> {
     ]);
 
     // Subscribe to connection state changes
-    _connectionSubscription = widget.podController.onConnectionStateChanged.listen((state) {
-      setState(() {
-        _isConnected = state == PodConnectionState.connected;
-        _isConnecting = state == PodConnectionState.connecting;
-        if (!_isConnected) {
-          _currentPatchName = 'Not Connected';
-          _currentAmp = '--';
-          _currentCab = '--';
-          _currentMic = '--';
-        }
-      });
-    });
+    _connectionSubscription = widget.podController.onConnectionStateChanged
+        .listen((state) {
+          setState(() {
+            _isConnected = state == PodConnectionState.connected;
+            _isConnecting = state == PodConnectionState.connecting;
+            if (!_isConnected) {
+              _currentPatchName = 'Not Connected';
+              _currentAmp = '--';
+              _currentCab = '--';
+              _currentMic = '--';
+            }
+          });
+        });
 
     // Subscribe to edit buffer changes
-    _editBufferSubscription = widget.podController.onEditBufferChanged.listen((buffer) {
+    _editBufferSubscription = widget.podController.onEditBufferChanged.listen((
+      buffer,
+    ) {
       setState(() {
         _updateFromEditBuffer();
         _isModified = widget.podController.editBufferModified;
@@ -162,7 +165,9 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     // Subscribe to program changes
-    _programChangeSubscription = widget.podController.onProgramChanged.listen((program) {
+    _programChangeSubscription = widget.podController.onProgramChanged.listen((
+      program,
+    ) {
       setState(() {
         _currentProgram = program;
         _updateFromEditBuffer();
@@ -170,7 +175,9 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     // Subscribe to sync progress
-    _syncProgressSubscription = widget.podController.onSyncProgress.listen((progress) {
+    _syncProgressSubscription = widget.podController.onSyncProgress.listen((
+      progress,
+    ) {
       setState(() {
         _patchesSynced = progress.isComplete;
         _syncedCount = progress.current;
@@ -178,20 +185,22 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     // Subscribe to parameter changes (for real-time tempo updates)
-    _parameterChangeSubscription = widget.podController.onParameterChanged.listen((change) {
-      // Update tempo when tempo MSB or LSB changes
-      if (change.param == PodXtCC.tempoMsb || change.param == PodXtCC.tempoLsb) {
-        setState(() {
-          _currentBpm = widget.podController.currentTempoBpm;
+    _parameterChangeSubscription = widget.podController.onParameterChanged
+        .listen((change) {
+          // Update tempo when tempo MSB or LSB changes
+          if (change.param == PodXtCC.tempoMsb ||
+              change.param == PodXtCC.tempoLsb) {
+            setState(() {
+              _currentBpm = widget.podController.currentTempoBpm;
+            });
+          }
+          // Update delay tempo sync state when delay note select changes
+          if (change.param == PodXtCC.delayNoteSelect) {
+            setState(() {
+              _isDelayTempoSynced = widget.podController.isDelayTempoSynced;
+            });
+          }
         });
-      }
-      // Update delay tempo sync state when delay note select changes
-      if (change.param == PodXtCC.delayNoteSelect) {
-        setState(() {
-          _isDelayTempoSynced = widget.podController.isDelayTempoSynced;
-        });
-      }
-    });
 
     // Open connection modal on startup if not connected
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -235,7 +244,8 @@ class _MainScreenState extends State<MainScreen> {
 
     _currentAmp = AmpModels.byId(ampId)?.name ?? '--';
     _currentCab = cab?.name ?? '--';
-    _currentMic = MicModels.byPosition(micPosition, isBass: isBXCab)?.name ?? '--';
+    _currentMic =
+        MicModels.byPosition(micPosition, isBass: isBXCab)?.name ?? '--';
     _currentPatchName = widget.podController.editBuffer.patch.name.isEmpty
         ? 'Untitled'
         : widget.podController.editBuffer.patch.name;
@@ -294,130 +304,157 @@ class _MainScreenState extends State<MainScreen> {
       body: BrushedMetalBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
-            children: [
-              // Row 1: Amp Selector
-              Expanded(
-                flex: 2,
-                child: AmpSelectorSection(
-                  podController: widget.podController,
-                  isConnected: _isConnected,
-                  gateEnabled: _gateEnabled,
-                  ampEnabled: _ampEnabled,
-                  currentAmp: _currentAmp,
-                  currentCab: _currentCab,
-                  currentMic: _currentMic,
-                  ampChainLinked: _ampChainLinked,
-                  settings: _settings,
-                  onGateToggle: () => widget.podController.setSwitch(PodXtCC.noiseGateEnable, !_gateEnabled),
-                  onAmpToggle: () => widget.podController.setSwitch(PodXtCC.ampEnable, !_ampEnabled),
-                  onGateLongPress: _showGateModal,
-                  onPreviousAmp: _previousAmp,
-                  onNextAmp: _nextAmp,
-                  onAmpTap: _showAmpPicker,
-                  onChainLinkToggle: () => setState(() => _ampChainLinked = !_ampChainLinked),
-                  onCabTap: _showCabPicker,
-                  onMicTap: _showMicPicker,
-                  onMidiTap: _showConnectionModal,
-                ),
-              ),
-              const SizedBox(height: 6),
-
-              // Row 2: Tone Controls
-              Expanded(
-                flex: 2,
-                child: ToneControlsSection(
-                  drive: _drive,
-                  bass: _bass,
-                  mid: _mid,
-                  treble: _treble,
-                  presence: _presence,
-                  volume: _volume,
-                  reverbMix: _reverbMix,
-                  onDriveChanged: (v) => widget.podController.setDrive(v),
-                  onBassChanged: (v) => widget.podController.setBass(v),
-                  onMidChanged: (v) => widget.podController.setMid(v),
-                  onTrebleChanged: (v) => widget.podController.setTreble(v),
-                  onPresenceChanged: (v) => widget.podController.setPresence(v),
-                  onVolumeChanged: (v) => widget.podController.setChannelVolume(v),
-                  onReverbMixChanged: (v) => widget.podController.setParameter(PodXtCC.reverbLevel, v),
-                ),
-              ),
-              const SizedBox(height: 6),
-
-              // Row 3: Effects + EQ
-              Expanded(
-                flex: 4,
-                child: EffectsColumnsSection(
-                  stompEnabled: _stompEnabled,
-                  eqEnabled: _eqEnabled,
-                  compEnabled: _compEnabled,
-                  modEnabled: _modEnabled,
-                  delayEnabled: _delayEnabled,
-                  reverbEnabled: _reverbEnabled,
-                  stompModel: _stompModel,
-                  modModel: _modModel,
-                  delayModel: _delayModel,
-                  reverbModel: _reverbModel,
-                  onStompToggle: () => widget.podController.setStompEnabled(!_stompEnabled),
-                  onStompLongPress: _showStompModal,
-                  onEqToggle: () => widget.podController.setEqEnabled(!_eqEnabled),
-                  onEqLongPress: () {}, // No modal for EQ (inline controls)
-                  onCompToggle: () => widget.podController.setCompressorEnabled(!_compEnabled),
-                  onCompLongPress: _showCompModal,
-                  onModToggle: () => widget.podController.setModEnabled(!_modEnabled),
-                  onModLongPress: _showModModal,
-                  onDelayToggle: () => widget.podController.setDelayEnabled(!_delayEnabled),
-                  onDelayLongPress: _showDelayModal,
-                  onReverbToggle: () => widget.podController.setReverbEnabled(!_reverbEnabled),
-                  onReverbLongPress: _showReverbModal,
-                  eqSection: EqSection(
-                    eq1Gain: _eq1Gain,
-                    eq2Gain: _eq2Gain,
-                    eq3Gain: _eq3Gain,
-                    eq4Gain: _eq4Gain,
-                    eq1Freq: _eq1Freq,
-                    eq2Freq: _eq2Freq,
-                    eq3Freq: _eq3Freq,
-                    eq4Freq: _eq4Freq,
-                    onEq1GainChanged: (v) => widget.podController.setParameter(PodXtCC.eq1Gain, dbToMidi(v)),
-                    onEq2GainChanged: (v) => widget.podController.setParameter(PodXtCC.eq2Gain, dbToMidi(v)),
-                    onEq3GainChanged: (v) => widget.podController.setParameter(PodXtCC.eq3Gain, dbToMidi(v)),
-                    onEq4GainChanged: (v) => widget.podController.setParameter(PodXtCC.eq4Gain, dbToMidi(v)),
-                    onEq1FreqChanged: (v) => widget.podController.setParameter(PodXtCC.eq1Freq, v),
-                    onEq2FreqChanged: (v) => widget.podController.setParameter(PodXtCC.eq2Freq, v),
-                    onEq3FreqChanged: (v) => widget.podController.setParameter(PodXtCC.eq3Freq, v),
-                    onEq4FreqChanged: (v) => widget.podController.setParameter(PodXtCC.eq4Freq, v),
+              children: [
+                // Row 1: Amp Selector
+                Expanded(
+                  flex: 2,
+                  child: AmpSelectorSection(
+                    podController: widget.podController,
+                    isConnected: _isConnected,
+                    gateEnabled: _gateEnabled,
+                    ampEnabled: _ampEnabled,
+                    currentAmp: _currentAmp,
+                    currentCab: _currentCab,
+                    currentMic: _currentMic,
+                    ampChainLinked: _ampChainLinked,
+                    settings: _settings,
+                    onGateToggle: () => widget.podController.setSwitch(
+                      PodXtCC.noiseGateEnable,
+                      !_gateEnabled,
+                    ),
+                    onAmpToggle: () => widget.podController.setSwitch(
+                      PodXtCC.ampEnable,
+                      !_ampEnabled,
+                    ),
+                    onGateLongPress: _showGateModal,
+                    onPreviousAmp: _previousAmp,
+                    onNextAmp: _nextAmp,
+                    onAmpTap: _showAmpPicker,
+                    onChainLinkToggle: () =>
+                        setState(() => _ampChainLinked = !_ampChainLinked),
+                    onCabTap: _showCabPicker,
+                    onMicTap: _showMicPicker,
+                    onMidiTap: _showConnectionModal,
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 6),
 
-              // Row 4: Control Bar
-              Expanded(
-                flex: 1,
-                child: ControlBarSection(
-                  wahEnabled: _wahEnabled,
-                  loopEnabled: _loopEnabled,
-                  isModified: _isModified,
-                  currentProgram: _currentProgram,
-                  currentPatchName: _currentPatchName,
-                  currentBpm: _currentBpm,
-                  isDelayTempoSynced: _isDelayTempoSynced,
-                  enableTempoScrolling: _settings.enableTempoScrolling,
-                  onSettings: _showSettingsModal,
-                  onWahToggle: () => widget.podController.setWahEnabled(!_wahEnabled),
-                  onWahLongPress: _showWahModal,
-                  onLoopToggle: () => widget.podController.setLoopEnabled(!_loopEnabled),
-                  onPreviousPatch: _previousPatch,
-                  onNextPatch: _nextPatch,
-                  onPatchTap: _showPatchListModal,
-                  onTap: () => widget.podController.sendTapTempo(),
-                  onTempoChanged: (newBpm) => widget.podController.setTempo(newBpm),
+                // Row 2: Tone Controls
+                Expanded(
+                  flex: 2,
+                  child: ToneControlsSection(
+                    drive: _drive,
+                    bass: _bass,
+                    mid: _mid,
+                    treble: _treble,
+                    presence: _presence,
+                    volume: _volume,
+                    reverbMix: _reverbMix,
+                    onDriveChanged: (v) => widget.podController.setDrive(v),
+                    onBassChanged: (v) => widget.podController.setBass(v),
+                    onMidChanged: (v) => widget.podController.setMid(v),
+                    onTrebleChanged: (v) => widget.podController.setTreble(v),
+                    onPresenceChanged: (v) =>
+                        widget.podController.setPresence(v),
+                    onVolumeChanged: (v) =>
+                        widget.podController.setChannelVolume(v),
+                    onReverbMixChanged: (v) => widget.podController
+                        .setParameter(PodXtCC.reverbLevel, v),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+
+                // Row 3: Effects + EQ
+                Expanded(
+                  flex: 4,
+                  child: EffectsColumnsSection(
+                    stompEnabled: _stompEnabled,
+                    eqEnabled: _eqEnabled,
+                    compEnabled: _compEnabled,
+                    modEnabled: _modEnabled,
+                    delayEnabled: _delayEnabled,
+                    reverbEnabled: _reverbEnabled,
+                    stompModel: _stompModel,
+                    modModel: _modModel,
+                    delayModel: _delayModel,
+                    reverbModel: _reverbModel,
+                    onStompToggle: () =>
+                        widget.podController.setStompEnabled(!_stompEnabled),
+                    onStompLongPress: _showStompModal,
+                    onEqToggle: () =>
+                        widget.podController.setEqEnabled(!_eqEnabled),
+                    onEqLongPress: () {}, // No modal for EQ (inline controls)
+                    onCompToggle: () => widget.podController
+                        .setCompressorEnabled(!_compEnabled),
+                    onCompLongPress: _showCompModal,
+                    onModToggle: () =>
+                        widget.podController.setModEnabled(!_modEnabled),
+                    onModLongPress: _showModModal,
+                    onDelayToggle: () =>
+                        widget.podController.setDelayEnabled(!_delayEnabled),
+                    onDelayLongPress: _showDelayModal,
+                    onReverbToggle: () =>
+                        widget.podController.setReverbEnabled(!_reverbEnabled),
+                    onReverbLongPress: _showReverbModal,
+                    eqSection: EqSection(
+                      eq1Gain: _eq1Gain,
+                      eq2Gain: _eq2Gain,
+                      eq3Gain: _eq3Gain,
+                      eq4Gain: _eq4Gain,
+                      eq1Freq: _eq1Freq,
+                      eq2Freq: _eq2Freq,
+                      eq3Freq: _eq3Freq,
+                      eq4Freq: _eq4Freq,
+                      onEq1GainChanged: (v) => widget.podController
+                          .setParameter(PodXtCC.eq1Gain, dbToMidi(v)),
+                      onEq2GainChanged: (v) => widget.podController
+                          .setParameter(PodXtCC.eq2Gain, dbToMidi(v)),
+                      onEq3GainChanged: (v) => widget.podController
+                          .setParameter(PodXtCC.eq3Gain, dbToMidi(v)),
+                      onEq4GainChanged: (v) => widget.podController
+                          .setParameter(PodXtCC.eq4Gain, dbToMidi(v)),
+                      onEq1FreqChanged: (v) =>
+                          widget.podController.setParameter(PodXtCC.eq1Freq, v),
+                      onEq2FreqChanged: (v) =>
+                          widget.podController.setParameter(PodXtCC.eq2Freq, v),
+                      onEq3FreqChanged: (v) =>
+                          widget.podController.setParameter(PodXtCC.eq3Freq, v),
+                      onEq4FreqChanged: (v) =>
+                          widget.podController.setParameter(PodXtCC.eq4Freq, v),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Row 4: Control Bar
+                Expanded(
+                  flex: 1,
+                  child: ControlBarSection(
+                    wahEnabled: _wahEnabled,
+                    loopEnabled: _loopEnabled,
+                    isModified: _isModified,
+                    currentProgram: _currentProgram,
+                    currentPatchName: _currentPatchName,
+                    currentBpm: _currentBpm,
+                    isDelayTempoSynced: _isDelayTempoSynced,
+                    enableTempoScrolling: _settings.enableTempoScrolling,
+                    onSettings: _showSettingsModal,
+                    onWahToggle: () =>
+                        widget.podController.setWahEnabled(!_wahEnabled),
+                    onWahLongPress: _showWahModal,
+                    onLoopToggle: () =>
+                        widget.podController.setLoopEnabled(!_loopEnabled),
+                    onPreviousPatch: _previousPatch,
+                    onNextPatch: _nextPatch,
+                    onPatchTap: _showPatchListModal,
+                    onTap: () => widget.podController.sendTapTempo(),
+                    onTempoChanged: (newBpm) =>
+                        widget.podController.setTempo(newBpm),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -527,7 +564,8 @@ class _MainScreenState extends State<MainScreen> {
         initialTilesView: _ampPickerTilesView,
         initialListScrollPosition: _ampPickerListScrollPosition,
         initialTilesScrollPosition: _ampPickerTilesScrollPosition,
-        onViewModeChanged: (tiles) => setState(() => _ampPickerTilesView = tiles),
+        onViewModeChanged: (tiles) =>
+            setState(() => _ampPickerTilesView = tiles),
         onScrollPositionChanged: (list, tiles) {
           _ampPickerListScrollPosition = list;
           _ampPickerTilesScrollPosition = tiles;

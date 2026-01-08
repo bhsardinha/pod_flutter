@@ -55,17 +55,20 @@ class ToneControlsSection extends StatelessWidget {
         final availableHeight = constraints.maxHeight;
 
         // Start with a proportion of height for the knob
-        double knobSize = (availableHeight * 0.50).clamp(40.0, 72.0);
+        double knobSize = (availableHeight * 0.5).clamp(40.0, 72.0);
+        // Make the knob group 10% larger (keeps clamps and later adaptive scaling)
+        knobSize = (knobSize * 1.15).clamp(40.0, 80.0);
 
         // Calculate font sizes and spacing proportionally
-        double labelFontSize = (knobSize * 0.18).clamp(10.0, 13.0);
-        double textSpacing = (knobSize * 0.11).clamp(4.0, 8.0);
+        double labelFontSize = (knobSize * 0.15).clamp(10.0, 13.0);
+        double textSpacing = (knobSize * 0.12).clamp(4.0, 8.0);
 
         // Calculate total component height:
         // label + spacing + knob + spacing + value (16px fixed)
         final labelHeight = labelFontSize + 4;
         final valueHeight = 16.0;
-        double totalHeight = labelHeight + textSpacing + knobSize + textSpacing + valueHeight;
+        double totalHeight =
+            labelHeight + textSpacing + knobSize + textSpacing + valueHeight;
 
         // If total height exceeds available, scale everything down
         if (totalHeight > availableHeight) {
