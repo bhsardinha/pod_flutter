@@ -7,21 +7,14 @@ import 'dart:math' as math;
 class BrushedMetalBackground extends StatelessWidget {
   final Widget child;
 
-  const BrushedMetalBackground({
-    super.key,
-    required this.child,
-  });
+  const BrushedMetalBackground({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         // Base brushed metal layer
-        Positioned.fill(
-          child: CustomPaint(
-            painter: BrushedMetalPainter(),
-          ),
-        ),
+        Positioned.fill(child: CustomPaint(painter: BrushedMetalPainter())),
         // Child content on top
         child,
       ],
@@ -33,8 +26,8 @@ class BrushedMetalBackground extends StatelessWidget {
 class BrushedMetalPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    // Base color 10% darker (#a80239 darkened)
-    final baseColor = const Color(0xFF970233);
+    // Base color - much darker (stronger black)
+    final baseColor = const Color(0xFF6B0123);
 
     // Draw base layer
     final basePaint = Paint()
@@ -50,20 +43,16 @@ class BrushedMetalPainter extends CustomPainter {
 
     // Draw darker horizontal brush strokes (mostly black for darkening effect)
     for (double y = 0; y < size.height; y += 0.5) {
-      // Darker effect - bias towards black strokes
-      final opacity = 0.01 + random.nextDouble() * 0.03;
+      // Much darker effect - stronger black strokes
+      final opacity = 0.015 + random.nextDouble() * 0.05;
       final brightness = random.nextDouble();
 
-      // 70% chance of black (darkening), 30% chance of white (highlights)
-      brushPaint.color = brightness > 0.7
-          ? Colors.white.withValues(alpha: opacity * 0.3)
-          : Colors.black.withValues(alpha: opacity);
+      // 80% chance of black (darkening), 20% chance of white (highlights)
+      brushPaint.color = brightness > 0.8
+          ? Colors.white.withValues(alpha: opacity * 0.25)
+          : Colors.black.withValues(alpha: opacity * 1.5);
 
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        brushPaint,
-      );
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), brushPaint);
     }
 
     // Add subtle vertical variation for realism (darker)
@@ -72,21 +61,17 @@ class BrushedMetalPainter extends CustomPainter {
       brushPaint.color = Colors.black.withValues(alpha: opacity);
       brushPaint.strokeWidth = 0.5;
 
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        brushPaint,
-      );
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), brushPaint);
     }
 
-    // Add subtle gradient overlay for depth (darker)
+    // Add stronger gradient overlay for depth
     final gradient = ui.Gradient.linear(
       Offset(0, 0),
       Offset(size.width, 0),
       [
-        Colors.black.withValues(alpha: 0.015),
+        Colors.black.withValues(alpha: 0.04),
         Colors.transparent,
-        Colors.black.withValues(alpha: 0.025),
+        Colors.black.withValues(alpha: 0.05),
       ],
       [0.0, 0.5, 1.0],
     );
@@ -95,7 +80,31 @@ class BrushedMetalPainter extends CustomPainter {
       ..shader = gradient
       ..style = PaintingStyle.fill;
 
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), gradientPaint);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      gradientPaint,
+    );
+
+    // Add very subtle vignette effect (almost imperceptible)
+    final vignette = ui.Gradient.radial(
+      Offset(size.width / 2, size.height / 2),
+      math.max(size.width, size.height) * 0.7,
+      [
+        Colors.transparent,
+        Colors.black.withValues(alpha: 0.05),
+        Colors.black.withValues(alpha: 0.12),
+      ],
+      [0.0, 0.9, 1.0],
+    );
+
+    final vignettePaint = Paint()
+      ..shader = vignette
+      ..style = PaintingStyle.fill;
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      vignettePaint,
+    );
   }
 
   @override

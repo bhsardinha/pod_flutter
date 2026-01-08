@@ -28,6 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _settings = AppSettings(
       ampNameDisplayMode: widget.settings.ampNameDisplayMode,
+      gridItemsPerRow: widget.settings.gridItemsPerRow,
+      enableTempoScrolling: widget.settings.enableTempoScrolling,
     );
   }
 
@@ -35,6 +37,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mode == null) return;
     setState(() {
       _settings.ampNameDisplayMode = mode;
+    });
+    widget.onSettingsChanged(_settings);
+  }
+
+  void _updateGridItemsPerRow(int? value) {
+    if (value == null) return;
+    setState(() {
+      _settings.gridItemsPerRow = value;
+    });
+    widget.onSettingsChanged(_settings);
+  }
+
+  void _updateTempoScrolling(bool value) {
+    setState(() {
+      _settings.enableTempoScrolling = value;
     });
     widget.onSettingsChanged(_settings);
   }
@@ -83,6 +100,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }).toList(),
                 onChanged: _updateMode,
               ),
+            ),
+          ),
+
+          // Grid Items Per Row setting
+          _buildSettingRow(
+            label: 'Grid Items Per Row',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: PodColors.surfaceLight,
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: PodColors.surfaceLight, width: 1),
+              ),
+              child: DropdownButton<int>(
+                value: _settings.gridItemsPerRow,
+                dropdownColor: PodColors.surface,
+                underline: const SizedBox(),
+                style: const TextStyle(
+                  color: PodColors.textPrimary,
+                  fontSize: 13,
+                ),
+                items: [4, 5, 6].map((value) {
+                  return DropdownMenuItem(
+                    value: value,
+                    child: Text('$value items'),
+                  );
+                }).toList(),
+                onChanged: _updateGridItemsPerRow,
+              ),
+            ),
+          ),
+
+          // Tempo Scrolling setting
+          _buildSettingRow(
+            label: 'Enable Tempo Scrolling',
+            child: Switch(
+              value: _settings.enableTempoScrolling,
+              onChanged: _updateTempoScrolling,
+              activeTrackColor: const Color(0xFFFF7A00).withValues(alpha: 0.5),
+              activeThumbColor: const Color(0xFFFF7A00),
             ),
           ),
 

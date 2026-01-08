@@ -248,7 +248,9 @@ class PodController {
     final isBass = cabModel?.pack == 'BX';
     return MicModels.byPosition(micPosition, isBass: isBass);
   }
-  Future<void> setMicModel(int position) => setParameter(PodXtCC.micSelect, position);
+
+  Future<void> setMicModel(int position) =>
+      setParameter(PodXtCC.micSelect, position);
 
   int get room => getParameter(PodXtCC.room);
   Future<void> setRoom(int value) => setParameter(PodXtCC.room, value);
@@ -338,8 +340,14 @@ class PodController {
 
   // Tempo
   int get tempo => getParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb);
-  Future<void> setTempo(int bpm) =>
-      setParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb, bpm);
+
+  /// Set tempo in BPM (30-240)
+  Future<void> setTempo(int bpm) {
+    // Convert BPM to internal value (BPM * 10)
+    // Range: 30-240 BPM -> 300-2400 internal
+    final internalValue = (bpm.clamp(30, 240) * 10);
+    return setParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb, internalValue);
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PUBLIC API - Program Management
@@ -371,6 +379,52 @@ class PodController {
   /// Refresh all patches from device
   Future<void> refreshAllPatches() async {
     await _midi.requestAllPatches();
+  }
+
+  /// Send tap tempo message
+  /// Tap this repeatedly to set the tempo
+  Future<void> sendTapTempo() async {
+    // POD XT uses CC 64 (sustain pedal) for tap tempo
+    // Send value 127 (on) to register a tap
+    await _midi.sendCC(64, 127);
+
+    // Wait a bit for POD to process the tap, then request updated tempo
+    // The POD doesn't send tempo CC updates automatically, we need to request edit buffer
+    await Future.delayed(const Duration(milliseconds: 50));
+    await _midi.requestEditBuffer();
+  }
+
+  /// Check if delay is in tempo sync mode (note division vs ms)
+  bool get isDelayTempoSynced {
+    final noteSelect = getParameter(PodXtCC.delayNoteSelect);
+    // Value 0 = ms mode (not tempo synced)
+    // Value > 0 = note division (tempo synced)
+    return noteSelect > 0;
+  }
+
+  /// Get current tempo in BPM from edit buffer
+  int get currentTempoBpm {
+    final tempoMsb = getParameter(PodXtCC.tempoMsb);
+    final tempoLsb = getParameter(PodXtCC.tempoLsb);
+
+    // Combine MSB and LSB to get internal tempo value
+    // POD XT stores the internal value directly (not normalized)
+    // Internal range: 300-2400
+    final internalValue = (tempoMsb << 7) | tempoLsb;
+
+    print('DEBUG TEMPO: MSB=$tempoMsb, LSB=$tempoLsb, internal=$internalValue');
+
+    // Convert to BPM using POD XT formula from pod-ui reference:
+    // Display BPM = internal * 0.1
+    // Range: 30.0-240.0 BPM (from internal 300-2400)
+    if (internalValue < 300) return 120; // Default to 120 BPM if invalid
+
+    final bpm = (internalValue * 0.1).round();
+    final clampedBpm = bpm.clamp(30, 240);
+
+    print('DEBUG TEMPO: calculated BPM=$bpm, clamped=$clampedBpm');
+
+    return clampedBpm;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -420,6 +474,15 @@ class PodController {
   }
 
   void _handleControlChange(({int cc, int value}) change) {
+    // Handle tap tempo (CC 64) - request edit buffer to get updated tempo
+    if (change.cc == 64 && change.value == 127) {
+      // Tap tempo received (from hardware or echo of our own tap)
+      // Request edit buffer after a short delay to get updated tempo
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _midi.requestEditBuffer();
+      });
+    }
+
     final param = PodXtCC.byCC[change.cc];
     if (param != null && param.address != null) {
       _editBuffer.patch.setValueAt(param.address!, change.value);
@@ -483,7 +546,9 @@ class PodController {
     final patch = Patch.fromData(data);
     print('  Patch name: "${patch.name}"');
     print('  Drive: ${patch.getValue(PodXtCC.drive)}');
-    print('  EQ Gains (MIDI): [${patch.getValue(PodXtCC.eq1Gain)}, ${patch.getValue(PodXtCC.eq2Gain)}, ${patch.getValue(PodXtCC.eq3Gain)}, ${patch.getValue(PodXtCC.eq4Gain)}]');
+    print(
+      '  EQ Gains (MIDI): [${patch.getValue(PodXtCC.eq1Gain)}, ${patch.getValue(PodXtCC.eq2Gain)}, ${patch.getValue(PodXtCC.eq3Gain)}, ${patch.getValue(PodXtCC.eq4Gain)}]',
+    );
 
     _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
     _editBufferController.add(_editBuffer);
@@ -553,10 +618,14 @@ class PodController {
         _currentProgram = program;
         _programChangeController.add(program);
       } else {
-        print('  ERROR: Program $program is out of range (max: ${programCount - 1})');
+        print(
+          '  ERROR: Program $program is out of range (max: ${programCount - 1})',
+        );
       }
     } else {
-      print('  ERROR: Program state payload too short (need 5 bytes, got ${message.payload.length})');
+      print(
+        '  ERROR: Program state payload too short (need 5 bytes, got ${message.payload.length})',
+      );
     }
   }
 

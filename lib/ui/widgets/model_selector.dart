@@ -87,8 +87,22 @@ class ModelSelector extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.chevron_left,
-                    color: PodColors.textSecondary,
-                    size: 20,
+                    color: const Color(0xFF3D0112), // Much darker to match darker brushed metal
+                    size: 24,
+                    shadows: [
+                      // Dark shadow on top-left (engraved depression)
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.9),
+                        offset: const Offset(-1.5, -1.5),
+                        blurRadius: 2.0,
+                      ),
+                      // Light highlight on bottom-right (edge catch light)
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        offset: const Offset(1.5, 1.5),
+                        blurRadius: 2.0,
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 12),
                   Text(
@@ -104,8 +118,22 @@ class ModelSelector extends StatelessWidget {
                   const SizedBox(width: 12),
                   Icon(
                     Icons.chevron_right,
-                    color: PodColors.textSecondary,
-                    size: 20,
+                    color: const Color(0xFF3D0112), // Much darker to match darker brushed metal
+                    size: 24,
+                    shadows: [
+                      // Dark shadow on top-left (engraved depression)
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.9),
+                        offset: const Offset(-1.5, -1.5),
+                        blurRadius: 2.0,
+                      ),
+                      // Light highlight on bottom-right (edge catch light)
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        offset: const Offset(1.5, 1.5),
+                        blurRadius: 2.0,
+                      ),
+                    ],
                   ),
                 ],
               ),

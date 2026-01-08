@@ -137,7 +137,7 @@ class _NavButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Icon(
           icon,
-          color: const Color(0xFF790129), // Darker version of brushed metal (0xFF970233)
+          color: const Color(0xFF3D0112), // Much darker to match darker brushed metal
           size: 34,
           shadows: [
             // Dark shadow on top-left (engraved depression)
@@ -148,7 +148,7 @@ class _NavButton extends StatelessWidget {
             ),
             // Light highlight on bottom-right (edge catch light)
             Shadow(
-              color: Colors.white.withValues(alpha: 0.3),
+              color: Colors.white.withValues(alpha: 0.2),
               offset: const Offset(1.5, 1.5),
               blurRadius: 2.0,
             ),

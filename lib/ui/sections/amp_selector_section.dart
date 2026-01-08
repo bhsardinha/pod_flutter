@@ -99,17 +99,19 @@ class AmpSelectorSection extends StatelessWidget {
           child: Column(
             children: [
               Expanded(
-                child: _buildDropdownButton(
+                child: EffectButton(
                   label: 'CAB',
-                  value: currentCab,
+                  modelName: currentCab,
+                  isOn: true,
                   onTap: onCabTap,
                 ),
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: _buildDropdownButton(
+                child: EffectButton(
                   label: 'MIC',
-                  value: currentMic,
+                  modelName: currentMic,
+                  isOn: true,
                   onTap: onMicTap,
                 ),
               ),
@@ -127,13 +129,29 @@ class AmpSelectorSection extends StatelessWidget {
         GestureDetector(
           onTap: onPreviousAmp,
           child: Container(
-            width: 36,
+            width: 52,
             height: double.infinity,
             alignment: Alignment.center,
             child: const Icon(
               Icons.chevron_left,
-              color: PodColors.textSecondary,
-              size: 28,
+              color: Color(
+                0xFF3D0112,
+              ), // Much darker to match darker brushed metal
+              size: 50,
+              shadows: [
+                // Dark shadow on top-left (engraved depression)
+                Shadow(
+                  color: Color(0xE6000000),
+                  offset: Offset(-1.5, -1.5),
+                  blurRadius: 2.0,
+                ),
+                // Light highlight on bottom-right (edge catch light)
+                Shadow(
+                  color: Color(0x33FFFFFF),
+                  offset: Offset(1.5, 1.5),
+                  blurRadius: 2.0,
+                ),
+              ],
             ),
           ),
         ),
@@ -227,8 +245,9 @@ class AmpSelectorSection extends StatelessWidget {
                           boxShadow: isConnected
                               ? [
                                   BoxShadow(
-                                    color: PodColors.buttonOnGreen
-                                        .withValues(alpha: 0.6),
+                                    color: PodColors.buttonOnGreen.withValues(
+                                      alpha: 0.6,
+                                    ),
                                     blurRadius: 6,
                                     spreadRadius: 1,
                                   ),
@@ -270,13 +289,29 @@ class AmpSelectorSection extends StatelessWidget {
         GestureDetector(
           onTap: onNextAmp,
           child: Container(
-            width: 36,
+            width: 50,
             height: double.infinity,
             alignment: Alignment.center,
             child: const Icon(
               Icons.chevron_right,
-              color: PodColors.textSecondary,
-              size: 28,
+              color: Color(
+                0xFF3D0112,
+              ), // Much darker to match darker brushed metal
+              size: 50,
+              shadows: [
+                // Dark shadow on top-left (engraved depression)
+                Shadow(
+                  color: Color(0xE6000000),
+                  offset: Offset(-1.5, -1.5),
+                  blurRadius: 2.0,
+                ),
+                // Light highlight on bottom-right (edge catch light)
+                Shadow(
+                  color: Color(0x33FFFFFF),
+                  offset: Offset(1.5, 1.5),
+                  blurRadius: 2.0,
+                ),
+              ],
             ),
           ),
         ),
@@ -284,50 +319,4 @@ class AmpSelectorSection extends StatelessWidget {
     );
   }
 
-  Widget _buildDropdownButton({
-    required String label,
-    required String value,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: PodColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: PodColors.surfaceLight, width: 1),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: PodColors.textSecondary,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w400,
-                color: PodColors.textPrimary,
-                height: 1.2,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-            ),
-            // Dropdown arrow removed per UI update; whole button is tappable
-          ],
-        ),
-      ),
-    );
-  }
 }

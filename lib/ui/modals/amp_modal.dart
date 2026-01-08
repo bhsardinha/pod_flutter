@@ -349,8 +349,8 @@ class _AmpModalState extends State<AmpModal> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 6,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: widget.settings.gridItemsPerRow,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             childAspectRatio: 2.35,
@@ -392,9 +392,10 @@ class _AmpModalState extends State<AmpModal> {
                         amp.name,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 9,
+                          fontFamily: 'Roboto',
+                          fontSize: 18,
                           fontWeight: isSelected
-                              ? FontWeight.w700
+                              ? FontWeight.w600
                               : FontWeight.w500,
                           color: isSelected ? packColor : PodColors.textPrimary,
                         ),
@@ -407,9 +408,10 @@ class _AmpModalState extends State<AmpModal> {
                           amp.realName!,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 7,
-                            fontWeight: FontWeight.w300,
-                            color: PodColors.textSecondary.withValues(alpha: 0.7),
+                            fontFamily: 'Roboto',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: PodColors.textSecondary.withValues(alpha: 0.8),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../theme/pod_theme.dart';
 import '../widgets/effect_button.dart';
 import '../widgets/patch_browser.dart';
+import '../widgets/tap_button.dart';
 import '../utils/value_formatters.dart';
 
 /// Control bar section (Row 4) containing settings, WAH, FX LOOP,
@@ -14,6 +14,9 @@ class ControlBarSection extends StatelessWidget {
   final bool isModified;
   final int currentProgram;
   final String currentPatchName;
+  final int currentBpm;
+  final bool isDelayTempoSynced;
+  final bool enableTempoScrolling;
   final VoidCallback onSettings;
   final VoidCallback onWahToggle;
   final VoidCallback onWahLongPress;
@@ -22,6 +25,7 @@ class ControlBarSection extends StatelessWidget {
   final VoidCallback onNextPatch;
   final VoidCallback onPatchTap;
   final VoidCallback onTap;
+  final Function(int newBpm) onTempoChanged;
 
   const ControlBarSection({
     super.key,
@@ -30,6 +34,9 @@ class ControlBarSection extends StatelessWidget {
     required this.isModified,
     required this.currentProgram,
     required this.currentPatchName,
+    required this.currentBpm,
+    required this.isDelayTempoSynced,
+    required this.enableTempoScrolling,
     required this.onSettings,
     required this.onWahToggle,
     required this.onWahLongPress,
@@ -38,6 +45,7 @@ class ControlBarSection extends StatelessWidget {
     required this.onNextPatch,
     required this.onPatchTap,
     required this.onTap,
+    required this.onTempoChanged,
   });
 
   @override
@@ -59,49 +67,15 @@ class ControlBarSection extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // FX LOOP (flex 1.5) — Two-line label
+        // FX LOOP (flex 1.5) — EffectButton with smaller font, no modal
         Expanded(
           flex: 15,
           child: SizedBox.expand(
-            child: GestureDetector(
+            child: EffectButton(
+              label: 'FX LOOP',
+              isOn: loopEnabled,
               onTap: onLoopToggle,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: loopEnabled
-                      ? PodColors.buttonOnAmber.withValues(alpha: 0.3)
-                      : PodColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: loopEnabled ? PodColors.buttonOnAmber : PodColors.surfaceLight,
-                    width: loopEnabled ? 2 : 1,
-                  ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'FX',
-                        style: TextStyle(
-                          color: loopEnabled ? PodColors.buttonOnAmber : PodColors.textSecondary,
-                          fontSize: 9,
-                          fontWeight: loopEnabled ? FontWeight.w700 : FontWeight.w500,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      Text(
-                        'LOOP',
-                        style: TextStyle(
-                          color: loopEnabled ? PodColors.buttonOnAmber : PodColors.textSecondary,
-                          fontSize: 9,
-                          fontWeight: loopEnabled ? FontWeight.w700 : FontWeight.w500,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              labelFontSize: 10,
             ),
           ),
         ),
@@ -123,54 +97,30 @@ class ControlBarSection extends StatelessWidget {
         ),
         const SizedBox(width: 12),
 
-        // TAP (flex 1.5)
+        // TAP (flex 1.5) — Blinks at current BPM (only when delay is tempo-synced)
         Expanded(
           flex: 15,
-          child: GestureDetector(
-            onTap: onTap,
-            child: SizedBox.expand(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: PodColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: PodColors.surfaceLight, width: 1),
-                ),
-                child: const Center(
-                  child: Text(
-                    'TAP',
-                    style: TextStyle(
-                      color: PodColors.textSecondary,
-                      fontSize: 10,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-              ),
+          child: SizedBox.expand(
+            child: TapButton(
+              bpm: currentBpm,
+              isTempoSynced: isDelayTempoSynced,
+              enableScrolling: enableTempoScrolling,
+              onTap: onTap,
+              onTempoChanged: onTempoChanged,
             ),
           ),
         ),
         const SizedBox(width: 12),
 
-        // Settings (flex 1.5)
+        // Settings (flex 1.5) — EffectButton with icon
         Expanded(
           flex: 15,
-          child: GestureDetector(
-            onTap: onSettings,
-            child: SizedBox.expand(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: PodColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: PodColors.surfaceLight, width: 1),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.settings,
-                    color: PodColors.textSecondary,
-                    size: 20,
-                  ),
-                ),
-              ),
+          child: SizedBox.expand(
+            child: EffectButton(
+              label: 'SET',
+              isOn: false,
+              onTap: onSettings,
+              icon: Icons.settings,
             ),
           ),
         ),

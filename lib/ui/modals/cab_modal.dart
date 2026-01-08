@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../../models/cab_models.dart';
+import '../../models/app_settings.dart';
 import '../theme/pod_theme.dart';
 
 /// Cabinet picker modal
@@ -8,12 +9,14 @@ class CabModal extends StatelessWidget {
   final int currentCabId;
   final PodController podController;
   final bool isConnected;
+  final AppSettings settings;
 
   const CabModal({
     super.key,
     required this.currentCabId,
     required this.podController,
     required this.isConnected,
+    required this.settings,
   });
 
   @override
@@ -73,8 +76,8 @@ class CabModal extends StatelessWidget {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 6,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: settings.gridItemsPerRow,
                       childAspectRatio: 2.35,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
@@ -124,8 +127,8 @@ class CabModal extends StatelessWidget {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 6,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: settings.gridItemsPerRow,
                       childAspectRatio: 2.35,
                       crossAxisSpacing: 8,
                       mainAxisSpacing: 8,
@@ -175,8 +178,9 @@ class CabModal extends StatelessWidget {
               Text(
                 cab.name,
                 style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontFamily: 'Roboto',
+                  fontSize: 18,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected ? PodColors.accent : PodColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
@@ -189,9 +193,10 @@ class CabModal extends StatelessWidget {
                   cab.realName!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 7,
-                    fontWeight: FontWeight.w300,
-                    color: PodColors.textSecondary.withValues(alpha: 0.7),
+                    fontFamily: 'Roboto',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: PodColors.textSecondary.withValues(alpha: 0.8),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

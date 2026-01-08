@@ -22,8 +22,8 @@ class EffectButton extends StatelessWidget {
   /// Callback when button is tapped (toggle)
   final VoidCallback onTap;
 
-  /// Callback when button is long-pressed (open modal)
-  final VoidCallback onLongPress;
+  /// Callback when button is long-pressed (open modal) - optional
+  final VoidCallback? onLongPress;
 
   /// The color to use for text glow when lit (green or amber)
   final Color color;
@@ -34,16 +34,20 @@ class EffectButton extends StatelessWidget {
   /// Optional font size for the model/sub-label
   final double? modelFontSize;
 
+  /// Optional icon to display instead of text
+  final IconData? icon;
+
   const EffectButton({
     super.key,
     required this.label,
     this.modelName,
     required this.isOn,
     required this.onTap,
-    required this.onLongPress,
+    this.onLongPress,
     this.color = PodColors.buttonOnAmber,
     this.labelFontSize,
     this.modelFontSize,
+    this.icon,
   });
 
   @override
@@ -54,110 +58,237 @@ class EffectButton extends StatelessWidget {
       onSecondaryTap: onLongPress,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          // Piano black glossy gradient
+          // Pitch black hole background
           gradient: const LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              Color(0xFF1A1A1A), // Subtle highlight at top
-              Color(0xFF0A0A0A), // Deep black in middle
-              Color(0xFF000000), // Pure black at bottom
+              Color(0xFF000000), // Pure black
+              Color(0xFF000000), // Pure black
             ],
-            stops: [0.0, 0.5, 1.0],
           ),
-          borderRadius: BorderRadius.circular(12),
-          // Outer bevel - raised button effect
+          borderRadius: BorderRadius.circular(18),
+          // Inner shadows to create hole/cavity effect
           boxShadow: [
-            // Top-left highlight (light source from top-left)
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.08),
-              offset: const Offset(-1, -1),
+              color: Colors.black.withValues(alpha: 0.9),
+              offset: const Offset(4, 4),
               blurRadius: 2,
-              spreadRadius: 0,
+              spreadRadius: -3,
             ),
-            // Bottom-right shadow (depth)
-            const BoxShadow(
-              color: Colors.black,
-              offset: Offset(2, 2),
-              blurRadius: 4,
-              spreadRadius: 0,
-            ),
-            // Ambient shadow
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              offset: const Offset(0, 1),
-              blurRadius: 3,
-              spreadRadius: 0,
+              color: Colors.black.withValues(alpha: 0.6),
+              offset: const Offset(-4, -4),
+              blurRadius: 2,
+              spreadRadius: -6,
             ),
           ],
-          // Subtle border for definition
-          border: Border.all(color: const Color(0xFF2A2A2A), width: 1),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Effect name with orange glow when ON
-            Text(
-              label,
-              style: TextStyle(
-                color: isOn
-                    ? const Color(0xFFFF7A00)
-                    : const Color(0xFF4A4A4A), // Orange or dark gray
-                fontSize: labelFontSize ?? 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.8,
-                // Discrete orange glow when ON
-                shadows: isOn
-                    ? [
-                        Shadow(
-                          color: const Color(
-                            0xFFFF7A00,
-                          ).withValues(alpha: 0.15),
-                          blurRadius: 4,
-                        ),
-                        Shadow(
-                          color: const Color(0xFFFF7A00).withValues(alpha: 0.3),
-                          blurRadius: 8,
-                        ),
-                        Shadow(
-                          color: const Color(
-                            0xFFFF7A00,
-                          ).withValues(alpha: 0.15),
-                          blurRadius: 4,
-                        ),
-                      ]
-                    : null,
-              ),
+        child: Container(
+          margin: const EdgeInsets.all(0.5),
+          decoration: BoxDecoration(
+            // Deep glossy black gradient - slightly lighter
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF0F0F0F), // Very dark gray
+                Color(0xFF0A0A0A), // Slightly darker
+              ],
             ),
-            // Model/preset name with subtle orange glow when ON
-            if (modelName != null && modelName!.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(
-                modelName!,
-                style: TextStyle(
-                  color: isOn
-                      ? const Color(0xFFFF7A00).withValues(alpha: 0.8)
-                      : const Color(0xFF3A3A3A),
-                  fontSize: modelFontSize ?? 11,
-                  shadows: isOn
-                      ? [
-                          Shadow(
-                            color: const Color(
-                              0xFFFF7A00,
-                            ).withValues(alpha: 0.3),
-                            blurRadius: 3,
-                          ),
-                        ]
-                      : null,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Stack(
+            children: [
+              // Radical glossy bevel - left edge very short gradient
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      const Color(0xFF000000), // Pitch black
+                      Colors.black.withValues(alpha: 0.1),
+                      const Color(
+                        0xFF666666,
+                      ).withValues(alpha: 0.08), // Darker gray
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.04, 0.08, 0.99, 1.0],
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+              ),
+              // Right edge - very short gradient
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [
+                      const Color(0xFF000000), // Pitch black
+                      Colors.black.withValues(alpha: 0.1),
+                      const Color(
+                        0xFF666666,
+                      ).withValues(alpha: 0.10), // Darker gray
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.04, 0.08, 0.99, 1.0],
+                  ),
+                ),
+              ),
+              // Top to bottom - very short gradient at top edge
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0xFF000000), // Pitch black
+                      Colors.black.withValues(alpha: 0.1),
+                      const Color(
+                        0xFF666666,
+                      ).withValues(alpha: 0.1), // Darker gray
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.05, 0.18, 0.99, 1.0],
+                  ),
+                ),
+              ),
+              // Bottom to top - very short gradient at bottom edge
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      const Color(0xFF000000), // Pitch black
+                      Colors.black.withValues(alpha: 0.1),
+                      const Color(
+                        0xFF666666,
+                      ).withValues(alpha: 0.08), // Darker gray
+                      Colors.transparent,
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.05, 0.18, 0.99, 1.0],
+                  ),
+                ),
+              ),
+              // Content
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: icon != null
+                      ? Icon(
+                          icon,
+                          color: isOn
+                              ? const Color(0xFFFF7A00)
+                              : const Color(0xFF6A6A6A),
+                          size: 20,
+                          shadows: isOn
+                              ? [
+                                  Shadow(
+                                    color: const Color(0xFFFF7A00)
+                                        .withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                  ),
+                                  Shadow(
+                                    color: const Color(0xFFFF7A00)
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                  ),
+                                  Shadow(
+                                    color: const Color(0xFFFF7A00)
+                                        .withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                              : null,
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Effect name with orange glow when ON
+                            Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: isOn
+                                    ? const Color(0xFFFF7A00)
+                                    : const Color(
+                                        0xFF6A6A6A), // Orange or lighter gray
+                                fontSize: labelFontSize ?? 14,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.8,
+                                // Discrete orange glow when ON
+                                shadows: isOn
+                                    ? [
+                                        Shadow(
+                                          color: const Color(
+                                            0xFFFF7A00,
+                                          ).withValues(alpha: 0.15),
+                                          blurRadius: 4,
+                                        ),
+                                        Shadow(
+                                          color: const Color(
+                                            0xFFFF7A00,
+                                          ).withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                        ),
+                                        Shadow(
+                                          color: const Color(
+                                            0xFFFF7A00,
+                                          ).withValues(alpha: 0.15),
+                                          blurRadius: 4,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                            // Model/preset name with subtle orange glow when ON
+                            if (modelName != null && modelName!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                modelName!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: isOn
+                                      ? const Color(0xFFFF7A00)
+                                          .withValues(alpha: 0.8)
+                                      : const Color(0xFF5A5A5A),
+                                  fontSize: modelFontSize ?? 11,
+                                  shadows: isOn
+                                      ? [
+                                          Shadow(
+                                            color: const Color(
+                                              0xFFFF7A00,
+                                            ).withValues(alpha: 0.3),
+                                            blurRadius: 3,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ],
+                          ],
+                        ),
+                ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

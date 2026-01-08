@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../../models/cab_models.dart';
 import '../theme/pod_theme.dart';
+import '../widgets/rotary_knob.dart';
 
 /// Microphone picker modal with room percentage control
 /// POD always uses positions 0-3, mic names differ based on cab type
@@ -40,104 +41,103 @@ class _MicModalState extends State<MicModal> {
       height: 400,
       child: Column(
         children: [
-          // Room percentage control
+          // Room knob control
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('ROOM', style: PodTextStyles.labelMedium),
-                    Text(
-                      '${(_roomValue * 100 / 127).round()}%',
-                      style: PodTextStyles.valueMedium.copyWith(
-                        color: PodColors.accent,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Slider(
-                  value: _roomValue.toDouble(),
-                  min: 0,
-                  max: 127,
-                  divisions: 127,
-                  onChanged: (value) {
-                    setState(() => _roomValue = value.toInt());
-                    if (widget.isConnected) {
-                      widget.podController.setRoom(value.toInt());
-                    }
-                  },
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: RotaryKnob(
+                label: 'ROOM',
+                value: _roomValue,
+                minValue: 0,
+                maxValue: 127,
+                onValueChanged: (value) {
+                  setState(() => _roomValue = value);
+                  if (widget.isConnected) {
+                    widget.podController.setRoom(value);
+                  }
+                },
+                valueFormatter: (value) => '${(value * 100 / 127).round()}%',
+              ),
             ),
           ),
           const Divider(height: 1),
-          const SizedBox(height: 8),
-          // Microphone list
+          const SizedBox(height: 16),
+          // Microphone grid
           Expanded(
-            child: ListView.builder(
-              itemCount: widget.availableMics.length,
-              itemBuilder: (context, index) {
-                final mic = widget.availableMics[index];
-                final isSelected = mic.position == widget.currentMicPosition;
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 2.35,
+                ),
+                itemCount: widget.availableMics.length,
+                itemBuilder: (context, index) {
+                  final mic = widget.availableMics[index];
+                  final isSelected = mic.position == widget.currentMicPosition;
 
-                return Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: 8,
-                    left: 16,
-                    right: 16,
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {
+                  return GestureDetector(
+                    onTap: () {
                       if (widget.isConnected) {
                         // Position is always 0-3
                         widget.podController.setMicModel(mic.position);
                       }
                       Navigator.of(context).pop();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? PodColors.accent.withValues(alpha: 0.2)
-                          : PodColors.surfaceLight,
-                      foregroundColor: isSelected
-                          ? PodColors.accent
-                          : PodColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: RichText(
-                      text: TextSpan(
-                        text: mic.name,
-                        style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: isSelected
-                              ? PodColors.accent
-                              : PodColors.textPrimary,
-                          fontSize: 14,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? PodColors.accent.withValues(alpha: 0.3)
+                            : PodColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected ? PodColors.accent : PodColors.knobBase,
+                          width: isSelected ? 2 : 1,
                         ),
-                        children: [
-                          if (mic.realName != null)
-                            TextSpan(
-                              text: ' - ${mic.realName}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w400,
-                                color: PodColors.textSecondary,
-                                fontSize: 12,
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              mic.name,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Roboto',
+                                fontSize: 18,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: isSelected ? PodColors.accent : PodColors.textPrimary,
                               ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+                            if (mic.realName != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                mic.realName!,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Roboto',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: PodColors.textSecondary.withValues(alpha: 0.8),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ],

@@ -59,6 +59,10 @@ class _MainScreenState extends State<MainScreen> {
   String _currentCab = '--';
   String _currentMic = '--';
 
+  // Tempo state
+  int _currentBpm = 120;
+  bool _isDelayTempoSynced = true;
+
   // Local settings (mutable copy)
   late AppSettings _settings;
 
@@ -120,6 +124,7 @@ class _MainScreenState extends State<MainScreen> {
   StreamSubscription<EditBuffer>? _editBufferSubscription;
   StreamSubscription<int>? _programChangeSubscription;
   StreamSubscription<SyncProgress>? _syncProgressSubscription;
+  StreamSubscription<ParameterChange>? _parameterChangeSubscription;
 
   @override
   void initState() {
@@ -172,6 +177,22 @@ class _MainScreenState extends State<MainScreen> {
       });
     });
 
+    // Subscribe to parameter changes (for real-time tempo updates)
+    _parameterChangeSubscription = widget.podController.onParameterChanged.listen((change) {
+      // Update tempo when tempo MSB or LSB changes
+      if (change.param == PodXtCC.tempoMsb || change.param == PodXtCC.tempoLsb) {
+        setState(() {
+          _currentBpm = widget.podController.currentTempoBpm;
+        });
+      }
+      // Update delay tempo sync state when delay note select changes
+      if (change.param == PodXtCC.delayNoteSelect) {
+        setState(() {
+          _isDelayTempoSynced = widget.podController.isDelayTempoSynced;
+        });
+      }
+    });
+
     // Open connection modal on startup if not connected
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isConnected && mounted) {
@@ -186,6 +207,7 @@ class _MainScreenState extends State<MainScreen> {
     _editBufferSubscription?.cancel();
     _programChangeSubscription?.cancel();
     _syncProgressSubscription?.cancel();
+    _parameterChangeSubscription?.cancel();
 
     // Reset orientation
     SystemChrome.setPreferredOrientations([
@@ -238,6 +260,10 @@ class _MainScreenState extends State<MainScreen> {
     _presence = widget.podController.presence;
     _volume = widget.podController.channelVolume;
     _reverbMix = widget.podController.getParameter(PodXtCC.reverbLevel);
+
+    // Update tempo
+    _currentBpm = widget.podController.currentTempoBpm;
+    _isDelayTempoSynced = widget.podController.isDelayTempoSynced;
 
     // Update EQ
     _eq1Gain = midiToDb(widget.podController.getParameter(PodXtCC.eq1Gain));
@@ -377,6 +403,9 @@ class _MainScreenState extends State<MainScreen> {
                   isModified: _isModified,
                   currentProgram: _currentProgram,
                   currentPatchName: _currentPatchName,
+                  currentBpm: _currentBpm,
+                  isDelayTempoSynced: _isDelayTempoSynced,
+                  enableTempoScrolling: _settings.enableTempoScrolling,
                   onSettings: _showSettingsModal,
                   onWahToggle: () => widget.podController.setWahEnabled(!_wahEnabled),
                   onWahLongPress: _showWahModal,
@@ -384,7 +413,8 @@ class _MainScreenState extends State<MainScreen> {
                   onPreviousPatch: _previousPatch,
                   onNextPatch: _nextPatch,
                   onPatchTap: _showPatchListModal,
-                  onTap: () {}, // TODO: Tap tempo
+                  onTap: () => widget.podController.sendTapTempo(),
+                  onTempoChanged: (newBpm) => widget.podController.setTempo(newBpm),
                 ),
               ),
             ],
@@ -460,6 +490,7 @@ class _MainScreenState extends State<MainScreen> {
         currentCabId: widget.podController.getParameter(PodXtCC.cabSelect),
         podController: widget.podController,
         isConnected: _isConnected,
+        settings: _settings,
       ),
     );
   }
