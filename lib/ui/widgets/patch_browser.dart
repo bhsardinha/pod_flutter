@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/pod_theme.dart';
 import 'dot_matrix_lcd.dart';
 
 /// A horizontal patch browser widget for navigating patches.
@@ -58,54 +57,58 @@ class PatchBrowser extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
               child: DotMatrixLCD(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 16,
+                  vertical: 8,
                 ),
                 child: Center(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: bank,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Left column: Bank
+                      SizedBox(
+                        width: 60,
+                        child: Text(
+                          bank,
                           style: const TextStyle(
                             fontFamily: 'Doto',
-                            fontSize: 22,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFFFF7A00),
                             letterSpacing: 1.5,
                           ),
+                          textAlign: TextAlign.left,
                         ),
-                        const TextSpan(
-                          text: ': ',
-                          style: TextStyle(
-                            fontFamily: 'Doto',
-                            fontSize: 18,
-                            color: Color(0xFFFF7A00),
-                          ),
-                        ),
-                        TextSpan(
-                          text: patchName,
+                      ),
+                      // Center column: Patch name
+                      Expanded(
+                        child: Text(
+                          patchName,
                           style: const TextStyle(
                             fontFamily: 'Doto',
-                            fontSize: 18,
+                            fontSize: 24,
                             color: Color(0xFFFF7A00),
                             letterSpacing: 1.2,
                           ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                        if (isModified)
-                          const TextSpan(
-                            text: ' *',
-                            style: TextStyle(
-                              fontFamily: 'Doto',
-                              fontSize: 18,
-                              color: Color(0xFFFF7A00),
-                              fontWeight: FontWeight.bold,
-                            ),
+                      ),
+                      // Right column: Modified indicator
+                      SizedBox(
+                        width: 30,
+                        child: Text(
+                          isModified ? '*' : '',
+                          style: const TextStyle(
+                            fontFamily: 'Doto',
+                            fontSize: 24,
+                            color: Color(0xFFFF7A00),
+                            fontWeight: FontWeight.bold,
                           ),
-                      ],
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -132,7 +135,25 @@ class _NavButton extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Icon(icon, color: PodColors.textSecondary, size: 28),
+        child: Icon(
+          icon,
+          color: const Color(0xFF790129), // Darker version of brushed metal (0xFF970233)
+          size: 34,
+          shadows: [
+            // Dark shadow on top-left (engraved depression)
+            Shadow(
+              color: Colors.black.withValues(alpha: 0.9),
+              offset: const Offset(-1.5, -1.5),
+              blurRadius: 2.0,
+            ),
+            // Light highlight on bottom-right (edge catch light)
+            Shadow(
+              color: Colors.white.withValues(alpha: 0.3),
+              offset: const Offset(1.5, 1.5),
+              blurRadius: 2.0,
+            ),
+          ],
+        ),
       ),
     );
   }
