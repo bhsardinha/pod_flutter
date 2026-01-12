@@ -1,7 +1,7 @@
 // Include CocoaPods generated xcconfigs so pod settings are applied.
-#include "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
-#include "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
-#include "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
+#include "../../Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "../../Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+#include "../../Pods/Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"
 
 // Application-level settings for the Runner target.
 //
