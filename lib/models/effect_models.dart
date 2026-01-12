@@ -18,8 +18,9 @@ class EffectModel {
   final String name;
   final List<EffectParam> params;
   final String? pack;
+  final String? basedOn;
 
-  const EffectModel(this.id, this.name, this.params, [this.pack]);
+  const EffectModel(this.id, this.name, this.params, [this.pack, this.basedOn]);
 
   bool get isStock => pack == null;
 }
@@ -173,14 +174,14 @@ class ReverbModels {
 // ═══════════════════════════════════════════════════════════════════════════
 class WahModels {
   static const List<EffectModel> all = [
-    EffectModel(0, 'Vetta Wah', []),
-    EffectModel(1, 'Fassel', []),
-    EffectModel(2, 'Weeper', []),
-    EffectModel(3, 'Chrome', []),
-    EffectModel(4, 'Chrome Custom', []),
-    EffectModel(5, 'Throaty', []),
-    EffectModel(6, 'Conductor', []),
-    EffectModel(7, 'Colorful', []),
+    EffectModel(0, 'Vetta Wah', [], null, 'Line 6 Original'),
+    EffectModel(1, 'Fassel', [], null, 'Cry Baby Super'),
+    EffectModel(2, 'Weeper', [], null, 'Arbiter Cry Baby'),
+    EffectModel(3, 'Chrome', [], null, 'Vox V847'),
+    EffectModel(4, 'Chrome Custom', [], null, 'Modified Vox V847'),
+    EffectModel(5, 'Throaty', [], null, 'RMC Real McCoy 1'),
+    EffectModel(6, 'Conductor', [], null, 'Maestro Boomerang'),
+    EffectModel(7, 'Colorful', [], null, 'Colorsound Wah-Fuzz'),
   ];
 
   static EffectModel? byId(int id) {

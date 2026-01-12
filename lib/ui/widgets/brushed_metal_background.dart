@@ -27,7 +27,7 @@ class BrushedMetalPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Base color - much darker (stronger black)
-    final baseColor = const Color(0xFF6B0123);
+    final baseColor = const ui.Color.fromARGB(255, 148, 1, 30);
 
     // Draw base layer
     final basePaint = Paint()
@@ -49,7 +49,7 @@ class BrushedMetalPainter extends CustomPainter {
 
       // 80% chance of black (darkening), 20% chance of white (highlights)
       brushPaint.color = brightness > 0.8
-          ? Colors.white.withValues(alpha: opacity * 0.25)
+          ? Colors.white.withValues(alpha: opacity * 0.2)
           : Colors.black.withValues(alpha: opacity * 1.5);
 
       canvas.drawLine(Offset(0, y), Offset(size.width, y), brushPaint);
@@ -59,7 +59,7 @@ class BrushedMetalPainter extends CustomPainter {
     for (double x = 0; x < size.width; x += 10) {
       final opacity = random.nextDouble() * 0.008;
       brushPaint.color = Colors.black.withValues(alpha: opacity);
-      brushPaint.strokeWidth = 0.5;
+      brushPaint.strokeWidth = 0.6;
 
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), brushPaint);
     }
@@ -91,10 +91,10 @@ class BrushedMetalPainter extends CustomPainter {
       math.max(size.width, size.height) * 0.7,
       [
         Colors.transparent,
-        Colors.black.withValues(alpha: 0.05),
-        Colors.black.withValues(alpha: 0.12),
+        Colors.black.withValues(alpha: 0.0001),
+        Colors.black.withValues(alpha: 0.0002),
       ],
-      [0.0, 0.9, 1.0],
+      [0.0, 0.95, 1.0],
     );
 
     final vignettePaint = Paint()

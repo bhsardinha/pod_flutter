@@ -155,6 +155,132 @@ Complete mapping of all POD X3 models to their real-world amp, cabinet, and micr
 | 47 Tube Close | Neumann U47 (close mic'd position) |
 | 47 Tube Far | Neumann U47 (distant mic'd position) |
 
+## Wah Models
+
+| POD Model | Based On |
+|-----------|----------|
+| Vetta Wah | Line 6 Original (PODxt/Vetta) |
+| Fassel | Cry Baby Super (Jen Electronics with Fasel inductor) |
+| Weeper | Arbiter Cry Baby |
+| Chrome | Vox V847 (reissue of 1967 V846) |
+| Chrome Custom | Modified Vox V847 (custom Fasel inductor) |
+| Throaty | RMC Real McCoy 1 (Clyde McCoy clone) |
+| Conductor | Maestro Boomerang |
+| Colorful | Colorsound Wah-Fuzz (inductor-less design) |
+
+## Stompbox Effect Models
+
+| POD Model | Based On |
+|-----------|----------|
+| Facial Fuzz | Arbiter Fuzz Face |
+| Fuzz Pi | Electro-Harmonix Big Muff Pi |
+| Screamer | Ibanez Tube Screamer |
+| Classic Dist | ProCo Rat |
+| Octave Fuzz | Tycobrahe Octavia |
+| Blue Comp | Boss CS-1 Compression Sustainer (treble off) |
+| Blue Comp Treb | Boss CS-1 Compression Sustainer (treble on) |
+| Red Comp | MXR Dyna Comp |
+| Vetta Comp | Line 6 Original (from Vetta II) |
+| Vetta Juice | Line 6 Original (from Vetta II, 30dB gain boost) |
+| Auto Swell | Boss SG-1 Slow Gear style envelope generator |
+| Auto Wah | Mu-Tron III envelope follower |
+| Killer Z | Boss Metal Zone |
+| Tube Drive | Chandler Tube Driver |
+| Boost + EQ | Line 6 Original (compressor with EQ) |
+| Dingo-Tron | Mu-Tron III (with "down" switch) |
+| Clean Sweep | Line 6 Original (wide range sweeping filter) |
+| Seismik Synth | Line 6 Original (pitch tracking oscillator) |
+| Double Bass | Line 6 Original (two octave oscillators) |
+| Buzz Wave | Line 6 Original (saw/square waves with vibrato) |
+| Rez Synth | Line 6 Original (sweeping low pass filter) |
+| Saturn 5 Ring M | Line 6 Original (ring modulator) |
+| Synth Analog | Moog and ARP style synth filters |
+| Synth FX | Line 6 Original (special effects sounds) |
+| Synth Harmony | Line 6 Original (two synth waves with intervals) |
+| Synth Lead | Moog, ARP, and Sequential Circuits monophonic synth |
+| Synth String | ARP Solina String Ensemble and Elka Synthex |
+| Bass Overdrive | Tech 21 Bass Sans Amp |
+| Bronze Master | Maestro Bass Brassmaster |
+| Sub Octaves | Line 6 Original (octave device) |
+| Bender | Line 6 Original (pitch shifter with pedal control) |
+
+## Modulation Effect Models
+
+| POD Model | Based On |
+|-----------|----------|
+| Sine Chorus | Line 6 Original (digital chorus with sine wave) |
+| Analog Chorus | Boss CE-1 Chorus Ensemble |
+| Line 6 Flanger | Line 6 Original |
+| Jet Flanger | A/DA Flanger |
+| Phaser | MXR Phase 90 |
+| U-Vibe | Uni-Vibe (four-stage phase shifter) |
+| Opto Trem | Blackface Fender optical tremolo (1964 Deluxe Reverb) |
+| Bias Trem | 1960 Vox AC-15 Tremolo |
+| Rotary Drum + Horn | Leslie 145 |
+| Rotary Drum | Fender Vibratone |
+| Auto Pan | Line 6 Original (panner effect) |
+| Analog Square | Boss CE-1 with square wave modulator |
+| Square Chorus | Line 6 Original (square wave chorus) |
+| Expo Chorus | Line 6 Original (exponential sweep chorus) |
+| Random Chorus | Line 6 Original (three random modulating filters) |
+| Square Flange | Line 6 Original (square wave flanger) |
+| Expo Flange | Line 6 Original (exponential sweep flanger) |
+| Lumpy Phase | Line 6 Original (Uni-Vibe-like with overdrive) |
+| Hi-Talk | Line 6 Original (moog-like filter + rotary speaker) |
+| Sweeper | Line 6 Original (stereo wah pedals pulsating) |
+| POD Purple X | Line 6 Original (broken sound effect) |
+| Random S/H | Oberheim Voltage Controlled Filter style |
+| Tape Eater | Line 6 Original (warbled tape sound) |
+| Warble-Matic | Line 6 Original (sweeper variant) |
+| Pattern Tremolo | Lightfoot Labs Goatkeeper style |
+| Barberpole Phaser | Line 6 Original (modular synth style) |
+| Octisynth | Line 6 Original |
+| Pitch Vibrato | Boss VB-2 |
+| Script Phase | MXR Phase 90 |
+| Voice Box | Line 6 Original (talk box style) |
+| Vocoder | Line 6 Original (talk box style) |
+| Dimension | Roland Dimension D |
+
+## Delay Models
+
+| POD Model | Based On |
+|-----------|----------|
+| Analog Delay | Boss DM-2 Analog Delay |
+| Analog w/ Mod | Electro-Harmonix Deluxe Memory Man |
+| Tube Echo | 1963 Maestro EP-1 Echoplex |
+| Multi-Head | Roland RE-101 Space Echo |
+| Sweep Echo | Line 6 Original (sweeping filter delay) |
+| Digital Delay | Line 6 Original (straight digital delay) |
+| Stereo Delay | Line 6 Original (dual delays for U2-style sounds) |
+| Ping Pong | Line 6 Original (stereo ping pong delay) |
+| Reverse | Line 6 Original (backwards delay) |
+| Echo Platter | Binson EchoRec (magnetic platter echo) |
+| Tape Echo | Maestro EP-3 Echoplex (solid state) |
+| Low Rez | Line 6 Original (low bit resolution delay) |
+| Phaze Echo | Line 6 Original (EP-1 delay with Uni-Vibe) |
+| Bubble Echo | Line 6 Original (Sample and Hold filter) |
+| Dynamic Delay | T.C. Electronic 2290 Dynamic Digital Delay |
+
+## Reverb Models
+
+| POD Model | Based On |
+|-----------|----------|
+| Lux Spring | Blackface Fender Deluxe Reverb (2-spring tank) |
+| Std Spring | Blackface Fender Twin Reverb (3-spring tank) |
+| King Spring | Line 6 Original (dense spring reverb) |
+| Small Room | Line 6 Original (small room acoustics) |
+| Tiled Room | Line 6 Original (bathroom-style reverb) |
+| Brite Room | Line 6 Original (live, bright room) |
+| Dark Hall | Line 6 Original (large concert hall, many reflections) |
+| Medium Hall | Line 6 Original (medium hall, heavy reflections) |
+| Large Hall | Line 6 Original (very large concert hall) |
+| Rich Chamber | Line 6 Original (rich chamber) |
+| Chamber | Line 6 Original (studio chamber) |
+| Cavernous | Line 6 Original (massive space) |
+| Slap Plate | Line 6 Original (early rock and roll, Sun Studios style) |
+| Vintage Plate | Line 6 Original (classic plate reverb) |
+| Large Plate | Line 6 Original (large plate reverb) |
+
 ---
 
 **Note:** All product names are trademarks of their respective owners. Line 6 has no affiliation with these manufacturers. The product names are used solely to identify the equipment studied during Line 6's sound model development.

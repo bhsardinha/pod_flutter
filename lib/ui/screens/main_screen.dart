@@ -592,6 +592,7 @@ class _MainScreenState extends State<MainScreen> {
       child: WahModal(
         podController: widget.podController,
         isConnected: _isConnected,
+        settings: widget.settings,
       ),
     );
   }
