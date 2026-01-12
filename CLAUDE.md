@@ -18,6 +18,20 @@ flutter build apk        # Build Android release
 flutter build ios        # Build iOS release
 ```
 
+## Coding Standards
+
+**IMPORTANT - Deprecated APIs:**
+- **NEVER use `withOpacity()`** - it's deprecated and causes precision loss
+- **ALWAYS use `.withValues(alpha: value)`** instead
+
+```dart
+// ❌ WRONG - deprecated
+Colors.white.withOpacity(0.95)
+
+// ✅ CORRECT
+Colors.white.withValues(alpha: 0.95)
+```
+
 ## Architecture
 
 ```

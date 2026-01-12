@@ -4,13 +4,8 @@ import '../../services/pod_controller.dart';
 import '../../protocol/cc_map.dart';
 import '../../models/patch.dart';
 import '../widgets/rotary_knob.dart';
-import '../theme/pod_theme.dart';
 
 /// Compressor parameters modal with real-time updates.
-///
-/// TODO: Implement full compressor controls
-/// - Threshold knob (CC 9 - compressorThreshold)
-/// - Gain knob (CC 5 - compressorGain)
 class CompModal extends StatefulWidget {
   final PodController podController;
   final bool isConnected;
@@ -33,11 +28,10 @@ class _CompModalState extends State<CompModal> {
   @override
   void initState() {
     super.initState();
-    // TODO: Initialize threshold and gain from podController
     _threshold = widget.podController.getParameter(PodXtCC.compressorThreshold);
     _gain = widget.podController.getParameter(PodXtCC.compressorGain);
 
-    // TODO: Subscribe to edit buffer for real-time updates
+    // Listen to edit buffer changes for real-time updates
     _editBufferSubscription = widget.podController.onEditBufferChanged.listen((buffer) {
       if (mounted) {
         setState(() {
@@ -58,44 +52,42 @@ class _CompModalState extends State<CompModal> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          const Text(
-            'TODO: Implement compressor controls',
-            style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
+          // Threshold knob (-63.0 to 0.0 dB)
+          // Formula from pod-ui: dB = value * (63.0/127.0) - 63.0
+          RotaryKnob(
+            label: 'THRESHOLD',
+            value: _threshold,
+            onValueChanged: (v) {
+              setState(() => _threshold = v);
+              if (widget.isConnected) {
+                widget.podController.setParameter(PodXtCC.compressorThreshold, v);
+              }
+            },
+            size: 60,
+            valueFormatter: (v) {
+              final db = (v * 63.0 / 127.0) - 63.0;
+              return db.toStringAsFixed(1);
+            },
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              // TODO: Threshold knob (CC 9)
-              RotaryKnob(
-                label: 'THRESHOLD',
-                value: _threshold,
-                onValueChanged: (v) {
-                  setState(() => _threshold = v);
-                  if (widget.isConnected) {
-                    widget.podController.setParameter(PodXtCC.compressorThreshold, v);
-                  }
-                },
-                size: 60,
-                valueFormatter: (v) => '${v}', // TODO: Add proper formatter
-              ),
-              // TODO: Gain knob (CC 5)
-              RotaryKnob(
-                label: 'GAIN',
-                value: _gain,
-                onValueChanged: (v) {
-                  setState(() => _gain = v);
-                  if (widget.isConnected) {
-                    widget.podController.setParameter(PodXtCC.compressorGain, v);
-                  }
-                },
-                size: 60,
-                valueFormatter: (v) => '$v', // TODO: Add proper formatter
-              ),
-            ],
+          // Gain knob (0.0 to 16.0 dB)
+          // Formula from pod-ui: dB = value * (16.0/127.0) + 0.0
+          RotaryKnob(
+            label: 'GAIN',
+            value: _gain,
+            onValueChanged: (v) {
+              setState(() => _gain = v);
+              if (widget.isConnected) {
+                widget.podController.setParameter(PodXtCC.compressorGain, v);
+              }
+            },
+            size: 60,
+            valueFormatter: (v) {
+              final db = v * 16.0 / 127.0;
+              return db.toStringAsFixed(1);
+            },
           ),
         ],
       ),

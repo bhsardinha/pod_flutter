@@ -331,7 +331,7 @@ class _RotaryKnobPainter extends CustomPainter {
     const int dotCount = 11;
     final double dotRadius = math.max(1.5, outerR * 0.015);
     final double dotDistance = outerR * 1.12; // place outside the outer ring
-    final dotPaint = Paint()..color = Colors.white.withOpacity(0.95);
+    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.95);
     for (int i = 0; i < dotCount; i++) {
       final double a = _startAngle + (i / (dotCount - 1)) * _totalArc;
       final Offset p =
@@ -447,7 +447,7 @@ class _RotaryKnobPainter extends CustomPainter {
 
   void _drawIndicator(Canvas canvas, Offset center, double radius) {
     final indicatorShadow = Paint()
-      ..color = Colors.black.withOpacity(0.45)
+      ..color = Colors.black.withValues(alpha: 0.45)
       ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
