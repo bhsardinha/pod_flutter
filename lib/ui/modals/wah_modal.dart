@@ -8,10 +8,6 @@ import '../widgets/rotary_knob.dart';
 import '../theme/pod_theme.dart';
 
 /// Wah parameters modal with real-time updates.
-///
-/// TODO: Implement full wah controls
-/// - Model selector (CC 91 - wahSelect) - 8 types from WahModels
-/// - Level knob (CC 4 - wahLevel)
 class WahModal extends StatefulWidget {
   final PodController podController;
   final bool isConnected;
@@ -34,11 +30,10 @@ class _WahModalState extends State<WahModal> {
   @override
   void initState() {
     super.initState();
-    // TODO: Initialize from podController
     _wahSelect = widget.podController.getParameter(PodXtCC.wahSelect);
     _wahLevel = widget.podController.getParameter(PodXtCC.wahLevel);
 
-    // Subscribe for real-time updates
+    // Listen to edit buffer changes for real-time updates
     _editBufferSubscription = widget.podController.onEditBufferChanged.listen((buffer) {
       if (mounted) {
         setState(() {
@@ -57,32 +52,60 @@ class _WahModalState extends State<WahModal> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Get current wah model
-    final wahModel = WahModels.byId(_wahSelect);
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'TODO: Implement wah model selector',
-            style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Current Model: ${wahModel?.name ?? "Unknown"}',
-            style: const TextStyle(color: PodColors.accent, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Available: ${WahModels.all.length} wah types',
-            style: const TextStyle(color: PodColors.textSecondary, fontSize: 10),
+          // Wah model selector with prev/next arrows
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: PodColors.surfaceLight,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: PodColors.accent.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Previous button
+                IconButton(
+                  icon: const Icon(Icons.arrow_left, color: PodColors.accent),
+                  onPressed: widget.isConnected ? () {
+                    final newIndex = (_wahSelect - 1) % WahModels.all.length;
+                    final newValue = newIndex < 0 ? WahModels.all.length - 1 : newIndex;
+                    setState(() => _wahSelect = newValue);
+                    widget.podController.setParameter(PodXtCC.wahSelect, newValue);
+                  } : null,
+                ),
+                // Current model name
+                Expanded(
+                  child: Text(
+                    WahModels.byId(_wahSelect)?.name ?? 'Unknown',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: PodColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                // Next button
+                IconButton(
+                  icon: const Icon(Icons.arrow_right, color: PodColors.accent),
+                  onPressed: widget.isConnected ? () {
+                    final newValue = (_wahSelect + 1) % WahModels.all.length;
+                    setState(() => _wahSelect = newValue);
+                    widget.podController.setParameter(PodXtCC.wahSelect, newValue);
+                  } : null,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
-          // TODO: Wah Level knob (CC 4)
+          // Wah position knob (0-100%)
           RotaryKnob(
-            label: 'LEVEL',
+            label: 'POSITION',
             value: _wahLevel,
             onValueChanged: (v) {
               setState(() => _wahLevel = v);
@@ -91,6 +114,7 @@ class _WahModalState extends State<WahModal> {
               }
             },
             size: 60,
+            valueFormatter: (v) => '${(v * 100 / 127).round()}%',
           ),
         ],
       ),
