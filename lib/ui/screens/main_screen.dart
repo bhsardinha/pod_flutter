@@ -81,9 +81,7 @@ class _MainScreenState extends State<MainScreen> {
   String? _delayModel;
   String? _reverbModel;
 
-  // Gate and mic parameters
-  int _gateThreshold = 0;
-  int _gateDecay = 64;
+  // Mic parameters
   int _roomValue = 64;
 
   // Knob values (0-127)
@@ -288,9 +286,7 @@ class _MainScreenState extends State<MainScreen> {
     _delayModel = widget.podController.delayModel?.name;
     _reverbModel = widget.podController.reverbModel?.name;
 
-    // Update gate and room parameters
-    _gateThreshold = widget.podController.gateThreshold;
-    _gateDecay = widget.podController.getParameter(PodXtCC.gateDecay);
+    // Update room parameter
     _roomValue = widget.podController.room;
   }
 

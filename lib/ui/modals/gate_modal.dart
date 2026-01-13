@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../../protocol/cc_map.dart';
 import '../../models/patch.dart';
-import '../widgets/rotary_knob.dart';
+import '../widgets/lcd_knob_array.dart';
 
 /// Noise gate parameters modal with real-time updates.
 ///
-/// This is the REFERENCE PATTERN for all effect modals that need
-/// real-time updates from the POD device via StreamSubscription.
+/// Uses LCD-style knobs matching POD XT hardware aesthetic.
 class GateModal extends StatefulWidget {
   final PodController podController;
   final bool isConnected;
@@ -54,14 +53,14 @@ class _GateModalState extends State<GateModal> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: LcdKnobArray(
+        knobs: [
           // Threshold knob (-96 to 0, physically reversed)
-          RotaryKnob(
+          LcdKnobConfig(
             label: 'THRESHOLD',
             value: 96 - _threshold, // Invert for display (makes knob work backwards)
+            minValue: 0,
             maxValue: 96,
             onValueChanged: (v) {
               final invertedValue = 96 - v; // Invert: clockwise decreases, counterclockwise increases
@@ -70,20 +69,20 @@ class _GateModalState extends State<GateModal> {
                 widget.podController.setGateThreshold(invertedValue);
               }
             },
-            size: 60,
             valueFormatter: (v) => (v - 96).toString(), // Display as -96 to 0
           ),
           // Decay knob (0-100%)
-          RotaryKnob(
+          LcdKnobConfig(
             label: 'DECAY',
             value: _decay,
+            minValue: 0,
+            maxValue: 127,
             onValueChanged: (v) {
               setState(() => _decay = v);
               if (widget.isConnected) {
                 widget.podController.setParameter(PodXtCC.gateDecay, v);
               }
             },
-            size: 60,
             valueFormatter: (v) => '${(v * 100 / 127).round()}%', // Display as percentage
           ),
         ],

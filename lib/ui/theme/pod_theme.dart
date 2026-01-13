@@ -4,40 +4,40 @@ import 'package:flutter/material.dart';
 /// Inspired by the Line 6 POD XT Pro hardware aesthetics
 class PodColors {
   // Backgrounds
-  static const background = Color(0xFF0D0D0D);      // Near black
-  static const surface = Color(0xFF1A1A1A);         // Dark charcoal
-  static const surfaceLight = Color(0xFF2A2A2A);    // Elevated surfaces
+  static const background = Color(0xFF0D0D0D); // Near black
+  static const surface = Color(0xFF1A1A1A); // Dark charcoal
+  static const surfaceLight = Color(0xFF2A2A2A); // Elevated surfaces
 
   // Accents
-  static const accent = Color(0xFFFF6B00);          // Line6 orange
-  static const accentDim = Color(0xFF803600);       // Dimmed orange
+  static const accent = Color(0xFFFF6B00); // Line6 orange
+  static const accentDim = Color(0xFF803600); // Dimmed orange
 
   // Backlit Buttons
-  static const buttonOff = Color(0xFF2A2A2A);       // Grayed out / no light
-  static const buttonOffText = Color(0xFF606060);   // Dimmed text when off
-  static const buttonOnGreen = Color(0xFF00CC00);   // Lit green
-  static const buttonOnAmber = Color(0xFFFFAA00);   // Lit amber/orange
-  static const buttonGlow = Color(0xFF00FF00);      // Glow effect (green)
+  static const buttonOff = Color(0xFF2A2A2A); // Grayed out / no light
+  static const buttonOffText = Color(0xFF606060); // Dimmed text when off
+  static const buttonOnGreen = Color(0xFF00CC00); // Lit green
+  static const buttonOnAmber = Color(0xFFFFAA00); // Lit amber/orange
+  static const buttonGlow = Color(0xFF00FF00); // Glow effect (green)
   static const buttonGlowAmber = Color(0xFFFFCC00); // Glow effect (amber)
 
   // LCD Display
-  static const lcdBackground = Color(0xFF1A2A1A);   // Dark green tint
-  static const lcdText = Color(0xFF88FF88);         // Green LCD text
-  static const lcdGlow = Color(0xFF00FF00);         // Glow effect
+  static const lcdBackground = Color(0xFF1A2A1A); // Dark green tint
+  static const lcdText = Color(0xFF88FF88); // Green LCD text
+  static const lcdGlow = Color(0xFF00FF00); // Glow effect
 
   // Knobs/Metal
-  static const knobBase = Color(0xFF3A3A3A);        // Knob body
-  static const knobHighlight = Color(0xFF5A5A5A);   // Knob highlight
-  static const knobShadow = Color(0xFF1A1A1A);      // Knob shadow
-  static const knobIndicator = Color(0xFFFFFFFF);   // Position indicator
+  static const knobBase = Color(0xFF3A3A3A); // Knob body
+  static const knobHighlight = Color(0xFF5A5A5A); // Knob highlight
+  static const knobShadow = Color(0xFF1A1A1A); // Knob shadow
+  static const knobIndicator = Color(0xFFFFFFFF); // Position indicator
 
   // Text
-  static const textPrimary = Color(0xFFE0E0E0);     // Main text
-  static const textSecondary = Color(0xFF808080);   // Dimmed text
-  static const textLabel = Color(0xFFB0B0B0);       // Labels
+  static const textPrimary = Color(0xFFE0E0E0); // Main text
+  static const textSecondary = Color(0xFF808080); // Dimmed text
+  static const textLabel = Color(0xFFB0B0B0); // Labels
 
   // Overlay
-  static const modalOverlay = Color(0xCC000000);    // 80% black
+  static const modalOverlay = Color.fromARGB(86, 0, 0, 0);
 }
 
 /// Text styles for the POD XT Pro app
@@ -221,9 +221,7 @@ class PodTheme {
         color: PodColors.surface,
         elevation: 2,
         shadowColor: PodColors.knobShadow.withValues(alpha: 0.5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
       // Elevated Button
@@ -233,9 +231,7 @@ class PodTheme {
           foregroundColor: PodColors.textPrimary,
           elevation: 2,
           shadowColor: PodColors.knobShadow.withValues(alpha: 0.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: PodTextStyles.valueMedium,
         ),
       ),
@@ -249,10 +245,7 @@ class PodTheme {
       ),
 
       // Icon theme
-      iconTheme: const IconThemeData(
-        color: PodColors.textLabel,
-        size: 24,
-      ),
+      iconTheme: const IconThemeData(color: PodColors.textLabel, size: 24),
 
       // Slider
       sliderTheme: SliderThemeData(
@@ -305,9 +298,7 @@ class PodTheme {
         backgroundColor: PodColors.surface,
         elevation: 8,
         shadowColor: PodColors.knobShadow.withValues(alpha: 0.7),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         titleTextStyle: PodTextStyles.header,
         contentTextStyle: PodTextStyles.valueMedium,
       ),

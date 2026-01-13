@@ -90,11 +90,34 @@ class _EffectModalState extends State<EffectModal> {
       // Load MSB/LSB params (combined into single value)
       final msbLsbParams = widget.mapper.getMsbLsbParams();
       for (final param in msbLsbParams) {
-        final msb = widget.podController.getParameter(param.msbParam);
-        final lsb = widget.podController.getParameter(param.lsbParam);
-        final combined = (msb << 7) | lsb;
-        // Store as MSB param key with combined value
-        _paramValues[param.msbParam] = combined;
+        if (param.isNoteSelectBased) {
+          // NoteSelect-based: Check if in tempo sync (1-13) or MS/Hz mode (0)
+          final noteSelect = widget.podController.getParameter(param.msbParam);
+          if (noteSelect >= 1 && noteSelect <= 13) {
+            // Tempo sync mode: knob value = NEGATIVE noteSelect (-13 to -1)
+            _paramValues[param.msbParam] = -noteSelect;
+          } else {
+            // MS/Hz mode: knob value = actual MSB/LSB value (0-16383)
+            // noteSelect = 0, read time/speed from MSB/LSB
+            final isMod = widget.mapper is ModParamMapper;
+            final msb = widget.podController.getParameter(
+              isMod ? PodXtCC.modSpeedMsb : PodXtCC.delayTimeMsb
+            );
+            final lsb = widget.podController.getParameter(
+              isMod ? PodXtCC.modSpeedLsb : PodXtCC.delayTimeLsb
+            );
+            final msbLsbValue = (msb << 7) | lsb;
+
+            // Knob value directly represents the MSB/LSB value
+            _paramValues[param.msbParam] = msbLsbValue;
+          }
+        } else if (param.lsbParam != null) {
+          // Traditional MSB/LSB pair
+          final msb = widget.podController.getParameter(param.msbParam);
+          final lsb = widget.podController.getParameter(param.lsbParam!);
+          final combined = (msb << 7) | lsb;
+          _paramValues[param.msbParam] = combined;
+        }
       }
     });
   }
@@ -117,7 +140,42 @@ class _EffectModalState extends State<EffectModal> {
     widget.podController.setParameter(param, value);
   }
 
+  void _onNoteSelectParamChanged(MsbLsbParamMapping mapping, int knobValue) {
+    setState(() {
+      _paramValues[mapping.msbParam] = knobValue;
+    });
+
+    if (knobValue < 0) {
+      // Negative value: note division mode (-13 to -1)
+      // Convert to positive and send as noteSelect (13 to 1)
+      widget.podController.setParameter(mapping.msbParam, -knobValue);
+    } else {
+      // Positive value: MS/Hz mode (0-16383)
+      // Set noteSelect to 0 to enable MS/Hz mode
+      widget.podController.setParameter(mapping.msbParam, 0);
+
+      // Determine which MSB/LSB parameters to use
+      final isMod = widget.mapper is ModParamMapper;
+      final msbParam = isMod ? PodXtCC.modSpeedMsb : PodXtCC.delayTimeMsb;
+      final lsbParam = isMod ? PodXtCC.modSpeedLsb : PodXtCC.delayTimeLsb;
+
+      // knobValue directly represents the 14-bit MSB/LSB value
+      final msbLsbValue = knobValue;
+
+      // Split into MSB (high 7 bits) and LSB (low 7 bits)
+      final msb = (msbLsbValue >> 7) & 0x7F;
+      final lsb = msbLsbValue & 0x7F;
+
+      // Send both CC messages
+      widget.podController.setParameter(msbParam, msb);
+      widget.podController.setParameter(lsbParam, lsb);
+    }
+  }
+
   void _onMsbLsbParamChanged(MsbLsbParamMapping mapping, int combinedValue) {
+    // Only process if we have an LSB parameter (traditional MSB/LSB pair)
+    if (mapping.lsbParam == null) return;
+
     // Split 14-bit value into MSB (7 bits) and LSB (7 bits)
     final msb = (combinedValue >> 7) & 0x7F;
     final lsb = combinedValue & 0x7F;
@@ -128,7 +186,7 @@ class _EffectModalState extends State<EffectModal> {
 
     // Send both CC messages
     widget.podController.setParameter(mapping.msbParam, msb);
-    widget.podController.setParameter(mapping.lsbParam, lsb);
+    widget.podController.setParameter(mapping.lsbParam!, lsb);
   }
 
   @override
@@ -165,15 +223,36 @@ class _EffectModalState extends State<EffectModal> {
               fixedParams.isNotEmpty)
             LcdKnobArray(
               knobs: [
-                // MSB/LSB knobs (time, speed)
-                ...msbLsbParams.map((param) => LcdKnobConfig(
+                // MSB/LSB knobs (time, speed) - may be noteSelect-based or true MSB/LSB
+                ...msbLsbParams.map((param) {
+                  if (param.isNoteSelectBased) {
+                    // NoteSelect-based: Linear knob from -13 to 16383
+                    // Negative values (-13 to -1): note divisions
+                    // Positive values (0 to 16383): MS/Hz mode
+                    final value = _paramValues[param.msbParam] ?? -1;
+
+                    return LcdKnobConfig(
                       label: param.label,
-                      value: _paramValues[param.msbParam] ?? 0,
+                      value: value,
+                      minValue: param.minValue,  // -13
+                      maxValue: param.maxValue,  // 16383
+                      onValueChanged: (v) => _onNoteSelectParamChanged(param, v),
+                      valueFormatter: param.formatter,
+                    );
+                  } else {
+                    // Traditional MSB/LSB pair
+                    final value = _paramValues[param.msbParam] ?? 0;
+
+                    return LcdKnobConfig(
+                      label: param.label,
+                      value: value,
                       minValue: 0,
                       maxValue: param.maxValue,
                       onValueChanged: (v) => _onMsbLsbParamChanged(param, v),
                       valueFormatter: param.formatter,
-                    )),
+                    );
+                  }
+                }),
 
                 // Model-specific knobs
                 ...modelParams.map((param) => LcdKnobConfig(

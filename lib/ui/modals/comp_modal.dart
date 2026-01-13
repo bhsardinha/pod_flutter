@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../../protocol/cc_map.dart';
 import '../../models/patch.dart';
-import '../widgets/rotary_knob.dart';
+import '../widgets/lcd_knob_array.dart';
 
 /// Compressor parameters modal with real-time updates.
+///
+/// Uses LCD-style knobs matching POD XT hardware aesthetic.
 class CompModal extends StatefulWidget {
   final PodController podController;
   final bool isConnected;
@@ -51,22 +53,22 @@ class _CompModalState extends State<CompModal> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: LcdKnobArray(
+        knobs: [
           // Threshold knob (-63.0 to 0.0 dB)
           // Formula from pod-ui: dB = value * (63.0/127.0) - 63.0
-          RotaryKnob(
+          LcdKnobConfig(
             label: 'THRESHOLD',
             value: _threshold,
+            minValue: 0,
+            maxValue: 127,
             onValueChanged: (v) {
               setState(() => _threshold = v);
               if (widget.isConnected) {
                 widget.podController.setParameter(PodXtCC.compressorThreshold, v);
               }
             },
-            size: 60,
             valueFormatter: (v) {
               final db = (v * 63.0 / 127.0) - 63.0;
               return db.toStringAsFixed(1);
@@ -74,16 +76,17 @@ class _CompModalState extends State<CompModal> {
           ),
           // Gain knob (0.0 to 16.0 dB)
           // Formula from pod-ui: dB = value * (16.0/127.0) + 0.0
-          RotaryKnob(
+          LcdKnobConfig(
             label: 'GAIN',
             value: _gain,
+            minValue: 0,
+            maxValue: 127,
             onValueChanged: (v) {
               setState(() => _gain = v);
               if (widget.isConnected) {
                 widget.podController.setParameter(PodXtCC.compressorGain, v);
               }
             },
-            size: 60,
             valueFormatter: (v) {
               final db = v * 16.0 / 127.0;
               return db.toStringAsFixed(1);

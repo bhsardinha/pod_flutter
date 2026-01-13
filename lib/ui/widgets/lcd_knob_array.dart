@@ -44,9 +44,10 @@ class LcdKnob extends StatelessWidget {
       onTap!();
     }
 
-    // Scroll handling: map scroll delta directly (adjusted for natural scroll)
+    // Linear knob behavior: scroll down = CW = increase value
+    // Reduced sensitivity for note divisions (13 values) vs MS mode (16383 values)
     final delta = event.scrollDelta.dy;
-    const sensitivity = 35.0; // pixels per value step (higher = less sensitive)
+    final sensitivity = (value < 0) ? 200.0 : 35.0;
 
     final steps = (delta / sensitivity).round();
     if (steps != 0) {
@@ -63,8 +64,9 @@ class LcdKnob extends StatelessWidget {
       onTap!();
     }
 
-    // Vertical drag to change value
-    const sensitivity = 1.5;
+    // Linear knob behavior: drag up = CCW = increase value
+    // Reduced sensitivity for note divisions (13 values) vs MS mode (16383 values)
+    final sensitivity = (value < 0) ? 5.0 : 1.5;
     final steps = (-details.delta.dy / sensitivity).round();
     if (steps != 0) {
       final newValue = (value + steps).clamp(minValue, maxValue);

@@ -6,6 +6,38 @@ library;
 import 'package:pod_flutter/protocol/cc_map.dart';
 import 'package:pod_flutter/models/effect_models.dart';
 
+/// Format delay time - handles both note divisions (negative values) and MS mode (0+)
+String formatDelayTime(int value) {
+  // Negative values: Note subdivisions (inverted: -13 to -1)
+  if (value < 0) {
+    final duration = NoteDurations.byId(-value); // Convert back to positive ID
+    return duration?.name ?? 'Unknown';
+  }
+
+  // Positive values: Milliseconds mode (0-16383)
+  // Convert 14-bit MIDI value (0-16383) to milliseconds (20-2000)
+  // Formula from pod-ui: ms = (value × 1980.0/16383.0) + 20.0
+  // This maps: 0→20ms, 16383→2000ms
+  final ms = (value * 1980.0 / 16383.0) + 20.0;
+  return '${ms.round()}ms';
+}
+
+/// Format modulation speed - handles both note divisions (negative values) and Hz mode (0+)
+String formatModSpeed(int value) {
+  // Negative values: Note subdivisions (inverted: -13 to -1)
+  if (value < 0) {
+    final duration = NoteDurations.byId(-value); // Convert back to positive ID
+    return duration?.name ?? 'Unknown';
+  }
+
+  // Positive values: Hz mode (0-16383)
+  // Convert 14-bit MIDI value (0-16383) to Hz (0.1-15.0)
+  // Formula from pod-ui: Hz = (value × 14.9/16383.0) + 0.1
+  // This maps: 0→0.1Hz, 16383→15.0Hz
+  final hz = (value * 14.9 / 16383.0) + 0.1;
+  return '${hz.toStringAsFixed(2)} Hz';
+}
+
 /// Represents a parameter mapping from EffectParam to CC control
 class EffectParamMapping {
   final String label;                    // Display label (from EffectParam.name or custom)
@@ -23,20 +55,25 @@ class EffectParamMapping {
   });
 }
 
-/// Special parameter type for MSB/LSB pairs (time, speed)
+/// Special parameter type for time/speed parameters
+/// These can be either MSB/LSB pairs OR single noteSelect parameters
 class MsbLsbParamMapping {
   final String label;
-  final CCParam msbParam;
-  final CCParam lsbParam;
+  final CCParam msbParam;  // Also used as primary param for noteSelect-based controls
+  final CCParam? lsbParam;  // Null for noteSelect-based controls
   final String Function(int) formatter;
-  final int maxValue;  // Combined 14-bit value max
+  final int minValue;
+  final int maxValue;
+  final bool isNoteSelectBased;  // True if this uses noteSelect (negative values = divisions, 0+ = time/Hz)
 
   const MsbLsbParamMapping({
     required this.label,
     required this.msbParam,
-    required this.lsbParam,
+    this.lsbParam,
     required this.formatter,
-    this.maxValue = 16383,  // 2^14 - 1
+    this.minValue = 0,
+    this.maxValue = 16383,
+    this.isNoteSelectBased = false,
   });
 }
 
@@ -263,10 +300,12 @@ class ModParamMapper extends EffectParamMapper {
     return [
       MsbLsbParamMapping(
         label: 'SPEED',
-        msbParam: PodXtCC.modSpeedMsb,
-        lsbParam: PodXtCC.modSpeedLsb,
-        formatter: (v) => '${(v / 100).toStringAsFixed(2)} Hz',
-        maxValue: 16383,
+        msbParam: PodXtCC.modNoteSelect,
+        lsbParam: PodXtCC.modSpeedLsb,  // Used for Hz mode
+        formatter: formatModSpeed,
+        minValue: -13,  // Negative values for note divisions (-13 to -1)
+        maxValue: 16383,  // Max 14-bit MIDI value (converts to 15.0 Hz)
+        isNoteSelectBased: true,
       ),
     ];
   }
@@ -358,10 +397,12 @@ class DelayParamMapper extends EffectParamMapper {
     return [
       MsbLsbParamMapping(
         label: 'TIME',
-        msbParam: PodXtCC.delayTimeMsb,
-        lsbParam: PodXtCC.delayTimeLsb,
-        formatter: (v) => '${v}ms',
-        maxValue: 16383,
+        msbParam: PodXtCC.delayNoteSelect,
+        lsbParam: PodXtCC.delayTimeLsb,  // Used for ms mode
+        formatter: formatDelayTime,
+        minValue: -13,  // Negative values for note divisions (-13 to -1)
+        maxValue: 16383,  // Max 14-bit MIDI value (converts to 2000ms)
+        isNoteSelectBased: true,
       ),
     ];
   }
