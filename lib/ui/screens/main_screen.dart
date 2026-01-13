@@ -18,11 +18,8 @@ import '../modals/cab_modal.dart';
 import '../modals/mic_modal.dart';
 import '../modals/amp_modal.dart';
 import '../modals/comp_modal.dart';
-import '../modals/wah_modal.dart';
-import '../modals/stomp_modal.dart';
-import '../modals/mod_modal.dart';
-import '../modals/delay_modal.dart';
-import '../modals/reverb_modal.dart';
+import '../widgets/effect_modal.dart';
+import '../../protocol/effect_param_mappers.dart';
 import '../sections/amp_selector_section.dart';
 import '../sections/tone_controls_section.dart';
 import '../sections/eq_section.dart';
@@ -588,11 +585,13 @@ class _MainScreenState extends State<MainScreen> {
   void _showWahModal() {
     showPodModal(
       context: context,
-      title: 'Wah',
-      child: WahModal(
+      title: WahParamMapper().modalTitle,
+      maxWidth: 750,
+      child: EffectModal(
         podController: widget.podController,
         isConnected: _isConnected,
         settings: widget.settings,
+        mapper: WahParamMapper(),
       ),
     );
   }
@@ -600,10 +599,13 @@ class _MainScreenState extends State<MainScreen> {
   void _showStompModal() {
     showPodModal(
       context: context,
-      title: 'Stomp',
-      child: StompModal(
+      title: StompParamMapper().modalTitle,
+      maxWidth: 750,
+      child: EffectModal(
         podController: widget.podController,
         isConnected: _isConnected,
+        settings: widget.settings,
+        mapper: StompParamMapper(),
       ),
     );
   }
@@ -611,10 +613,13 @@ class _MainScreenState extends State<MainScreen> {
   void _showModModal() {
     showPodModal(
       context: context,
-      title: 'Modulation',
-      child: ModModal(
+      title: ModParamMapper().modalTitle,
+      maxWidth: 750,
+      child: EffectModal(
         podController: widget.podController,
         isConnected: _isConnected,
+        settings: widget.settings,
+        mapper: ModParamMapper(),
       ),
     );
   }
@@ -622,10 +627,13 @@ class _MainScreenState extends State<MainScreen> {
   void _showDelayModal() {
     showPodModal(
       context: context,
-      title: 'Delay',
-      child: DelayModal(
+      title: DelayParamMapper().modalTitle,
+      maxWidth: 750,
+      child: EffectModal(
         podController: widget.podController,
         isConnected: _isConnected,
+        settings: widget.settings,
+        mapper: DelayParamMapper(),
       ),
     );
   }
@@ -633,10 +641,13 @@ class _MainScreenState extends State<MainScreen> {
   void _showReverbModal() {
     showPodModal(
       context: context,
-      title: 'Reverb',
-      child: ReverbModal(
+      title: ReverbParamMapper().modalTitle,
+      maxWidth: 750,
+      child: EffectModal(
         podController: widget.podController,
         isConnected: _isConnected,
+        settings: widget.settings,
+        mapper: ReverbParamMapper(),
       ),
     );
   }

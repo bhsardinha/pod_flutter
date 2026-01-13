@@ -32,11 +32,11 @@ class PodModal extends StatelessWidget {
       child: Container(
         constraints: BoxConstraints(
           maxWidth: maxWidth ?? 500,
-          maxHeight: 600,
+          maxHeight: 700,
         ),
         margin: const EdgeInsets.all(24.0),
         decoration: BoxDecoration(
-          color: PodColors.surface,
+          color: PodColors.background,
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Material(

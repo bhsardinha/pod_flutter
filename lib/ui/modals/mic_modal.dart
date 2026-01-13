@@ -79,12 +79,14 @@ class _MicModalState extends State<MicModal> {
                   final isSelected = mic.position == widget.currentMicPosition;
 
                   return GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       if (widget.isConnected) {
                         // Position is always 0-3
                         widget.podController.setMicModel(mic.position);
+                        // Request edit buffer from hardware to get default parameter values
+                        await widget.podController.refreshEditBuffer();
                       }
-                      Navigator.of(context).pop();
+                      if (context.mounted) Navigator.of(context).pop();
                     },
                     child: Container(
                       decoration: BoxDecoration(

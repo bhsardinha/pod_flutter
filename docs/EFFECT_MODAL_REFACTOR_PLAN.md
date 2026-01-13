@@ -491,7 +491,8 @@ class ReverbParamMapper extends EffectParamMapper {
 
   @override
   List<EffectParamMapping> getFixedParams() {
-    // All reverbs have the same 4 parameters
+    // All reverbs have the same 3 parameters
+    // NOTE: Reverb LEVEL is excluded - it's controlled by the main screen reverb knob
     return [
       EffectParamMapping(
         label: 'DECAY',
@@ -507,11 +508,6 @@ class ReverbParamMapper extends EffectParamMapper {
         label: 'PRE DELAY',
         ccParam: PodXtCC.reverbPreDelay,
         formatter: (v) => '${v}ms',
-      ),
-      EffectParamMapping(
-        label: 'LEVEL',
-        ccParam: PodXtCC.reverbLevel,
-        formatter: (v) => '${(v * 100 / 127).round()}%',
       ),
     ];
   }
@@ -667,43 +663,37 @@ class _EffectModalState extends State<EffectModal> {
 
           const SizedBox(height: 20),
 
-          // Dynamic knobs section
+          // Dynamic LCD knob array section
           if (msbLsbParams.isNotEmpty || modelParams.isNotEmpty || fixedParams.isNotEmpty)
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              alignment: WrapAlignment.center,
-              children: [
+            LcdKnobArray(
+              knobs: [
                 // MSB/LSB knobs (time, speed)
-                ...msbLsbParams.map((param) => RotaryKnob(
+                ...msbLsbParams.map((param) => LcdKnobConfig(
                   label: param.label,
                   value: _paramValues[param.msbParam] ?? 0,
                   minValue: 0,
                   maxValue: param.maxValue,
                   onValueChanged: (v) => _onMsbLsbParamChanged(param, v),
-                  size: 60,
                   valueFormatter: param.formatter,
                 )),
 
                 // Model-specific knobs
-                ...modelParams.map((param) => RotaryKnob(
+                ...modelParams.map((param) => LcdKnobConfig(
                   label: param.label,
                   value: _paramValues[param.ccParam] ?? 0,
                   minValue: param.minValue,
                   maxValue: param.maxValue,
                   onValueChanged: (v) => _onParamChanged(param.ccParam, v),
-                  size: 60,
                   valueFormatter: param.formatter,
                 )),
 
                 // Fixed knobs (always shown)
-                ...fixedParams.map((param) => RotaryKnob(
+                ...fixedParams.map((param) => LcdKnobConfig(
                   label: param.label,
                   value: _paramValues[param.ccParam] ?? 0,
                   minValue: param.minValue,
                   maxValue: param.maxValue,
                   onValueChanged: (v) => _onParamChanged(param.ccParam, v),
-                  size: 60,
                   valueFormatter: param.formatter,
                 )),
               ],
@@ -715,19 +705,279 @@ class _EffectModalState extends State<EffectModal> {
 }
 ```
 
-### 3. Update `lib/ui/widgets/rotary_knob.dart`
+### 3. Create `lib/ui/widgets/lcd_knob_array.dart`
 
-Need to handle 14-bit values for MSB/LSB:
+**NEW REQUIREMENT**: Replace rotary knobs with POD XT LCD-style parameter display.
+
+#### Design Requirements:
+- Use `dot_matrix_lcd.dart` as base
+- 3-line display for each parameter:
+  - **Top line**: Parameter label (uppercase)
+  - **Center**: Orange pixelated LCD-style interactive knob (visual indicator)
+  - **Bottom line**: Current value with formatter
+- Orange marker on active parameter (inverted font color)
+- Authentic LCD aesthetic matching POD XT/XT Pro hardware
+- Support 14-bit values for MSB/LSB parameters (0-16383)
+
+#### Implementation:
 
 ```dart
-class RotaryKnob extends StatefulWidget {
-  // ... existing fields ...
+/// LCD-style parameter knob resembling POD XT/XT Pro LCD display
+class LcdKnob extends StatelessWidget {
+  final String label;
+  final int value;
+  final int minValue;
+  final int maxValue;
+  final ValueChanged<int> onValueChanged;
+  final String Function(int) valueFormatter;
+  final bool isActive;  // Whether this knob is currently selected/active
+  final double width;
+  final double height;
 
-  // Change to support larger ranges
-  final int minValue;  // Not just 0-127
-  final int maxValue;  // Can be 16383 for MSB/LSB
+  const LcdKnob({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onValueChanged,
+    this.minValue = 0,
+    this.maxValue = 127,
+    required this.valueFormatter,
+    this.isActive = false,
+    this.width = 100,
+    this.height = 80,
+  });
 
-  // ... rest of implementation ...
+  @override
+  Widget build(BuildContext context) {
+    final normalizedValue = (value - minValue) / (maxValue - minValue);
+
+    return GestureDetector(
+      onPanUpdate: (details) => _handleDrag(details),
+      onTap: () => _setActive(),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          border: Border.all(
+            color: isActive
+                ? const Color(0xFFFF7A00)  // Orange when active
+                : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Label (inverted when active)
+            _DotText(
+              label,
+              size: 10,
+              color: isActive
+                  ? Colors.black
+                  : const Color(0xFFFF7A00),
+              backgroundColor: isActive
+                  ? const Color(0xFFFF7A00)
+                  : Colors.transparent,
+            ),
+            const SizedBox(height: 4),
+            // LCD knob visualization (arc/bar showing value)
+            _LcdKnobIndicator(
+              value: normalizedValue,
+              size: 30,
+              isActive: isActive,
+            ),
+            const SizedBox(height: 4),
+            // Value display
+            _DotText(
+              valueFormatter(value),
+              size: 10,
+              color: const Color(0xFFFF7A00),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleDrag(DragUpdateDetails details) {
+    // Vertical drag to change value
+    const sensitivity = 2.0;
+    final steps = (-details.delta.dy / sensitivity).round();
+    if (steps != 0) {
+      final newValue = (value + steps).clamp(minValue, maxValue);
+      onValueChanged(newValue);
+    }
+  }
+
+  void _setActive() {
+    // Mark this knob as active (for navigation)
+  }
+}
+
+/// Renders pixelated LCD-style knob indicator (arc or bar)
+class _LcdKnobIndicator extends StatelessWidget {
+  final double value;  // 0.0 to 1.0
+  final double size;
+  final bool isActive;
+
+  const _LcdKnobIndicator({
+    required this.value,
+    required this.size,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _LcdKnobPainter(
+        value: value,
+        color: isActive
+            ? const Color(0xFFFF7A00)
+            : const Color(0xFFCC5E00),  // Dimmer when inactive
+      ),
+    );
+  }
+}
+
+/// Painter for LCD knob - draws pixelated arc or horizontal bar
+class _LcdKnobPainter extends CustomPainter {
+  final double value;
+  final Color color;
+
+  _LcdKnobPainter({required this.value, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 2;
+
+    // Draw pixelated arc segments (11 segments for LCD look)
+    const segmentCount = 11;
+    const arcSweep = 270.0 * math.pi / 180.0;
+    const startAngle = 135.0 * math.pi / 180.0;
+
+    final filledSegments = (value * segmentCount).round();
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i < filledSegments; i++) {
+      final angle = startAngle + (i / segmentCount) * arcSweep;
+      final x = center.dx + math.cos(angle) * radius;
+      final y = center.dy + math.sin(angle) * radius;
+
+      // Draw pixelated dot (2x2 pixels)
+      canvas.drawRect(
+        Rect.fromLTWH(x - 1, y - 1, 2, 2),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LcdKnobPainter oldDelegate) {
+    return oldDelegate.value != value || oldDelegate.color != color;
+  }
+}
+
+/// Dot-matrix text matching DotMatrixLCD style
+class _DotText extends StatelessWidget {
+  final String text;
+  final double size;
+  final Color color;
+  final Color? backgroundColor;
+
+  const _DotText(
+    this.text, {
+    required this.size,
+    required this.color,
+    this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: backgroundColor != null
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 2)
+          : EdgeInsets.zero,
+      color: backgroundColor,
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'Doto',
+          fontWeight: FontWeight.w600,
+          fontSize: size,
+          color: color,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+/// Array of LCD knobs arranged horizontally
+class LcdKnobArray extends StatefulWidget {
+  final List<LcdKnobConfig> knobs;
+  final EdgeInsets padding;
+
+  const LcdKnobArray({
+    super.key,
+    required this.knobs,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  });
+
+  @override
+  State<LcdKnobArray> createState() => _LcdKnobArrayState();
+}
+
+class _LcdKnobArrayState extends State<LcdKnobArray> {
+  int _activeIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return DotMatrixLCD(
+      padding: widget.padding,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(widget.knobs.length, (index) {
+          final config = widget.knobs[index];
+          return LcdKnob(
+            label: config.label,
+            value: config.value,
+            minValue: config.minValue,
+            maxValue: config.maxValue,
+            onValueChanged: config.onValueChanged,
+            valueFormatter: config.valueFormatter,
+            isActive: index == _activeIndex,
+            width: 100,
+            height: 80,
+          );
+        }),
+      ),
+    );
+  }
+}
+
+/// Configuration for a single LCD knob
+class LcdKnobConfig {
+  final String label;
+  final int value;
+  final int minValue;
+  final int maxValue;
+  final ValueChanged<int> onValueChanged;
+  final String Function(int) valueFormatter;
+
+  const LcdKnobConfig({
+    required this.label,
+    required this.value,
+    required this.onValueChanged,
+    this.minValue = 0,
+    this.maxValue = 127,
+    required this.valueFormatter,
+  });
 }
 ```
 
@@ -851,11 +1101,12 @@ Already handled by `EffectModelSelector`:
 ## Migration Steps
 
 ### Phase 1: Core Implementation
-1. ✅ Create `effect_param_mappers.dart` with base classes and all 5 mappers
-2. ✅ Create `effect_modal.dart` with dynamic parameter generation
-3. ✅ Update `rotary_knob.dart` to support 14-bit values (minValue/maxValue)
-4. ✅ Update `main_screen.dart` to use EffectModal for all 5 effects
-5. ✅ Delete old modal files: wah_modal.dart, stomp_modal.dart, mod_modal.dart, delay_modal.dart, reverb_modal.dart
+1. ⏳ Create `effect_param_mappers.dart` with base classes and all 5 mappers
+2. ⏳ Create `lcd_knob_array.dart` with LCD-style parameter knobs (replaces rotary knobs)
+3. ⏳ Create `effect_modal.dart` with dynamic parameter generation using LCD knobs
+4. ⏳ Update `main_screen.dart` to use EffectModal for all 5 effects
+5. ⏳ Delete old modal files: wah_modal.dart, stomp_modal.dart, mod_modal.dart, delay_modal.dart, reverb_modal.dart
+6. ⏳ Remove reverb LEVEL knob from ReverbParamMapper (already on main screen)
 
 ### Phase 2: Advanced Features (Future)
 - Tempo sync toggle and note duration selector

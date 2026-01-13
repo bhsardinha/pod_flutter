@@ -88,8 +88,8 @@ class _VerticalFaderState extends State<VerticalFader> {
       final double baseSensitivity = (widget.max - widget.min) / height;
       final double adjustedSensitivity = baseSensitivity * widget.sensitivity;
 
-      // Invert mapping so upward drag increases the fader value
-      _currentValue += details.delta.dy * adjustedSensitivity;
+      // Negate delta.dy so upward drag (negative dy) increases the fader value
+      _currentValue -= details.delta.dy * adjustedSensitivity;
       _currentValue = _currentValue.clamp(widget.min, widget.max);
 
       // Snap to zero if within threshold

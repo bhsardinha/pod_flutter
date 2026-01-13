@@ -153,11 +153,13 @@ class CabModal extends StatelessWidget {
 
   Widget _buildCabButton(BuildContext context, CabModel cab, bool isSelected) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         if (isConnected) {
           podController.setCabModel(cab.id);
+          // Request edit buffer from hardware to get default parameter values
+          await podController.refreshEditBuffer();
         }
-        Navigator.of(context).pop();
+        if (context.mounted) Navigator.of(context).pop();
       },
       child: Container(
         decoration: BoxDecoration(

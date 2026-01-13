@@ -12,6 +12,7 @@ import '../theme/pod_theme.dart';
 /// - Label and value display
 /// - Optional value formatter for real values
 /// - Vertical drag or circular gesture control
+/// - Scroll wheel control (up = increase, down = decrease)
 class RotaryKnob extends StatefulWidget {
   /// Label displayed below the knob
   final String label;
@@ -137,8 +138,8 @@ class _RotaryKnobState extends State<RotaryKnob> {
 
   void _handleVerticalDrag(DragUpdateDetails details) {
     // Vertical drag: up = increase, down = decrease
-    // Inverted sign so gestures map as expected for natural scroll settings
-    _accumulatedDelta += details.delta.dy;
+    // Negate delta.dy so upward drag (negative dy) increases value
+    _accumulatedDelta -= details.delta.dy;
 
     // Sensitivity: pixels per value step (higher = less sensitive)
     const sensitivity = 5.0;
@@ -242,45 +243,45 @@ class _RotaryKnobState extends State<RotaryKnob> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Label above knob
-            Text(
-              widget.label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: widget.labelFontSize,
+          // Label above knob
+          Text(
+            widget.label,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: widget.labelFontSize,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.8,
+            ),
+          ),
+          SizedBox(height: widget.textSpacing),
+          // Knob
+          SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: CustomPaint(
+              painter: _RotaryKnobPainter(
+                value: _currentValue,
+                minValue: widget.minValue,
+                maxValue: widget.maxValue,
+                angle: _valueToAngle(_currentValue),
+                showTickMarks: widget.showTickMarks,
+              ),
+            ),
+          ),
+          SizedBox(height: widget.textSpacing),
+          // Value display below knob
+          SizedBox(
+            height: 16,
+            child: Text(
+              _getDisplayValue(),
+              style: const TextStyle(
+                color: PodColors.textPrimary,
+                fontSize: 11,
                 fontWeight: FontWeight.w500,
-                letterSpacing: 0.8,
               ),
             ),
-            SizedBox(height: widget.textSpacing),
-            // Knob
-            SizedBox(
-              width: widget.size,
-              height: widget.size,
-              child: CustomPaint(
-                painter: _RotaryKnobPainter(
-                  value: _currentValue,
-                  minValue: widget.minValue,
-                  maxValue: widget.maxValue,
-                  angle: _valueToAngle(_currentValue),
-                  showTickMarks: widget.showTickMarks,
-                ),
-              ),
-            ),
-            SizedBox(height: widget.textSpacing),
-            // Value display below knob
-            SizedBox(
-              height: 16,
-              child: Text(
-                _getDisplayValue(),
-                style: const TextStyle(
-                  color: PodColors.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );
@@ -421,68 +422,6 @@ class _RotaryKnobPainter extends CustomPainter {
     canvas.drawLine(dashStart, dashEnd, dashPaint);
 
     canvas.restore();
-  }
-
-  void _drawTickMarks(Canvas canvas, Offset center, double radius) {
-    const tickCount = 11;
-    final tickPaint = Paint()
-      ..color = PodColors.textSecondary.withValues(alpha: 0.12)
-      ..strokeWidth = 0.9
-      ..strokeCap = StrokeCap.round;
-
-    for (int i = 0; i < tickCount; i++) {
-      final tickAngle = _startAngle + (i / (tickCount - 1)) * _totalArc;
-      final tickStart =
-          center +
-          Offset(
-            math.cos(tickAngle) * (radius * 0.92),
-            math.sin(tickAngle) * (radius * 0.92),
-          );
-      final tickEnd =
-          center +
-          Offset(math.cos(tickAngle) * radius, math.sin(tickAngle) * radius);
-      canvas.drawLine(tickStart, tickEnd, tickPaint);
-    }
-  }
-
-  void _drawIndicator(Canvas canvas, Offset center, double radius) {
-    final indicatorShadow = Paint()
-      ..color = Colors.black.withValues(alpha: 0.45)
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
-
-    final shadowStart =
-        center +
-        Offset(
-          math.cos(angle) * (radius * 0.28 + 1.2),
-          math.sin(angle) * (radius * 0.28 + 1.2),
-        );
-    final shadowEnd =
-        center +
-        Offset(
-          math.cos(angle) * (radius * 0.68 + 1.2),
-          math.sin(angle) * (radius * 0.68 + 1.2),
-        );
-    canvas.drawLine(shadowStart, shadowEnd, indicatorShadow);
-
-    final indicatorPaint = Paint()
-      ..color = PodColors.knobIndicator
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-    final startPoint =
-        center +
-        Offset(
-          math.cos(angle) * (radius * 0.28),
-          math.sin(angle) * (radius * 0.28),
-        );
-    final endPoint =
-        center +
-        Offset(
-          math.cos(angle) * (radius * 0.68),
-          math.sin(angle) * (radius * 0.68),
-        );
-    canvas.drawLine(startPoint, endPoint, indicatorPaint);
   }
 
   @override
