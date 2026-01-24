@@ -26,11 +26,51 @@ class PodXtSysex {
   }
 
   /// Request a specific patch dump
+  ///
+  /// Format: F0 00 01 0C 03 73 00 XX 00 00 F7
+  /// where XX = patch number (0-127)
   static Uint8List requestPatch(int patchNumber) {
-    // Patch number is sent as 2 bytes (bank, program)
-    final bank = patchNumber ~/ 128;
-    final program = patchNumber % 128;
-    return buildMessage(SysexCommand.patchDumpRequest, [bank, program]);
+    assert(patchNumber >= 0 && patchNumber < programCount);
+    return buildMessage(
+      SysexCommand.patchDumpRequest,
+      [0x00, patchNumber & 0x7F, 0x00, 0x00],
+    );
+  }
+
+  /// Request patch dump end marker
+  ///
+  /// Must be sent after receiving a patch dump response
+  /// Format: F0 00 01 0C 03 72 F7
+  static Uint8List requestPatchDumpEnd() {
+    return buildMessage(SysexCommand.patchDumpEnd);
+  }
+
+  /// Store patch to hardware slot
+  ///
+  /// Format: F0 00 01 0C 03 71 P1 P2 ID ...160 bytes... F7
+  /// After sending, must send patchDumpEnd marker
+  ///
+  /// CRITICAL: Byte order must be [patch_lsb, patch_msb, id, data...]
+  /// This matches the format received in patch dump responses
+  ///
+  /// Returns the complete store message
+  static Uint8List storePatch(int patchNumber, Uint8List patchData) {
+    assert(patchNumber >= 0 && patchNumber < programCount,
+      'Patch number must be 0-127');
+    assert(patchData.length == programSize,
+      'Patch data must be $programSize bytes');
+
+    // Encode patch number as single byte (POD XT uses 0-127)
+    final p1 = patchNumber & 0x7F;  // LSB
+    final p2 = (patchNumber >> 8) & 0x7F;  // MSB (always 0 for 0-127)
+    final id = 0x05;  // Device ID (broadcast)
+
+    // CRITICAL: Order is [patch_lsb, patch_msb, id, data...]
+    // This matches the receive format in _handlePatchDump
+    return buildMessage(
+      SysexCommand.patchDumpResponse, // Same command as dump (03 71)
+      [p1, p2, id, ...patchData],
+    );
   }
 
   /// Request all patches dump

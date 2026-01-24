@@ -181,11 +181,11 @@ class _AmpModalState extends State<AmpModal> {
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: DefaultTextStyle.of(context).style,
                       children: [
                         TextSpan(
                           text: '${amp.id.toString().padLeft(2, '0')} - ',
                           style: TextStyle(
+                            fontSize: 15,
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                             color: isSelected ? PodColors.accent : PodColors.textPrimary,
                           ),
@@ -193,6 +193,7 @@ class _AmpModalState extends State<AmpModal> {
                         TextSpan(
                           text: amp.name,
                           style: TextStyle(
+                            fontSize: 15,
                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                             color: isSelected ? PodColors.accent : PodColors.textPrimary,
                           ),

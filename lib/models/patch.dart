@@ -9,7 +9,7 @@ import '../protocol/cc_map.dart';
 
 /// Represents a single patch/program
 class Patch {
-  /// Raw patch data (152 bytes)
+  /// Raw patch data (160 bytes for POD XT/XT Pro)
   final Uint8List _data;
 
   /// Whether this patch has been modified since last save/load

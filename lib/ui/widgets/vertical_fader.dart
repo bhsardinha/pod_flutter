@@ -50,7 +50,6 @@ class VerticalFader extends StatefulWidget {
     this.min = -12.0,
     this.max = 12.0,
     this.label,
-    // Slightly larger defaults for better touch targets
     this.width = 40.0,
     this.height,
     this.showValue = true,
@@ -82,17 +81,12 @@ class _VerticalFaderState extends State<VerticalFader> {
 
   void _handleDragUpdate(DragUpdateDetails details, double height) {
     setState(() {
-      // Convert vertical drag to value change
-      // Negative dy means dragging up (increase value)
-      // Apply sensitivity multiplier for more precise control
       final double baseSensitivity = (widget.max - widget.min) / height;
       final double adjustedSensitivity = baseSensitivity * widget.sensitivity;
 
-      // Negate delta.dy so upward drag (negative dy) increases the fader value
       _currentValue -= details.delta.dy * adjustedSensitivity;
       _currentValue = _currentValue.clamp(widget.min, widget.max);
 
-      // Snap to zero if within threshold
       if (_currentValue.abs() <= widget.snapThreshold) {
         _currentValue = 0.0;
       }
@@ -107,13 +101,11 @@ class _VerticalFaderState extends State<VerticalFader> {
 
   void _updateValueFromPosition(double dy, double height) {
     setState(() {
-      // Convert tap position to value
       final double normalizedPosition = 1.0 - (dy / height);
       _currentValue =
           widget.min + (normalizedPosition * (widget.max - widget.min));
       _currentValue = _currentValue.clamp(widget.min, widget.max);
 
-      // Snap to zero if within threshold
       if (_currentValue.abs() <= widget.snapThreshold) {
         _currentValue = 0.0;
       }
@@ -124,32 +116,26 @@ class _VerticalFaderState extends State<VerticalFader> {
 
   @override
   Widget build(BuildContext context) {
-    // Revolutionary approach: Use LayoutBuilder to measure available space first
     return LayoutBuilder(
       builder: (context, parentConstraints) {
-        // Calculate adaptive sizing based on parent constraints
         final totalHeight = parentConstraints.maxHeight;
 
-        // Dynamic value display height (scales with available space)
         final valueHeight = widget.showValue
             ? (totalHeight * 0.12).clamp(14.0, 20.0)
             : 0.0;
 
-        // Dynamic font size based on value display height
         final valueFontSize = widget.showValue
             ? (valueHeight * 0.6).clamp(9.0, 12.0)
             : 0.0;
 
-        // Label height if present
         final labelHeight = widget.label != null ? 20.0 : 0.0;
 
-        // Track gets all remaining space
         final trackHeight = totalHeight - valueHeight - labelHeight;
 
         return Column(
           mainAxisSize: MainAxisSize.max,
           children: [
-            // Value display - flexible height
+            // Value display
             if (widget.showValue)
               SizedBox(
                 height: valueHeight,
@@ -165,7 +151,7 @@ class _VerticalFaderState extends State<VerticalFader> {
                 ),
               ),
 
-            // Fader track - uses remaining space
+            // Fader track
             SizedBox(
               height: trackHeight,
               child: GestureDetector(
@@ -183,7 +169,7 @@ class _VerticalFaderState extends State<VerticalFader> {
               ),
             ),
 
-            // Label - fixed if present
+            // Label
             if (widget.label != null)
               SizedBox(
                 height: labelHeight,
@@ -192,6 +178,7 @@ class _VerticalFaderState extends State<VerticalFader> {
                   style: const TextStyle(
                     color: PodColors.textLabel,
                     fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -227,70 +214,158 @@ class _FaderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Make track much wider (thicker) for improved visuals and touch targets
-    final double trackWidth = size.width * 0.72;
+    final double trackWidth = size.width * 0.5;
     final double trackLeft = (size.width - trackWidth) / 2;
     final double trackRight = trackLeft + trackWidth;
 
-    // Larger handle to match the thicker track
-    final double handleWidth = size.width * 0.98;
-    final double handleHeight = math.max(14.0, size.width * 0.40);
+    final double handleWidth = size.width * 0.85;
+    final double handleHeight = math.max(12.0, size.width * 0.35);
 
-    // Calculate center position (where value = 0)
     final double centerY = size.height / 2;
 
-    // Calculate handle position based on value
     final double normalizedValue = (value - min) / (max - min);
     final double handleY = size.height - (normalizedValue * size.height);
 
-    // Draw track background
-    final trackPaint = Paint()
-      ..color = PodColors.surfaceLight
+    // Draw track outer shadow/inset
+    final trackShadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
+
+    final trackShadowRect = RRect.fromLTRBR(
+      trackLeft - 1,
+      -1,
+      trackRight + 1,
+      size.height + 1,
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(trackShadowRect, trackShadowPaint);
+
+    // Draw track background with gradient
+    final trackGradient = LinearGradient(
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+      colors: [
+        PodColors.surfaceLight.withValues(alpha: 0.6),
+        PodColors.surfaceLight,
+        PodColors.surfaceLight.withValues(alpha: 0.6),
+      ],
+    );
+
+    final trackPaint = Paint()
+      ..shader = trackGradient.createShader(
+        Rect.fromLTRB(trackLeft, 0, trackRight, size.height),
+      );
 
     final trackRect = RRect.fromLTRBR(
       trackLeft,
       0,
       trackRight,
       size.height,
-      const Radius.circular(2),
+      const Radius.circular(3),
     );
     canvas.drawRRect(trackRect, trackPaint);
 
-    // Draw fill from center to handle
-    final fillPaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
+    // Draw tick marks
+    _drawTickMarks(canvas, size, trackLeft, trackRight);
 
+    // Draw fill from center to handle with gradient
     final double fillTop = math.min(centerY, handleY);
     final double fillBottom = math.max(centerY, handleY);
 
     if ((handleY - centerY).abs() > 0.5) {
+      final bool isBoost = handleY < centerY;
+
+      final fillGradient = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: isBoost
+            ? [
+                fillColor.withValues(alpha: 0.9),
+                fillColor.withValues(alpha: 0.6),
+              ]
+            : [
+                fillColor.withValues(alpha: 0.6),
+                fillColor.withValues(alpha: 0.9),
+              ],
+      );
+
+      final fillPaint = Paint()
+        ..shader = fillGradient.createShader(
+          Rect.fromLTRB(trackLeft, fillTop, trackRight, fillBottom),
+        );
+
       final fillRect = RRect.fromLTRBR(
         trackLeft,
         fillTop,
         trackRight,
         fillBottom,
-        const Radius.circular(2),
+        const Radius.circular(3),
       );
       canvas.drawRRect(fillRect, fillPaint);
     }
 
-    // Draw center line (0dB indicator) - subtle
+    // Draw center line (0dB indicator)
     final centerLinePaint = Paint()
-      ..color = PodColors.textSecondary.withValues(alpha: 0.5)
-      ..strokeWidth = 1.5;
+      ..color = PodColors.textPrimary.withValues(alpha: 0.4)
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
 
     canvas.drawLine(
-      Offset(trackLeft - 4, centerY),
-      Offset(trackRight + 4, centerY),
+      Offset(trackLeft - 6, centerY),
+      Offset(trackRight + 6, centerY),
       centerLinePaint,
     );
 
-    // Draw handle - simple rectangle
+    // Draw small notch at center
+    final notchPaint = Paint()
+      ..color = PodColors.textLabel.withValues(alpha: 0.6)
+      ..strokeWidth = 1.5;
+
+    canvas.drawLine(
+      Offset(trackRight + 6, centerY),
+      Offset(trackRight + 10, centerY),
+      notchPaint,
+    );
+    canvas.drawLine(
+      Offset(trackLeft - 6, centerY),
+      Offset(trackLeft - 10, centerY),
+      notchPaint,
+    );
+
+    // Draw handle shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.25)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    final shadowRect = RRect.fromLTRBR(
+      (size.width - handleWidth) / 2,
+      handleY - handleHeight / 2 + 2,
+      (size.width + handleWidth) / 2,
+      handleY + handleHeight / 2 + 2,
+      Radius.circular(handleHeight * 0.25),
+    );
+    canvas.drawRRect(shadowRect, shadowPaint);
+
+    // Draw handle with gradient
+    final handleGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        PodColors.textPrimary,
+        PodColors.textPrimary.withValues(alpha: 0.85),
+        PodColors.textPrimary.withValues(alpha: 0.7),
+      ],
+    );
+
     final handlePaint = Paint()
-      ..color = PodColors.textPrimary
-      ..style = PaintingStyle.fill;
+      ..shader = handleGradient.createShader(
+        Rect.fromLTRB(
+          (size.width - handleWidth) / 2,
+          handleY - handleHeight / 2,
+          (size.width + handleWidth) / 2,
+          handleY + handleHeight / 2,
+        ),
+      );
 
     final handleRect = RRect.fromLTRBR(
       (size.width - handleWidth) / 2,
@@ -300,6 +375,62 @@ class _FaderPainter extends CustomPainter {
       Radius.circular(handleHeight * 0.25),
     );
     canvas.drawRRect(handleRect, handlePaint);
+
+    // Draw handle highlight
+    final highlightPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.3)
+      ..style = PaintingStyle.fill;
+
+    final highlightRect = RRect.fromLTRBR(
+      (size.width - handleWidth) / 2 + 2,
+      handleY - handleHeight / 2 + 2,
+      (size.width + handleWidth) / 2 - 2,
+      handleY - handleHeight / 2 + (handleHeight * 0.3),
+      Radius.circular(handleHeight * 0.2),
+    );
+    canvas.drawRRect(highlightRect, highlightPaint);
+
+    // Draw handle grip lines
+    final gripPaint = Paint()
+      ..color = PodColors.background.withValues(alpha: 0.4)
+      ..strokeWidth = 1.0
+      ..strokeCap = StrokeCap.round;
+
+    final gripSpacing = handleWidth * 0.25;
+    final gripLeft = size.width / 2 - gripSpacing;
+    final gripRight = size.width / 2 + gripSpacing;
+
+    for (int i = 0; i < 3; i++) {
+      final y = handleY - 3 + (i * 3.0);
+      canvas.drawLine(
+        Offset(gripLeft, y),
+        Offset(gripRight, y),
+        gripPaint,
+      );
+    }
+  }
+
+  void _drawTickMarks(Canvas canvas, Size size, double trackLeft, double trackRight) {
+    final tickPaint = Paint()
+      ..color = PodColors.textSecondary.withValues(alpha: 0.3)
+      ..strokeWidth = 1.0;
+
+    // Draw tick marks at 25%, 50%, 75% positions
+    final positions = [0.25, 0.5, 0.75];
+
+    for (final pos in positions) {
+      final y = size.height * pos;
+      canvas.drawLine(
+        Offset(trackLeft - 3, y),
+        Offset(trackLeft, y),
+        tickPaint,
+      );
+      canvas.drawLine(
+        Offset(trackRight, y),
+        Offset(trackRight + 3, y),
+        tickPaint,
+      );
+    }
   }
 
   @override

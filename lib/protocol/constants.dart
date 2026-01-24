@@ -31,8 +31,11 @@ class SysexCommand {
 }
 
 /// Program/Patch storage constants
+/// POD XT Pro edit buffer: 160 bytes total
+/// - 16 bytes: patch name
+/// - 144 bytes: parameter data (72 parameters with various sizes)
 const int programCount = 128;
-const int programSize = 160; // 72*2 + 16 bytes = 144 + 16 = 160
+const int programSize = 160; // POD XT Pro specific (verified from hardware responses)
 const int programNameLength = 16;
 const int programNameAddress = 0;
 

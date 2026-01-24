@@ -114,6 +114,11 @@ class _MainScreenState extends State<MainScreen> {
   double _ampPickerListScrollPosition = 0.0;
   double _ampPickerTilesScrollPosition = 0.0;
 
+  // Cab picker view mode and scroll positions
+  bool _cabPickerTilesView = false;
+  double _cabPickerListScrollPosition = 0.0;
+  double _cabPickerTilesScrollPosition = 0.0;
+
   // Subscriptions
   StreamSubscription<PodConnectionState>? _connectionSubscription;
   StreamSubscription<EditBuffer>? _editBufferSubscription;
@@ -521,6 +526,15 @@ class _MainScreenState extends State<MainScreen> {
         podController: widget.podController,
         isConnected: _isConnected,
         settings: _settings,
+        initialTilesView: _cabPickerTilesView,
+        initialListScrollPosition: _cabPickerListScrollPosition,
+        initialTilesScrollPosition: _cabPickerTilesScrollPosition,
+        onViewModeChanged: (tiles) =>
+            setState(() => _cabPickerTilesView = tiles),
+        onScrollPositionChanged: (list, tiles) {
+          _cabPickerListScrollPosition = list;
+          _cabPickerTilesScrollPosition = tiles;
+        },
       ),
     );
   }

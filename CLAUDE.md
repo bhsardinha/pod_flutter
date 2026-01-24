@@ -20,6 +20,10 @@ flutter build ios        # Build iOS release
 
 ## Coding Standards
 
+**IMPORTANT**
+
+- **THE pod-ui is the only source of truth** always create or edit things ensuring the mimic the exact behaviour of the full working rust app!
+
 **IMPORTANT - Deprecated APIs:**
 - **NEVER use `withOpacity()`** - it's deprecated and causes precision loss
 - **ALWAYS use `.withValues(alpha: value)`** instead
@@ -55,7 +59,7 @@ Colors.white.withValues(alpha: 0.95)
 │  - sysex.dart: Sysex message encoding/decoding                      │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Models (lib/models/)                                               │
-│  - patch.dart: Patch/EditBuffer data structures (152 bytes)         │
+│  - patch.dart: Patch/EditBuffer data structures (160 bytes)         │
 │  - amp_models.dart: 105 amp models (stock + MS/CC/BX packs)         │
 │  - cab_models.dart: 47 cabinet + 8 mic models                       │
 │  - effect_models.dart: Stomp/Mod/Delay/Reverb/Wah models           │
@@ -76,7 +80,7 @@ Colors.white.withValues(alpha: 0.95)
 | `lib/protocol/cc_map.dart` | All 70+ CC parameters with addresses |
 | `lib/protocol/sysex.dart` | Sysex encoding, edit buffer requests |
 | `lib/services/pod_controller.dart` | Main controller with convenience APIs |
-| `lib/models/patch.dart` | Patch data model (152 bytes per patch) |
+| `lib/models/patch.dart` | Patch data model (160 bytes per patch for POD XT Pro) |
 
 ## MIDI Protocol Summary
 
@@ -105,6 +109,90 @@ Colors.white.withValues(alpha: 0.95)
 | FX (0x04) | FX Junkie Effects Expansion |
 | BX (0x08) | Bass Expansion |
 
+## POD XT Pro Specifics
+
+**CRITICAL:** This app is for **POD XT Pro** specifically. POD XT and POD XT Pro have differences:
+
+### Patch Size (CRITICAL DIFFERENCE!)
+- **POD XT Pro**: **160 bytes per patch** (verified from hardware)
+- POD XT (non-Pro): 152 bytes (per pod-ui reference)
+- POD XT Live: Different
+- POD X3: Different again
+
+**IMPORTANT:** The pod-ui reference documentation describes POD XT (152 bytes), but POD XT Pro uses a different, larger patch size (160 bytes). This was verified by commit 9effcbf where changing from 152→160 made the app work with actual POD XT Pro hardware.
+
+**Structure** (POD XT Pro):
+- Bytes 0-15: Patch name (16 bytes, space-padded)
+- Bytes 16-159: Parameter data (144 bytes)
+- Total: 160 bytes
+
+### Sysex Message Format (POD XT Pro)
+
+**Edit Buffer Dump Response** (`0x03 0x74`):
+```
+F0 00 01 0C 03 74 [ID] [160 bytes raw data] F7
+- ID: 1 byte device ID
+- Data: 160 bytes (NOT nibble-encoded!)
+```
+
+**Patch Dump Response** (`0x03 0x71`):
+```
+F0 00 01 0C 03 71 [P_LSB] [P_MSB] [ID] [160 bytes raw data] F7
+- P_LSB, P_MSB: Patch number as 2 bytes (LSB, MSB)
+- ID: 1 byte device ID (usually 0x05)
+- Data: 160 bytes (NOT nibble-encoded!)
+```
+
+**Store Patch** (same as Patch Dump):
+```
+F0 00 01 0C 03 71 [P_LSB] [P_MSB] [ID] [160 bytes raw data] F7
+F0 00 01 0C 03 72 F7  # Patch dump end marker (REQUIRED)
+- Must send end marker after store
+- Response: 03 50 (success) or 03 51 (failure)
+```
+
+**CRITICAL**: POD XT Pro does NOT use nibble encoding for patch data (unlike other Line 6 devices). Data is sent raw.
+
+### Critical Quirk: Patch Dump Responses
+
+**POD XT/XT Pro responds to patch dump requests with edit buffer dumps!**
+
+When you request a patch dump (`03 73`), the POD responds with `03 74` (edit buffer dump), **NOT** `03 71` (patch dump).
+
+**Solution**: Track which patch you requested and treat `03 74` responses as patch dumps during bulk import:
+
+```dart
+int? _expectedPatchNumber;
+
+// Request patch
+_expectedPatchNumber = 42;
+await sendSysex(requestPatch(42));
+
+// In edit buffer dump handler:
+if (_expectedPatchNumber != null) {
+  // This is a patch dump response, not edit buffer!
+  _patchLibrary[_expectedPatchNumber] = patch;
+  _expectedPatchNumber = null;
+} else {
+  _editBuffer = patch;
+}
+```
+
+This matches pod-ui behavior (handler.rs:292-316).
+
+### Bulk Import
+POD XT Pro does NOT support bulk dump commands. Must request patches individually:
+```dart
+for (int i = 0; i < 128; i++) {
+  _expectedPatchNumber = i;
+  await sendSysex(requestPatch(i));
+  await waitForResponse();  // Waits for 03 74 edit buffer dump!
+  await sendSysex(requestPatchDumpEnd());
+}
+```
+
+**CRITICAL**: Must wait for each patch response before requesting next. Simple delays are not sufficient - use Completers or similar to wait for actual responses.
+
 ## Usage Pattern
 
 ```dart
@@ -124,5 +212,14 @@ await pod.setDelayEnabled(true);
 // Listen for changes from device
 pod.onParameterChanged.listen((change) {
   print('${change.param.name} = ${change.value}');
+});
+
+// Listen for store results
+pod.onStoreResult.listen((result) {
+  if (result.success) {
+    print('Patch saved!');
+  } else {
+    print('Save failed: ${result.error}');
+  }
 });
 ```

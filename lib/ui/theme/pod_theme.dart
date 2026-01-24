@@ -72,6 +72,7 @@ class PodTextStyles {
 
   // Parameter labels (printed on hardware)
   static const labelLarge = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 13,
     fontWeight: FontWeight.w700,
     color: PodColors.textLabel,
@@ -80,6 +81,7 @@ class PodTextStyles {
   );
 
   static const labelMedium = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 11,
     fontWeight: FontWeight.w600,
     color: PodColors.textLabel,
@@ -88,6 +90,7 @@ class PodTextStyles {
   );
 
   static const labelSmall = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 9,
     fontWeight: FontWeight.w600,
     color: PodColors.textLabel,
@@ -97,6 +100,7 @@ class PodTextStyles {
 
   // Parameter values
   static const valueLarge = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 17,
     fontWeight: FontWeight.w600,
     color: PodColors.textPrimary,
@@ -105,6 +109,7 @@ class PodTextStyles {
   );
 
   static const valueMedium = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 15,
     fontWeight: FontWeight.w500,
     color: PodColors.textPrimary,
@@ -113,6 +118,7 @@ class PodTextStyles {
   );
 
   static const valueSmall = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 13,
     fontWeight: FontWeight.w500,
     color: PodColors.textPrimary,
@@ -122,6 +128,7 @@ class PodTextStyles {
 
   // Secondary text
   static const secondary = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 11,
     fontWeight: FontWeight.w400,
     color: PodColors.textSecondary,
@@ -131,6 +138,7 @@ class PodTextStyles {
 
   // Button text when off
   static const buttonOff = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 11,
     fontWeight: FontWeight.w600,
     color: PodColors.buttonOffText,
@@ -140,6 +148,7 @@ class PodTextStyles {
 
   // Button text when on (green)
   static const buttonOnGreen = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 11,
     fontWeight: FontWeight.w700,
     color: PodColors.buttonOnGreen,
@@ -149,6 +158,7 @@ class PodTextStyles {
 
   // Button text when on (amber)
   static const buttonOnAmber = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 11,
     fontWeight: FontWeight.w700,
     color: PodColors.buttonOnAmber,
@@ -158,6 +168,7 @@ class PodTextStyles {
 
   // Header/title text
   static const header = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 19,
     fontWeight: FontWeight.w700,
     color: PodColors.textPrimary,
@@ -166,6 +177,7 @@ class PodTextStyles {
   );
 
   static const subheader = TextStyle(
+    fontFamily: 'OPTICopperplate',
     fontSize: 15,
     fontWeight: FontWeight.w600,
     color: PodColors.textLabel,

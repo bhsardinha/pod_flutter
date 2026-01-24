@@ -44,11 +44,17 @@ class PodController {
   final _programChangeController = StreamController<int>.broadcast();
   final _editBufferController = StreamController<EditBuffer>.broadcast();
   final _syncProgressController = StreamController<SyncProgress>.broadcast();
+  final _storeResultController = StreamController<StoreResult>.broadcast();
 
   // Subscriptions
   StreamSubscription? _ccSubscription;
   StreamSubscription? _pcSubscription;
   StreamSubscription? _sysexSubscription;
+
+  // Bulk import tracking
+  Completer<void>? _patchDumpCompleter;
+  int? _expectedPatchNumber;
+  bool _bulkImportInProgress = false;
 
   PodController(this._midi) {
     _setupListeners();
@@ -77,6 +83,9 @@ class PodController {
   bool get patchesSynced => _patchesSynced;
   int get patchesSyncedCount => _patchesSyncedCount;
   Stream<SyncProgress> get onSyncProgress => _syncProgressController.stream;
+
+  /// Store operation results (success/failure)
+  Stream<StoreResult> get onStoreResult => _storeResultController.stream;
 
   /// Get patch name by program number
   String getPatchName(int program) {
@@ -524,12 +533,16 @@ class PodController {
     } else if (message.isProgramState) {
       print('  -> Program state');
       _handleProgramState(message);
+    } else if (message.isStoreSuccess) {
+      print('  -> Store SUCCESS!');
+      _handleStoreSuccess(message);
+    } else if (message.isStoreFailure) {
+      print('  -> Store FAILURE!');
+      _handleStoreFailure(message);
     }
   }
 
   void _handleEditBufferDump(SysexMessage message) {
-    print('  Edit buffer payload: ${message.payload.length} bytes');
-
     // POD XT format: [id, raw_data...] - NOT nibble-encoded!
     // Skip first byte (ID), rest is raw patch data
     if (message.payload.length < 1 + programSize) {
@@ -539,19 +552,49 @@ class PodController {
       return;
     }
 
-    final id = message.payload[0];
+    // Skip first byte (ID), extract raw patch data
     final data = message.payload.sublist(1, 1 + programSize);
-    print('  ID: $id, Data: ${data.length} bytes');
-
     final patch = Patch.fromData(data);
-    print('  Patch name: "${patch.name}"');
-    print('  Drive: ${patch.getValue(PodXtCC.drive)}');
-    print(
-      '  EQ Gains (MIDI): [${patch.getValue(PodXtCC.eq1Gain)}, ${patch.getValue(PodXtCC.eq2Gain)}, ${patch.getValue(PodXtCC.eq3Gain)}, ${patch.getValue(PodXtCC.eq4Gain)}]',
-    );
 
-    _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
-    _editBufferController.add(_editBuffer);
+    // CRITICAL: POD XT/XT Pro responds to patch dump requests with edit buffer dumps (03 74)
+    // Check if we're waiting for a patch dump response during bulk import
+    if (_expectedPatchNumber != null && _patchDumpCompleter != null) {
+      // This edit buffer dump is actually a response to our patch dump request
+      final patchNum = _expectedPatchNumber!;
+      print('  -> Received patch $patchNum: "${patch.name}"');
+
+      _patchLibrary.patches[patchNum] = patch;
+      _patchesSyncedCount = patchNum + 1;
+
+      // Update progress
+      _syncProgressController.add(
+        SyncProgress(
+          _patchesSyncedCount,
+          programCount,
+          'Patch ${patchNum + 1}/$programCount: ${patch.name}',
+        ),
+      );
+
+      // Complete completer
+      if (!_patchDumpCompleter!.isCompleted) {
+        _patchDumpCompleter!.complete();
+      }
+      _expectedPatchNumber = null;
+    } else if (_bulkImportInProgress) {
+      // During bulk import, ignore unexpected edit buffer dumps
+      // (POD sends Amp Presets and User FX after the 128 user patches)
+      print('  -> Ignoring extra data during bulk import (Amp Preset or User FX)');
+      return;
+    } else {
+      // Normal edit buffer update (not during bulk import)
+      print('  Edit buffer: "${patch.name}"');
+      print('  Drive: ${patch.getValue(PodXtCC.drive)}');
+      print(
+        '  EQ Gains (MIDI): [${patch.getValue(PodXtCC.eq1Gain)}, ${patch.getValue(PodXtCC.eq2Gain)}, ${patch.getValue(PodXtCC.eq3Gain)}, ${patch.getValue(PodXtCC.eq4Gain)}]',
+      );
+      _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
+      _editBufferController.add(_editBuffer);
+    }
   }
 
   void _handlePatchDump(SysexMessage message) {
@@ -629,6 +672,130 @@ class PodController {
     }
   }
 
+  /// Handle store success response (03 50)
+  void _handleStoreSuccess(SysexMessage message) {
+    print('POD: Patch stored successfully!');
+    _storeResultController.add(StoreResult(success: true));
+  }
+
+  /// Handle store failure response (03 51)
+  void _handleStoreFailure(SysexMessage message) {
+    print('POD: ERROR - Patch store failed!');
+    _storeResultController.add(StoreResult(success: false, error: 'Store operation failed'));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // BULK OPERATIONS - Import/Export
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// Import all 128 patches from hardware (sequential, not parallel)
+  ///
+  /// POD XT Pro BULK IMPORT PROTOCOL (from pod-ui reference lines 531-576):
+  /// - Uses Patch Dump Request (03 73) - queries patch WITHOUT loading it (silent!)
+  /// - POD responds with Edit Buffer Dump (03 74) - NOT Patch Dump (03 71)
+  /// - Does NOT change current patch (background operation)
+  /// - Must request patches individually 0-127 (no AllProgramsDump)
+  ///
+  /// NOTE: Program Change is ONLY for loading a patch to edit (audible switch)
+  Future<void> importAllPatchesFromHardware() async {
+    if (_connectionState != PodConnectionState.connected) {
+      throw StateError('Not connected to device');
+    }
+
+    print('POD: Starting bulk import of all 128 patches...');
+    print('POD: Using Patch Dump Request (silent background import)');
+
+    // Reset sync state
+    _bulkImportInProgress = true;
+    _patchesSynced = false;
+    _patchesSyncedCount = 0;
+    _syncProgressController.add(
+      SyncProgress(0, programCount, 'Starting import...'),
+    );
+
+    try {
+      // Request patches sequentially (0-127)
+      for (int i = 0; i < programCount; i++) {
+        try {
+          // Create completer to wait for response
+          _patchDumpCompleter = Completer<void>();
+          _expectedPatchNumber = i; // Track which patch we're expecting
+
+          // Send Patch Dump Request (03 73)
+          // POD will respond with Edit Buffer Dump (03 74) containing the patch data
+          // This does NOT change the current patch (silent background query)
+          await _midi.sendSysex(PodXtSysex.requestPatch(i));
+
+          // Wait for response with timeout (edit buffer dump handler will complete the completer)
+          try {
+            await _patchDumpCompleter!.future.timeout(
+              const Duration(milliseconds: 800),
+              onTimeout: () {
+                throw TimeoutException('Patch $i response timeout');
+              },
+            );
+          } catch (e) {
+            print('POD: Timeout/error for patch $i, continuing...');
+            _patchDumpCompleter = null;
+            _expectedPatchNumber = null;
+            // Continue with next patch despite error
+            continue;
+          }
+
+          _patchDumpCompleter = null;
+          _expectedPatchNumber = null;
+
+          // Small delay before next patch request
+          await Future.delayed(const Duration(milliseconds: 50));
+
+        } catch (e) {
+          print('POD: Error importing patch $i: $e');
+          _patchDumpCompleter = null;
+          _expectedPatchNumber = null;
+          // Continue with next patch
+        }
+      }
+
+      print('POD: Bulk import complete! Imported $_patchesSyncedCount patches');
+      _patchesSynced = true;
+      _syncProgressController.add(
+        SyncProgress(programCount, programCount, 'Import complete!'),
+      );
+    } finally {
+      // Always reset the flag, even if import was interrupted
+      _bulkImportInProgress = false;
+    }
+  }
+
+  /// Save current edit buffer to a hardware slot
+  ///
+  /// Sends store command, end marker, then waits for success/failure response
+  Future<void> savePatchToHardware(int patchNumber) async {
+    if (_connectionState != PodConnectionState.connected) {
+      throw StateError('Not connected to device');
+    }
+
+    if (patchNumber < 0 || patchNumber >= programCount) {
+      throw ArgumentError('Patch number must be 0-${programCount - 1}');
+    }
+
+    print('POD: Saving to hardware slot $patchNumber...');
+
+    // Get patch data
+    final patchData = _editBuffer.patch.data;
+
+    // Build and send store command
+    final storeMsg = PodXtSysex.storePatch(patchNumber, patchData);
+    await _midi.sendSysex(storeMsg);
+
+    // Send end marker
+    await _midi.sendSysex(PodXtSysex.requestPatchDumpEnd());
+
+    // Wait for success/failure response (handled in _handleSysex)
+    // The response will be 03 50 (success) or 03 51 (failure)
+    print('POD: Store command sent, waiting for confirmation...');
+  }
+
   /// Dispose resources
   void dispose() {
     _ccSubscription?.cancel();
@@ -639,6 +806,7 @@ class PodController {
     _programChangeController.close();
     _editBufferController.close();
     _syncProgressController.close();
+    _storeResultController.close();
   }
 }
 
@@ -666,4 +834,15 @@ class SyncProgress {
 
   @override
   String toString() => 'SyncProgress($current/$total: $message)';
+}
+
+/// Store operation result
+class StoreResult {
+  final bool success;
+  final String? error;
+
+  StoreResult({required this.success, this.error});
+
+  @override
+  String toString() => success ? 'StoreResult(success)' : 'StoreResult(failed: $error)';
 }
