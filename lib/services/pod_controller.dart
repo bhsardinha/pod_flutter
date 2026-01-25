@@ -628,6 +628,12 @@ class PodController {
   }
 
   void _handlePatchDumpEnd(SysexMessage message) {
+    // During bulk import, ignore individual patch dump end markers
+    // The bulk import function will handle completion
+    if (_bulkImportInProgress) {
+      return;
+    }
+
     print('POD: All patches synced! ($_patchesSyncedCount patches)');
     _patchesSynced = true;
     _syncProgressController.add(

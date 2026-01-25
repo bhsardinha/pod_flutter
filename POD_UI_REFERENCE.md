@@ -141,7 +141,7 @@ All messages use Line6 sysex prefix: `[0xF0, 0x00, 0x01, 0x0C, ...]`
 | Edit Buffer Dump | `03 74` | `F0 00 01 0C 03 74 ID [160 bytes] F7` | RAW 8-bit data |
 | Patch Dump Request | `03 73` | `F0 00 01 0C 03 73 P1 P2 00 00 F7` | P1/P2 = encoded MIDI patch |
 | Patch Dump (send) | `03 71` | `F0 00 01 0C 03 71 ID P1 P2 [160 bytes] F7` | Store to hardware |
-| Patch Dump End | `03 72` | `F0 00 01 0C 03 72 F7` | Send after receiving dump |
+| Patch Dump End | `03 72` | `F0 00 01 0C 03 72 F7` | Sent after EACH patch (not bulk end!) |
 | Store Success | `03 50` | `F0 00 01 0C 03 50 F7` | Acknowledgment |
 | Store Failure | `03 51` | `F0 00 01 0C 03 51 F7` | Error response |
 | Installed Packs Request | `03 7D` | `F0 00 01 0C 03 7D F7` | Query expansion packs |
@@ -201,6 +201,36 @@ let buffer = match self.queue_peek() {
 };
 ```
 
+### Critical Quirk: Patch Dump End (03 72) During Individual Patch Requests
+
+**CRITICAL:** POD XT Pro sends `03 72` (Patch Dump End) after EACH individual patch response, NOT just at the end of a complete bulk operation!
+
+**Why this matters:**
+- Other POD models support AllProgramsDump and send `03 72` once at the very end
+- POD XT Pro does NOT support AllProgramsDump - requires individual patch requests
+- Each patch request cycle: `03 73 (request)` → `03 74 (response)` → `03 72 (end marker)`
+- The `03 72` is NOT a completion signal - it's just acknowledging the single patch transfer
+
+**Solution:**
+```dart
+bool _bulkImportInProgress = false;
+
+void _handlePatchDumpEnd(SysexMessage message) {
+  // During POD XT Pro bulk import, ignore individual patch end markers
+  // The bulk import loop determines completion when all 128 patches are done
+  if (_bulkImportInProgress) {
+    return;  // Ignore - this is just the end of ONE patch, not the whole operation
+  }
+
+  // For other POD models that support AllProgramsDump,
+  // this would signal actual completion
+  _patchesSynced = true;
+  _syncProgressController.add(
+    SyncProgress(programCount, programCount, 'Sync complete!'),
+  );
+}
+```
+
 ### Flutter Implementation Pattern
 
 ```dart
@@ -234,6 +264,17 @@ void _handleEditBufferDump(SysexMessage message) {
     // Normal edit buffer update
     _editBuffer = patch;
   }
+}
+
+// Handle patch dump end
+void _handlePatchDumpEnd(SysexMessage message) {
+  // CRITICAL: During bulk import, ignore 03 72 - it comes after EACH patch!
+  if (_bulkImportInProgress) {
+    return;
+  }
+
+  // Only handle as completion for other POD models
+  _patchesSynced = true;
 }
 ```
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../theme/pod_theme.dart';
+import '../widgets/pod_modal.dart';
 
 /// Patch list modal for selecting and managing patches
 class PatchListModal extends StatefulWidget {
@@ -52,9 +53,30 @@ class _PatchListModalState extends State<PatchListModal> {
   }
 
   Future<void> _importAllPatches() async {
+    if (!mounted) return;
+
     setState(() => _importing = true);
+
+    // Show progress modal first, before starting import
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (context) => _ImportProgressModal(
+        podController: widget.podController,
+      ),
+    );
+
+    // Small delay to ensure modal is ready
+    await Future.delayed(const Duration(milliseconds: 100));
+
     try {
+      // Now start the import
       await widget.podController.importAllPatchesFromHardware();
+      if (mounted) Navigator.of(context).pop(); // Close progress modal
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop(); // Close progress modal
+      rethrow;
     } finally {
       if (mounted) setState(() => _importing = false);
     }
@@ -182,68 +204,10 @@ class _PatchListModalState extends State<PatchListModal> {
 
             // Main content
             Expanded(
-              child: _importing || (!widget.patchesSynced && widget.syncedCount < 128)
-                  ? _buildImportProgress()
-                  : _buildPatchGrid(widget.onSelectPatch),
+              child: _buildPatchGrid(widget.onSelectPatch),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildImportProgress() {
-    final percentage = ((widget.syncedCount / 128) * 100).toStringAsFixed(0);
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 100,
-            height: 100,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: CircularProgressIndicator(
-                    value: widget.syncedCount / 128,
-                    backgroundColor: PodColors.surfaceLight,
-                    color: PodColors.accent,
-                    strokeWidth: 8,
-                  ),
-                ),
-                Text(
-                  '$percentage%',
-                  style: const TextStyle(
-                    color: PodColors.accent,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Importing patches...',
-            style: TextStyle(
-              color: PodColors.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${widget.syncedCount}/128 patches',
-            style: const TextStyle(
-              color: PodColors.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -350,6 +314,104 @@ class _PatchListModalState extends State<PatchListModal> {
                 ),
               );
             }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small progress modal that overlays during patch import
+class _ImportProgressModal extends StatefulWidget {
+  final PodController podController;
+
+  const _ImportProgressModal({
+    required this.podController,
+  });
+
+  @override
+  State<_ImportProgressModal> createState() => _ImportProgressModalState();
+}
+
+class _ImportProgressModalState extends State<_ImportProgressModal> {
+  int _current = 0;
+  int _total = 128;
+  StreamSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    print('ImportProgressModal: initState - starting to listen for progress');
+    // Listen to sync progress stream
+    _subscription = widget.podController.onSyncProgress.listen((progress) {
+      print('ImportProgressModal: received progress ${progress.current}/${progress.total}');
+      if (mounted) {
+        setState(() {
+          _current = progress.current;
+          _total = progress.total;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final percentage = _total > 0 ? (_current / _total * 100).toStringAsFixed(0) : '0';
+
+    return PodModal(
+      maxWidth: 300,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 100,
+            height: 100,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: CircularProgressIndicator(
+                    value: _total > 0 ? _current / _total : 0,
+                    backgroundColor: PodColors.surfaceLight,
+                    color: PodColors.accent,
+                    strokeWidth: 8,
+                  ),
+                ),
+                Text(
+                  '$percentage%',
+                  style: const TextStyle(
+                    color: PodColors.accent,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Importing patches...',
+            style: TextStyle(
+              color: PodColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$_current/$_total patches',
+            style: const TextStyle(
+              color: PodColors.textSecondary,
+              fontSize: 14,
+            ),
           ),
         ],
       ),

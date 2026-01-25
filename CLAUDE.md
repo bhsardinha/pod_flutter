@@ -183,15 +183,47 @@ This matches pod-ui behavior (handler.rs:292-316).
 ### Bulk Import
 POD XT Pro does NOT support bulk dump commands. Must request patches individually:
 ```dart
+bool _bulkImportInProgress = true;
+
 for (int i = 0; i < 128; i++) {
   _expectedPatchNumber = i;
   await sendSysex(requestPatch(i));
   await waitForResponse();  // Waits for 03 74 edit buffer dump!
-  await sendSysex(requestPatchDumpEnd());
+  // POD sends 03 72 after EACH patch - do NOT treat as completion!
 }
+
+_bulkImportInProgress = false;
 ```
 
 **CRITICAL**: Must wait for each patch response before requesting next. Simple delays are not sufficient - use Completers or similar to wait for actual responses.
+
+### Critical: Patch Dump End (03 72) Behavior
+
+**POD XT Pro sends `03 72` after EACH individual patch, NOT just at the end of bulk operations!**
+
+This is different from other POD models:
+- **Other POD models**: Support AllProgramsDump, send `03 72` once at the very end
+- **POD XT Pro**: No AllProgramsDump support, sends `03 72` after every single patch response
+
+**Message flow per patch:**
+1. Send `03 73` (Patch Dump Request)
+2. Receive `03 74` (Edit Buffer Dump - contains patch data)
+3. Receive `03 72` (Patch Dump End - just acknowledges this ONE patch)
+
+**Implementation:**
+```dart
+void _handlePatchDumpEnd(SysexMessage message) {
+  // During POD XT Pro bulk import, ignore individual 03 72 markers
+  if (_bulkImportInProgress) {
+    return;  // This is NOT the end of the bulk operation!
+  }
+
+  // Only treat as completion for other POD models
+  _patchesSynced = true;
+}
+```
+
+The actual completion is determined by the import loop finishing all 128 patches, NOT by receiving `03 72`.
 
 ## Usage Pattern
 
