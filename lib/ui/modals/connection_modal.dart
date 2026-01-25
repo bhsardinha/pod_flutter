@@ -27,7 +27,6 @@ class _ConnectionModalState extends State<ConnectionModal> {
   List<MidiDeviceInfo> _devices = [];
   bool _scanning = false;
   String? _error;
-  bool _disposed = false;
   StreamSubscription<List<MidiDeviceInfo>>? _deviceSubscription;
 
   @override
@@ -36,7 +35,7 @@ class _ConnectionModalState extends State<ConnectionModal> {
 
     // Listen for device changes (hot-plug detection)
     _deviceSubscription = widget.podController.onDevicesChanged.listen((devices) {
-      if (!_disposed && mounted) {
+      if (mounted) {
         setState(() {
           _devices = devices;
           _scanning = false;
@@ -52,13 +51,12 @@ class _ConnectionModalState extends State<ConnectionModal> {
 
   @override
   void dispose() {
-    _disposed = true;
     _deviceSubscription?.cancel();
     super.dispose();
   }
 
   Future<void> _scanDevices() async {
-    if (_disposed || !mounted) return;
+    if (!mounted) return;
 
     setState(() {
       _scanning = true;
@@ -67,14 +65,14 @@ class _ConnectionModalState extends State<ConnectionModal> {
 
     try {
       final devices = await widget.podController.scanDevices();
-      if (!_disposed && mounted) {
+      if (mounted) {
         setState(() {
           _devices = devices;
           _scanning = false;
         });
       }
     } catch (e) {
-      if (!_disposed && mounted) {
+      if (mounted) {
         setState(() {
           // Remove "Exception: " prefix for cleaner display
           _error = e.toString().replaceFirst('Exception: ', '');
@@ -85,15 +83,15 @@ class _ConnectionModalState extends State<ConnectionModal> {
   }
 
   Future<void> _connectToDevice(MidiDeviceInfo device) async {
-    if (_disposed || !mounted) return;
+    if (!mounted) return;
 
     try {
       await widget.podController.connect(device);
-      if (!_disposed && mounted) {
+      if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      if (!_disposed && mounted) {
+      if (mounted) {
         setState(() {
           _error = 'Failed to connect: $e';
         });
