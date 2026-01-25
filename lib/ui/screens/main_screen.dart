@@ -46,6 +46,7 @@ class _MainScreenState extends State<MainScreen> {
   // Connection state
   bool _isConnected = false;
   bool _isConnecting = false;
+  bool _editBufferLoaded = false; // True once we've received the initial edit buffer
 
   // Patch state
   int _currentProgram = 0;
@@ -146,6 +147,7 @@ class _MainScreenState extends State<MainScreen> {
             _isConnected = state == PodConnectionState.connected;
             _isConnecting = state == PodConnectionState.connecting;
             if (!_isConnected) {
+              _editBufferLoaded = false; // Reset on disconnect
               _currentPatchName = 'Not Connected';
               _currentAmp = '--';
               _currentCab = '--';
@@ -159,6 +161,7 @@ class _MainScreenState extends State<MainScreen> {
       buffer,
     ) {
       setState(() {
+        _editBufferLoaded = true; // Mark as loaded once we receive first edit buffer
         _updateFromEditBuffer();
         _isModified = widget.podController.editBufferModified;
       });
@@ -170,7 +173,7 @@ class _MainScreenState extends State<MainScreen> {
     ) {
       setState(() {
         _currentProgram = program;
-        _updateFromEditBuffer();
+        // Don't call _updateFromEditBuffer() here - edit buffer update will follow
       });
     });
 
@@ -301,9 +304,11 @@ class _MainScreenState extends State<MainScreen> {
       backgroundColor: PodColors.background,
       body: BrushedMetalBackground(
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Column(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Column(
               children: [
                 // Row 1: Amp Selector
                 Expanded(
@@ -455,6 +460,31 @@ class _MainScreenState extends State<MainScreen> {
               ],
             ),
           ),
+          // Loading overlay when connected but edit buffer not yet loaded
+          if (_isConnected && !_editBufferLoaded)
+            Container(
+              color: Colors.black.withValues(alpha: 0.7),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'Loading patch data...',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
         ),
       ),
     );

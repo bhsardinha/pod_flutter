@@ -451,8 +451,6 @@ class PodController {
     // Wait a moment for the connection to stabilize
     await Future.delayed(const Duration(milliseconds: 500));
 
-    print('POD: Requesting initial state...');
-
     // Reset sync state
     _patchesSynced = false;
     _patchesSyncedCount = 0;
@@ -462,12 +460,10 @@ class PodController {
     await Future.delayed(const Duration(milliseconds: 100));
 
     // Request current program state (to get correct program number)
-    print('POD: Requesting program state...');
     await _midi.requestProgramState();
     await Future.delayed(const Duration(milliseconds: 400));
 
     // Request current edit buffer
-    print('POD: Requesting edit buffer...');
     await _midi.requestEditBuffer();
 
     // TODO: Implement individual patch requests if bulk request doesn't work
@@ -511,29 +507,22 @@ class PodController {
   }
 
   void _handleSysex(SysexMessage message) {
-    // Debug: print received sysex
-    print('POD Sysex received: $message');
-
+    // Route sysex messages to appropriate handlers
     if (message.isEditBufferDump) {
-      print('  -> Edit buffer dump!');
       _handleEditBufferDump(message);
     } else if (message.isPatchDump) {
-      print('  -> Patch dump');
       _handlePatchDump(message);
     } else if (message.isPatchDumpEnd) {
-      print('  -> Patch dump end');
       _handlePatchDumpEnd(message);
     } else if (message.isInstalledPacks) {
-      print('  -> Installed packs');
       _handleInstalledPacks(message);
     } else if (message.isProgramState) {
-      print('  -> Program state');
       _handleProgramState(message);
     } else if (message.isStoreSuccess) {
-      print('  -> Store SUCCESS!');
+      print('POD: Patch stored successfully');
       _handleStoreSuccess(message);
     } else if (message.isStoreFailure) {
-      print('  -> Store FAILURE!');
+      print('POD: ERROR - Patch store failed');
       _handleStoreFailure(message);
     }
   }
@@ -578,17 +567,9 @@ class PodController {
     } else if (_bulkImportInProgress) {
       // During bulk import, ignore unexpected edit buffer dumps
       // (POD sends Amp Presets and User FX after the 128 user patches)
-      print(
-        '  -> Ignoring extra data during bulk import (Amp Preset or User FX)',
-      );
       return;
     } else {
       // Normal edit buffer update (not during bulk import)
-      print('  Edit buffer: "${patch.name}"');
-      print('  Drive: ${patch.getValue(PodXtCC.drive)}');
-      print(
-        '  EQ Gains (MIDI): [${patch.getValue(PodXtCC.eq1Gain)}, ${patch.getValue(PodXtCC.eq2Gain)}, ${patch.getValue(PodXtCC.eq3Gain)}, ${patch.getValue(PodXtCC.eq4Gain)}]',
-      );
       _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
       _editBufferController.add(_editBuffer);
     }
@@ -622,8 +603,6 @@ class PodController {
           'Syncing patch ${patchNum + 1}/$programCount: ${patch.name}',
         ),
       );
-
-      print('    Name: "${patch.name}"');
     }
   }
 
@@ -650,7 +629,6 @@ class PodController {
   void _handleProgramState(SysexMessage message) {
     // Program number response format: [0x11, p1, p2, p3, p4]
     // Where p1-p4 are 4-bit nibbles that combine to a 16-bit program number
-    print('  Program state payload length: ${message.payload.length}');
     if (message.payload.length >= 5) {
       // Skip first byte (0x11 subcommand), read 4 nibbles
       final p1 = message.payload[1] & 0x0F;
@@ -658,32 +636,28 @@ class PodController {
       final p3 = message.payload[3] & 0x0F;
       final p4 = message.payload[4] & 0x0F;
       final program = (p1 << 12) | (p2 << 8) | (p3 << 4) | p4;
-      print('  Program nibbles: $p1 $p2 $p3 $p4 -> Program #$program');
       if (program < programCount) {
-        print('  Setting current program to: $program');
         _currentProgram = program;
         _programChangeController.add(program);
       } else {
         print(
-          '  ERROR: Program $program is out of range (max: ${programCount - 1})',
+          'POD: ERROR - Program $program out of range (max: ${programCount - 1})',
         );
       }
     } else {
       print(
-        '  ERROR: Program state payload too short (need 5 bytes, got ${message.payload.length})',
+        'POD: ERROR - Program state payload too short (need 5 bytes, got ${message.payload.length})',
       );
     }
   }
 
   /// Handle store success response (03 50)
   void _handleStoreSuccess(SysexMessage message) {
-    print('POD: Patch stored successfully!');
     _storeResultController.add(StoreResult(success: true));
   }
 
   /// Handle store failure response (03 51)
   void _handleStoreFailure(SysexMessage message) {
-    print('POD: ERROR - Patch store failed!');
     _storeResultController.add(
       StoreResult(success: false, error: 'Store operation failed'),
     );
@@ -706,9 +680,6 @@ class PodController {
     if (_connectionState != PodConnectionState.connected) {
       throw StateError('Not connected to device');
     }
-
-    print('POD: Starting bulk import of all 128 patches...');
-    print('POD: Using Patch Dump Request (silent background import)');
 
     // Reset sync state
     _bulkImportInProgress = true;
@@ -758,7 +729,6 @@ class PodController {
         }
       }
 
-      print('POD: Bulk import complete! Imported $_patchesSyncedCount patches');
       _patchesSynced = true;
       _syncProgressController.add(
         SyncProgress(programCount, programCount, 'Import complete!'),
