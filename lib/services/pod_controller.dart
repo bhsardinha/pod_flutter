@@ -421,8 +421,6 @@ class PodController {
     // Internal range: 300-2400
     final internalValue = (tempoMsb << 7) | tempoLsb;
 
-    print('DEBUG TEMPO: MSB=$tempoMsb, LSB=$tempoLsb, internal=$internalValue');
-
     // Convert to BPM using POD XT formula from pod-ui reference:
     // Display BPM = internal * 0.1
     // Range: 30.0-240.0 BPM (from internal 300-2400)
@@ -430,8 +428,6 @@ class PodController {
 
     final bpm = (internalValue * 0.1).round();
     final clampedBpm = bpm.clamp(30, 240);
-
-    print('DEBUG TEMPO: calculated BPM=$bpm, clamped=$clampedBpm');
 
     return clampedBpm;
   }
@@ -561,7 +557,6 @@ class PodController {
     if (_expectedPatchNumber != null && _patchDumpCompleter != null) {
       // This edit buffer dump is actually a response to our patch dump request
       final patchNum = _expectedPatchNumber!;
-      print('  -> Received patch $patchNum: "${patch.name}"');
 
       _patchLibrary.patches[patchNum] = patch;
       _patchesSyncedCount = patchNum + 1;
@@ -583,7 +578,9 @@ class PodController {
     } else if (_bulkImportInProgress) {
       // During bulk import, ignore unexpected edit buffer dumps
       // (POD sends Amp Presets and User FX after the 128 user patches)
-      print('  -> Ignoring extra data during bulk import (Amp Preset or User FX)');
+      print(
+        '  -> Ignoring extra data during bulk import (Amp Preset or User FX)',
+      );
       return;
     } else {
       // Normal edit buffer update (not during bulk import)
@@ -681,7 +678,9 @@ class PodController {
   /// Handle store failure response (03 51)
   void _handleStoreFailure(SysexMessage message) {
     print('POD: ERROR - Patch store failed!');
-    _storeResultController.add(StoreResult(success: false, error: 'Store operation failed'));
+    _storeResultController.add(
+      StoreResult(success: false, error: 'Store operation failed'),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -735,7 +734,6 @@ class PodController {
               },
             );
           } catch (e) {
-            print('POD: Timeout/error for patch $i, continuing...');
             _patchDumpCompleter = null;
             _expectedPatchNumber = null;
             // Continue with next patch despite error
@@ -747,9 +745,7 @@ class PodController {
 
           // Small delay before next patch request
           await Future.delayed(const Duration(milliseconds: 50));
-
         } catch (e) {
-          print('POD: Error importing patch $i: $e');
           _patchDumpCompleter = null;
           _expectedPatchNumber = null;
           // Continue with next patch
@@ -844,5 +840,6 @@ class StoreResult {
   StoreResult({required this.success, this.error});
 
   @override
-  String toString() => success ? 'StoreResult(success)' : 'StoreResult(failed: $error)';
+  String toString() =>
+      success ? 'StoreResult(success)' : 'StoreResult(failed: $error)';
 }

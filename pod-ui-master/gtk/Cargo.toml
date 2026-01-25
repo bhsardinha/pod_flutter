@@ -1,0 +1,18 @@
+[package]
+name = "pod-gtk"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+glib = "0.18"
+gdk = "0.18"
+gtk = { version = "0.18", features = ["v3_24"] }
+multimap = "0.10.0"
+
+log = "*" # defined in pod-core
+tokio = "*" # defined in pod-core
+anyhow = "*" # defined in pod-code
+
+pod-core = { path = "../core" }

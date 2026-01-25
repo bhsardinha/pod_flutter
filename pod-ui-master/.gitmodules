@@ -1,0 +1,3 @@
+[submodule "build/resources"]
+	path = build/resources
+	url = ../pod-ui-resources

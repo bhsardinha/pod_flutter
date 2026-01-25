@@ -27,13 +27,35 @@ class PodXtSysex {
 
   /// Request a specific patch dump
   ///
-  /// Format: F0 00 01 0C 03 73 00 XX 00 00 F7
-  /// where XX = patch number (0-127)
+  /// Format: F0 00 01 0C 03 73 P1 P2 00 00 F7
+  ///
+  /// POD XT Pro uses NON-CONTIGUOUS patch mapping (from pod-ui core/src/midi.rs):
+  /// - Patches 0-63: MIDI patch 0-63
+  /// - Patches 64-127: MIDI patch 192-255 (NOT 64-127!)
+  ///
+  /// After MIDI patch conversion, encode as 14-bit value split into two 7-bit bytes:
+  /// - P1 = upper 7 bits (midi_patch >> 7)
+  /// - P2 = lower 7 bits (midi_patch & 0x7F)
   static Uint8List requestPatch(int patchNumber) {
     assert(patchNumber >= 0 && patchNumber < programCount);
+
+    // POD XT Pro patch mapping (pod-ui: core/src/midi.rs PodXtPatch::to_midi)
+    int midiPatch;
+    if (patchNumber >= 0 && patchNumber <= 63) {
+      midiPatch = patchNumber;        // 0-63 -> MIDI 0-63
+    } else if (patchNumber >= 64 && patchNumber <= 127) {
+      midiPatch = patchNumber + 128;  // 64-127 -> MIDI 192-255
+    } else {
+      throw ArgumentError('Patch number must be 0-127, got $patchNumber');
+    }
+
+    // Encode MIDI patch as two 7-bit bytes (pod-ui: core/src/util.rs u16_to_2_u7)
+    final p1 = (midiPatch >> 7) & 0x7F;  // Upper 7 bits
+    final p2 = midiPatch & 0x7F;         // Lower 7 bits
+
     return buildMessage(
       SysexCommand.patchDumpRequest,
-      [0x00, patchNumber & 0x7F, 0x00, 0x00],
+      [p1, p2, 0x00, 0x00],
     );
   }
 
@@ -47,11 +69,12 @@ class PodXtSysex {
 
   /// Store patch to hardware slot
   ///
-  /// Format: F0 00 01 0C 03 71 P1 P2 ID ...160 bytes... F7
+  /// Format: F0 00 01 0C 03 71 ID P1 P2 ...160 bytes... F7
   /// After sending, must send patchDumpEnd marker
   ///
-  /// CRITICAL: Byte order must be [patch_lsb, patch_msb, id, data...]
-  /// This matches the format received in patch dump responses
+  /// POD XT Pro uses NON-CONTIGUOUS patch mapping (same as requestPatch):
+  /// - Patches 0-63: MIDI patch 0-63
+  /// - Patches 64-127: MIDI patch 192-255
   ///
   /// Returns the complete store message
   static Uint8List storePatch(int patchNumber, Uint8List patchData) {
@@ -60,16 +83,26 @@ class PodXtSysex {
     assert(patchData.length == programSize,
       'Patch data must be $programSize bytes');
 
-    // Encode patch number as single byte (POD XT uses 0-127)
-    final p1 = patchNumber & 0x7F;  // LSB
-    final p2 = (patchNumber >> 8) & 0x7F;  // MSB (always 0 for 0-127)
+    // POD XT Pro patch mapping (same as requestPatch)
+    int midiPatch;
+    if (patchNumber >= 0 && patchNumber <= 63) {
+      midiPatch = patchNumber;        // 0-63 -> MIDI 0-63
+    } else if (patchNumber >= 64 && patchNumber <= 127) {
+      midiPatch = patchNumber + 128;  // 64-127 -> MIDI 192-255
+    } else {
+      throw ArgumentError('Patch number must be 0-127, got $patchNumber');
+    }
+
+    // Encode MIDI patch as two 7-bit bytes
+    final p1 = (midiPatch >> 7) & 0x7F;  // Upper 7 bits
+    final p2 = midiPatch & 0x7F;         // Lower 7 bits
     final id = 0x05;  // Device ID (broadcast)
 
-    // CRITICAL: Order is [patch_lsb, patch_msb, id, data...]
-    // This matches the receive format in _handlePatchDump
+    // Format from pod-ui: ID, P1, P2, data
+    // (Note: Different from receive format which is P1, P2, ID, data)
     return buildMessage(
-      SysexCommand.patchDumpResponse, // Same command as dump (03 71)
-      [p1, p2, id, ...patchData],
+      SysexCommand.patchDumpResponse, // 03 71
+      [id, p1, p2, ...patchData],
     );
   }
 

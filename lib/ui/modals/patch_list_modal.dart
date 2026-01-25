@@ -2,9 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../theme/pod_theme.dart';
-import '../utils/color_extensions.dart';
 
-/// Patch list modal widget for selecting patches
+/// Patch list modal for selecting and managing patches
 class PatchListModal extends StatefulWidget {
   final PodController podController;
   final int currentProgram;
@@ -27,16 +26,13 @@ class PatchListModal extends StatefulWidget {
 
 class _PatchListModalState extends State<PatchListModal> {
   bool _importing = false;
-  String _statusMessage = '';
   StreamSubscription? _storeResultSubscription;
 
   @override
   void initState() {
     super.initState();
-    // Listen for store results
     _storeResultSubscription = widget.podController.onStoreResult.listen((result) {
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.success
@@ -56,33 +52,17 @@ class _PatchListModalState extends State<PatchListModal> {
   }
 
   Future<void> _importAllPatches() async {
-    setState(() {
-      _importing = true;
-      _statusMessage = 'Importing all patches...';
-    });
-
+    setState(() => _importing = true);
     try {
       await widget.podController.importAllPatchesFromHardware();
-      if (mounted) {
-        setState(() {
-          _importing = false;
-          _statusMessage = 'Import complete!';
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _importing = false;
-          _statusMessage = 'Import failed: $e';
-        });
-      }
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
   }
 
   Future<void> _savePatchToSlot(int slotNumber) async {
     try {
       await widget.podController.savePatchToHardware(slotNumber);
-      // Success/failure will be shown via stream listener
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,231 +76,283 @@ class _PatchListModalState extends State<PatchListModal> {
     }
   }
 
-  void _showSaveDialog(BuildContext context) {
-    // Show dialog to select slot number
+  void _showSaveDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: PodColors.surface,
-        title: const Text(
-          'Save Current Patch',
-          style: TextStyle(color: PodColors.textPrimary),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Select slot to save current patch:',
-              style: TextStyle(color: PodColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 300,
-              width: double.maxFinite,
-              child: ListView.builder(
-                itemCount: 128,
-                itemBuilder: (context, index) {
-                  final patch = widget.podController.patchLibrary[index];
-                  return ListTile(
-                    title: Text(
-                      '${index.toString().padLeft(3, '0')}: ${patch.name.isEmpty ? "(empty)" : patch.name}',
-                      style: const TextStyle(color: PodColors.textPrimary),
+      builder: (context) => Dialog(
+        backgroundColor: PodColors.background,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.7,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Save Current Patch',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: PodColors.textPrimary,
                     ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _savePatchToSlot(index);
-                    },
-                  );
-                },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: PodColors.textSecondary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _buildPatchGrid((program) {
+                  Navigator.pop(context);
+                  _savePatchToSlot(program);
+                }),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Action buttons row
-    final actionButtons = Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: _importing ? null : _importAllPatches,
-              icon: const Icon(Icons.download, size: 16),
-              label: Text(_importing ? 'Importing...' : 'Import All'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: PodColors.accent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+    return Dialog(
+      backgroundColor: PodColors.background,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.95,
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'PATCHES',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: PodColors.textPrimary,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: PodColors.textSecondary),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _showSaveDialog(context),
-              icon: const Icon(Icons.save, size: 16),
-              label: const Text('Save To...'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: PodColors.surfaceLight,
-                foregroundColor: PodColors.textPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
+            const SizedBox(height: 16),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _importing ? null : _importAllPatches,
+                    icon: const Icon(Icons.download, size: 18),
+                    label: Text(_importing ? 'IMPORTING...' : 'IMPORT ALL'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PodColors.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showSaveDialog,
+                    icon: const Icon(Icons.save, size: 18),
+                    label: const Text('SAVE TO...'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PodColors.surfaceLight,
+                      foregroundColor: PodColors.textPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+
+            // Main content
+            Expanded(
+              child: _importing || (!widget.patchesSynced && widget.syncedCount < 128)
+                  ? _buildImportProgress()
+                  : _buildPatchGrid(widget.onSelectPatch),
+            ),
+          ],
+        ),
       ),
     );
+  }
 
-    // Show sync progress if not complete
-    if (!widget.patchesSynced && widget.syncedCount < 128) {
-      return Column(
+  Widget _buildImportProgress() {
+    final percentage = ((widget.syncedCount / 128) * 100).toStringAsFixed(0);
+
+    return Center(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          actionButtons,
-          const SizedBox(height: 20),
-          CircularProgressIndicator(
-            value: widget.syncedCount / 128,
-            backgroundColor: PodColors.surfaceLight,
-            color: PodColors.accent,
+          SizedBox(
+            width: 100,
+            height: 100,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: CircularProgressIndicator(
+                    value: widget.syncedCount / 128,
+                    backgroundColor: PodColors.surfaceLight,
+                    color: PodColors.accent,
+                    strokeWidth: 8,
+                  ),
+                ),
+                Text(
+                  '$percentage%',
+                  style: const TextStyle(
+                    color: PodColors.accent,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+          const Text(
+            'Importing patches...',
+            style: TextStyle(
+              color: PodColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
-            'Syncing patches... ${widget.syncedCount}/128',
+            '${widget.syncedCount}/128 patches',
             style: const TextStyle(
               color: PodColors.textSecondary,
               fontSize: 14,
             ),
           ),
-          const SizedBox(height: 20),
         ],
-      );
-    }
+      ),
+    );
+  }
 
-    // Group patches by bank (32 banks, 4 patches each)
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        actionButtons,
-        if (_statusMessage.isNotEmpty)
+  Widget _buildPatchGrid(ValueChanged<int> onTap) {
+    return ListView.builder(
+      itemCount: 32, // 32 banks
+      itemBuilder: (context, bankIndex) {
+        return _buildBankRow(bankIndex, onTap);
+      },
+    );
+  }
+
+  Widget _buildBankRow(int bankIndex, ValueChanged<int> onTap) {
+    final bankNum = bankIndex + 1;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bank label
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
             child: Text(
-              _statusMessage,
+              'BANK ${bankNum.toString().padLeft(2, '0')}',
               style: const TextStyle(
-                color: PodColors.accent,
-                fontSize: 12,
+                color: PodColors.textSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
               ),
             ),
           ),
-        SizedBox(
-          height: 400,
-          child: ListView.builder(
-            itemCount: 32, // 32 banks
-            itemBuilder: (context, bankIndex) {
-              final bankNum = bankIndex + 1;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Bank header
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, top: 12, bottom: 4),
-                    child: Text(
-                      'Bank ${bankNum.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        color: PodColors.textSecondary,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+          // 4 patches (A, B, C, D)
+          Row(
+            children: List.generate(4, (slotIndex) {
+              final program = bankIndex * 4 + slotIndex;
+              final patch = widget.podController.patchLibrary[program];
+              final isSelected = program == widget.currentProgram;
+              final letter = String.fromCharCode('A'.codeUnitAt(0) + slotIndex);
+
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(program),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? PodColors.accent.withValues(alpha: 0.25)
+                          : PodColors.surfaceLight,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? PodColors.accent
+                            : PodColors.surfaceLight,
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
-                  ),
-                  // 4 patches per bank (A, B, C, D)
-                  Row(
-                    children: List.generate(4, (slotIndex) {
-                      final program = bankIndex * 4 + slotIndex;
-                      final patch = widget.podController.patchLibrary[program];
-                      final isSelected = program == widget.currentProgram;
-                      final letter = String.fromCharCode(
-                        'A'.codeUnitAt(0) + slotIndex,
-                      );
-
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => widget.onSelectPatch(program),
-                          child: Container(
-                            margin: const EdgeInsets.all(2),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? PodColors.accent.withValues(alpha: 0.2)
-                                  : PodColors.surfaceLight,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: isSelected
-                                    ? PodColors.accent
-                                    : PodColors.surfaceLight,
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Program number
-                                Text(
-                                  letter,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? PodColors.accent
-                                        : PodColors.textSecondary,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                // Patch name
-                                Text(
-                                  patch.name.isEmpty ? '(empty)' : patch.name,
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? PodColors.textPrimary
-                                        : patch.name.isEmpty
-                                            ? PodColors.textSecondary
-                                            : PodColors.textPrimary,
-                                    fontSize: 11,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ],
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Slot letter
+                        Text(
+                          letter,
+                          style: TextStyle(
+                            color: isSelected
+                                ? PodColors.accent
+                                : PodColors.textSecondary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
                         ),
-                      );
-                    }),
+                        const SizedBox(height: 4),
+                        // Patch name with dynamic font sizing
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            patch.name.isEmpty ? '(empty)' : patch.name,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? PodColors.textPrimary
+                                  : patch.name.isEmpty
+                                      ? PodColors.textSecondary.withValues(alpha: 0.6)
+                                      : PodColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.visible,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               );
-            },
+            }),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

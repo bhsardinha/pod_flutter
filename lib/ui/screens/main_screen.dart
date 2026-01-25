@@ -491,10 +491,10 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _showPatchListModal() {
-    showPodModal(
+    showDialog(
       context: context,
-      title: 'Patch Library',
-      child: PatchListModal(
+      barrierColor: PodColors.modalOverlay,
+      builder: (context) => PatchListModal(
         podController: widget.podController,
         currentProgram: _currentProgram,
         patchesSynced: _patchesSynced,
