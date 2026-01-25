@@ -521,7 +521,11 @@ class DelayModels {
     EffectModel(
       3,
       'Multi-Head',
-      [EffectParam('Feedback'), EffectParam('Heads'), EffectParam('Flutter')],
+      [
+        EffectParam('Feedback'),
+        EffectParam('Heads', maxValue: 8),
+        EffectParam('Flutter'),
+      ],
       null,
       'Roland RE-101',
     ),
@@ -542,11 +546,7 @@ class DelayModels {
     EffectModel(
       6,
       'Stereo Delay',
-      [
-        EffectParam('Offset'),
-        EffectParam('Feedback L'),
-        EffectParam('Feedback R'),
-      ],
+      [EffectParam('Offset'), EffectParam('Fdbk L'), EffectParam('Fdbk R')],
       null,
       'Line 6 Original',
     ),
@@ -569,7 +569,11 @@ class DelayModels {
     EffectModel(
       9,
       'Echo Platter',
-      [EffectParam('Feedback'), EffectParam('Heads'), EffectParam('Flutter')],
+      [
+        EffectParam('Feedback'),
+        EffectParam('Heads', maxValue: 8),
+        EffectParam('Flutter'),
+      ],
       'FX',
       'Binson EchoRec',
     ),
@@ -583,7 +587,11 @@ class DelayModels {
     EffectModel(
       11,
       'Low Rez',
-      [EffectParam('Feedback'), EffectParam('Tone'), EffectParam('Bits')],
+      [
+        EffectParam('Feedback'),
+        EffectParam('Tone'),
+        EffectParam('Bits', maxValue: 8),
+      ],
       'FX',
       'Line 6 Original',
     ),

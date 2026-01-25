@@ -260,7 +260,12 @@ class _EffectModalState extends State<EffectModal> {
                       value: _paramValues[param.ccParam] ?? 0,
                       minValue: param.minValue,
                       maxValue: param.maxValue,
-                      onValueChanged: (v) => _onParamChanged(param.ccParam, v),
+                      onValueChanged: (v) {
+                        final scaledValue = param.valueScaler != null
+                            ? param.valueScaler!(v)
+                            : v;
+                        _onParamChanged(param.ccParam, scaledValue);
+                      },
                       valueFormatter: param.formatter,
                     )),
 

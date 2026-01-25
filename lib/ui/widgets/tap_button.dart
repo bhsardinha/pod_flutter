@@ -26,6 +26,15 @@ class TapButton extends StatefulWidget {
   /// Callback when tempo is changed via swipe
   final Function(int newBpm) onTempoChanged;
 
+  /// Optional font size for the TAP label
+  final double? labelFontSize;
+
+  /// Optional font size for the BPM number
+  final double? bpmFontSize;
+
+  /// Whether to use dynamic font sizing (FittedBox)
+  final bool useDynamicSize;
+
   const TapButton({
     super.key,
     required this.bpm,
@@ -33,6 +42,9 @@ class TapButton extends StatefulWidget {
     required this.enableScrolling,
     required this.onTap,
     required this.onTempoChanged,
+    this.labelFontSize,
+    this.bpmFontSize,
+    this.useDynamicSize = false,
   });
 
   @override
@@ -267,59 +279,120 @@ class _TapButtonState extends State<TapButton> {
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'TAP',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _isBlinkOn
-                              ? const Color(0xFFFF7A00)
-                              : const Color(0xFF6A6A6A),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.8,
-                          shadows: _isBlinkOn
-                              ? [
-                                  Shadow(
-                                    color: const Color(0xFFFF7A00)
-                                        .withValues(alpha: 0.15),
-                                    blurRadius: 4,
-                                  ),
-                                  Shadow(
-                                    color: const Color(0xFFFF7A00)
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                  ),
-                                  Shadow(
-                                    color: const Color(0xFFFF7A00)
-                                        .withValues(alpha: 0.15),
-                                    blurRadius: 4,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                      ),
-                      if (widget.isTempoSynced) ...[
-                        const SizedBox(height: 2),
+                      if (widget.useDynamicSize)
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'TAP',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _isBlinkOn
+                                  ? const Color(0xFFFF7A00)
+                                  : const Color(0xFF6A6A6A),
+                              fontSize: widget.labelFontSize ?? 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.8,
+                              shadows: _isBlinkOn
+                                  ? [
+                                      Shadow(
+                                        color: const Color(0xFFFF7A00)
+                                            .withValues(alpha: 0.15),
+                                        blurRadius: 4,
+                                      ),
+                                      Shadow(
+                                        color: const Color(0xFFFF7A00)
+                                            .withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                      ),
+                                      Shadow(
+                                        color: const Color(0xFFFF7A00)
+                                            .withValues(alpha: 0.15),
+                                        blurRadius: 4,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          ),
+                        )
+                      else
                         Text(
-                          '${widget.bpm}',
+                          'TAP',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: _isBlinkOn
                                 ? const Color(0xFFFF7A00)
                                 : const Color(0xFF6A6A6A),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w400,
+                            fontSize: widget.labelFontSize ?? 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.8,
                             shadows: _isBlinkOn
                                 ? [
                                     Shadow(
                                       color: const Color(0xFFFF7A00)
+                                          .withValues(alpha: 0.15),
+                                      blurRadius: 4,
+                                    ),
+                                    Shadow(
+                                      color: const Color(0xFFFF7A00)
                                           .withValues(alpha: 0.3),
-                                      blurRadius: 3,
+                                      blurRadius: 8,
+                                    ),
+                                    Shadow(
+                                      color: const Color(0xFFFF7A00)
+                                          .withValues(alpha: 0.15),
+                                      blurRadius: 4,
                                     ),
                                   ]
                                 : null,
                           ),
                         ),
+                      if (widget.isTempoSynced) ...[
+                        const SizedBox(height: 2),
+                        if (widget.useDynamicSize)
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              '${widget.bpm}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _isBlinkOn
+                                    ? const Color(0xFFFF7A00)
+                                    : const Color(0xFF6A6A6A),
+                                fontSize: widget.bpmFontSize ?? 9,
+                                fontWeight: FontWeight.w400,
+                                shadows: _isBlinkOn
+                                    ? [
+                                        Shadow(
+                                          color: const Color(0xFFFF7A00)
+                                              .withValues(alpha: 0.3),
+                                          blurRadius: 3,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            '${widget.bpm}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _isBlinkOn
+                                  ? const Color(0xFFFF7A00)
+                                  : const Color(0xFF6A6A6A),
+                              fontSize: widget.bpmFontSize ?? 9,
+                              fontWeight: FontWeight.w400,
+                              shadows: _isBlinkOn
+                                  ? [
+                                      Shadow(
+                                        color: const Color(0xFFFF7A00)
+                                            .withValues(alpha: 0.3),
+                                        blurRadius: 3,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          ),
                       ],
                     ],
                   ),

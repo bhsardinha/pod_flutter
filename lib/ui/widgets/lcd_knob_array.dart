@@ -45,9 +45,20 @@ class LcdKnob extends StatelessWidget {
     }
 
     // Linear knob behavior: scroll down = CW = increase value
-    // Reduced sensitivity for note divisions (13 values) vs MS mode (16383 values)
     final delta = event.scrollDelta.dy;
-    final sensitivity = (value < 0) ? 200.0 : 35.0;
+    final range = maxValue - minValue;
+    double sensitivity;
+
+    if (value < 0) {
+      // Note divisions (-13 to -1), a small range of negative values
+      sensitivity = 200.0;
+    } else if (range <= 15) {
+      // Custom sensitivity for small-range knobs (e.g., Heads, Bits)
+      sensitivity = 400.0; // Much less sensitive
+    } else {
+      // Default for standard (0-127) and large-range (e.g., 0-16383) params
+      sensitivity = 35.0;
+    }
 
     final steps = (delta / sensitivity).round();
     if (steps != 0) {
@@ -65,8 +76,20 @@ class LcdKnob extends StatelessWidget {
     }
 
     // Linear knob behavior: drag up = CCW = increase value
-    // Reduced sensitivity for note divisions (13 values) vs MS mode (16383 values)
-    final sensitivity = (value < 0) ? 5.0 : 1.5;
+    final range = maxValue - minValue;
+    double sensitivity;
+
+    if (value < 0) {
+      // Note divisions (-13 to -1), a small range of negative values
+      sensitivity = 5.0;
+    } else if (range <= 15) {
+      // Custom sensitivity for small-range knobs (e.g., Heads, Bits)
+      sensitivity = 25.0; // Much less sensitive
+    } else {
+      // Default for standard (0-127) and large-range (e.g., 0-16383) params
+      sensitivity = 1.5;
+    }
+
     final steps = (-details.delta.dy / sensitivity).round();
     if (steps != 0) {
       final newValue = (value + steps).clamp(minValue, maxValue);

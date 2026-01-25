@@ -52,38 +52,40 @@ class ControlBarSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // WAH (flex 1.5) — EffectButton with smaller font, no model name
+        // WAH (flex 1.5) — EffectButton with dynamic font sizing
         Expanded(
-          flex: 15,
+          flex: 16,
           child: SizedBox.expand(
             child: EffectButton(
               label: 'WAH',
               isOn: wahEnabled,
               onTap: onWahToggle,
               onLongPress: onWahLongPress,
-              labelFontSize: 10,
+              labelFontSize: 12,
+              useDynamicLabelSize: true,
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
 
-        // FX LOOP (flex 1.5) — EffectButton with smaller font, no modal
+        // FX LOOP (flex 1.5) — EffectButton with dynamic font sizing, two lines
         Expanded(
-          flex: 15,
+          flex: 16,
           child: SizedBox.expand(
             child: EffectButton(
-              label: 'FX LOOP',
+              label: 'FX\nLOOP',
               isOn: loopEnabled,
               onTap: onLoopToggle,
-              labelFontSize: 10,
+              labelFontSize: 12,
+              useDynamicLabelSize: true,
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
 
         // Preset bar (flex 10)
         Expanded(
-          flex: 100,
+          flex: 95,
           child: SizedBox.expand(
             child: PatchBrowser(
               bank: formatProgramName(currentProgram),
@@ -95,11 +97,11 @@ class ControlBarSection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
 
         // TAP (flex 1.5) — Blinks at current BPM (only when delay is tempo-synced)
         Expanded(
-          flex: 15,
+          flex: 16,
           child: SizedBox.expand(
             child: TapButton(
               bpm: currentBpm,
@@ -107,10 +109,13 @@ class ControlBarSection extends StatelessWidget {
               enableScrolling: enableTempoScrolling,
               onTap: onTap,
               onTempoChanged: onTempoChanged,
+              labelFontSize: 12,
+              bpmFontSize: 10,
+              useDynamicSize: true,
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
 
         // Settings (flex 1.5) — EffectButton with icon
         Expanded(

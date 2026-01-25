@@ -40,11 +40,13 @@ String formatModSpeed(int value) {
 
 /// Represents a parameter mapping from EffectParam to CC control
 class EffectParamMapping {
-  final String label;                    // Display label (from EffectParam.name or custom)
-  final CCParam ccParam;                 // CC parameter to control
-  final String Function(int) formatter;  // Value display formatter
-  final int minValue;                    // Min MIDI value (default 0)
-  final int maxValue;                    // Max MIDI value (default 127)
+  final String label; // Display label (from EffectParam.name or custom)
+  final CCParam ccParam; // CC parameter to control
+  final String Function(int) formatter; // Value display formatter
+  final int minValue; // Min MIDI value (default 0)
+  final int maxValue; // Max MIDI value (default 127)
+  final int Function(int)?
+      valueScaler; // Optional: transform value before sending
 
   const EffectParamMapping({
     required this.label,
@@ -52,6 +54,7 @@ class EffectParamMapping {
     required this.formatter,
     this.minValue = 0,
     this.maxValue = 127,
+    this.valueScaler,
   });
 }
 
@@ -339,16 +342,29 @@ class DelayParamMapper extends EffectParamMapper {
       PodXtCC.delayParam4,
     ];
 
-    return List.generate(
-      model.params.length,
-      (i) => EffectParamMapping(
-        label: model.params[i].name.toUpperCase(),
-        ccParam: ccParams[i],
-        formatter: _getFormatterForParam(model.params[i].name),
-        minValue: model.params[i].minValue,
-        maxValue: model.params[i].maxValue,
-      ),
-    );
+    final List<EffectParamMapping> mappings = [];
+    for (int i = 0; i < model.params.length; i++) {
+      final param = model.params[i];
+      final paramName = param.name.toLowerCase();
+      int Function(int)? scaler;
+
+      if (paramName.contains('heads') || paramName.contains('bits')) {
+        // Scale 0-8 knob value to 0-112 MIDI value in steps of 14
+        scaler = (v) => (v * 14).clamp(0, 127);
+      }
+
+      mappings.add(
+        EffectParamMapping(
+          label: param.name.toUpperCase(),
+          ccParam: ccParams[i],
+          formatter: _getFormatterForParam(param.name),
+          minValue: param.minValue,
+          maxValue: param.maxValue,
+          valueScaler: scaler,
+        ),
+      );
+    }
+    return mappings;
   }
 
   String Function(int) _getFormatterForParam(String paramName) {
@@ -366,8 +382,26 @@ class DelayParamMapper extends EffectParamMapper {
       return (v) => '${(v * 100 / 127).round()}%';
     }
 
-    if (lower.contains('heads') || lower.contains('bits')) {
-      return (v) => '$v';
+    if (lower.contains('heads')) {
+      // Heads parameter: 0-8 range with labels for tape head combinations
+      // MIDI to step conversion: divide 128 values into 9 steps
+      // Step 0: MIDI 0-13, Step 1: MIDI 14-27, ... Step 8: MIDI 112-127
+      return (v) {
+        final step = (v * 9 / 128).floor().clamp(0, 8);
+        const labels = ['12--', '1-3-', '1--4', '-23-', '123-', '12-4', '1-34', '-234', '1234'];
+        return labels[step];
+      };
+    }
+
+    if (lower.contains('bits')) {
+      // Bits parameter: 0-8 range showing bit depth (12-bit down to 4-bit)
+      // MIDI to step conversion: divide 128 values into 9 steps
+      // Step 0: MIDI 0-13, Step 1: MIDI 14-27, ... Step 8: MIDI 112-127
+      return (v) {
+        final step = (v * 9 / 128).floor().clamp(0, 8);
+        const labels = ['12', '11', '10', '9', '8', '7', '6', '5', '4'];
+        return labels[step];
+      };
     }
 
     if (lower.contains('speed') || lower.contains('depth')) {

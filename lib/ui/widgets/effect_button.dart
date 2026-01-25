@@ -37,6 +37,9 @@ class EffectButton extends StatelessWidget {
   /// Optional icon to display instead of text
   final IconData? icon;
 
+  /// Whether to use dynamic font sizing for the label (FittedBox)
+  final bool useDynamicLabelSize;
+
   const EffectButton({
     super.key,
     required this.label,
@@ -48,6 +51,7 @@ class EffectButton extends StatelessWidget {
     this.labelFontSize,
     this.modelFontSize,
     this.icon,
+    this.useDynamicLabelSize = false,
   });
 
   @override
@@ -219,69 +223,145 @@ class EffectButton extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // Effect name with orange glow when ON
-                            Text(
-                              label,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: isOn
-                                    ? const Color(0xFFFF7A00)
-                                    : const Color(
-                                        0xFF6A6A6A), // Orange or lighter gray
-                                fontSize: labelFontSize ?? 14,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.8,
-                                // Discrete orange glow when ON
-                                shadows: isOn
-                                    ? [
-                                        Shadow(
-                                          color: const Color(
-                                            0xFFFF7A00,
-                                          ).withValues(alpha: 0.15),
-                                          blurRadius: 4,
-                                        ),
-                                        Shadow(
-                                          color: const Color(
-                                            0xFFFF7A00,
-                                          ).withValues(alpha: 0.3),
-                                          blurRadius: 8,
-                                        ),
-                                        Shadow(
-                                          color: const Color(
-                                            0xFFFF7A00,
-                                          ).withValues(alpha: 0.15),
-                                          blurRadius: 4,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                            ),
-                            // Model/preset name with subtle orange glow when ON
-                            if (modelName != null && modelName!.isNotEmpty) ...[
-                              const SizedBox(height: 2),
+                              // Effect name with orange glow when ON
+                              if (useDynamicLabelSize)
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      label,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      style: TextStyle(
+                                        color: isOn
+                                            ? const Color(0xFFFF7A00)
+                                            : const Color(
+                                                0xFF6A6A6A), // Orange or lighter gray
+                                        fontSize: labelFontSize ?? 14,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: 0.8,
+                                        height: 1.0,
+                                        // Discrete orange glow when ON
+                                        shadows: isOn
+                                            ? [
+                                                Shadow(
+                                                  color: const Color(
+                                                    0xFFFF7A00,
+                                                  ).withValues(alpha: 0.15),
+                                                  blurRadius: 4,
+                                                ),
+                                                Shadow(
+                                                  color: const Color(
+                                                    0xFFFF7A00,
+                                                  ).withValues(alpha: 0.3),
+                                                  blurRadius: 8,
+                                                ),
+                                                Shadow(
+                                                  color: const Color(
+                                                    0xFFFF7A00,
+                                                  ).withValues(alpha: 0.15),
+                                                  blurRadius: 4,
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                            else
                               Text(
-                                modelName!,
+                                label,
                                 textAlign: TextAlign.center,
+                                maxLines: 2,
                                 style: TextStyle(
                                   color: isOn
                                       ? const Color(0xFFFF7A00)
-                                          .withValues(alpha: 0.8)
-                                      : const Color(0xFF5A5A5A),
-                                  fontSize: modelFontSize ?? 11,
+                                      : const Color(
+                                          0xFF6A6A6A), // Orange or lighter gray
+                                  fontSize: labelFontSize ?? 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8,
+                                  height: 1.0,
+                                  // Discrete orange glow when ON
                                   shadows: isOn
                                       ? [
                                           Shadow(
                                             color: const Color(
                                               0xFFFF7A00,
+                                            ).withValues(alpha: 0.15),
+                                            blurRadius: 4,
+                                          ),
+                                          Shadow(
+                                            color: const Color(
+                                              0xFFFF7A00,
                                             ).withValues(alpha: 0.3),
-                                            blurRadius: 3,
+                                            blurRadius: 8,
+                                          ),
+                                          Shadow(
+                                            color: const Color(
+                                              0xFFFF7A00,
+                                            ).withValues(alpha: 0.15),
+                                            blurRadius: 4,
                                           ),
                                         ]
                                       : null,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
                               ),
+                            // Model/preset name with subtle orange glow when ON
+                            if (modelName != null && modelName!.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              if (useDynamicLabelSize)
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    modelName!,
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: isOn
+                                          ? const Color(0xFFFF7A00)
+                                              .withValues(alpha: 0.8)
+                                          : const Color(0xFF5A5A5A),
+                                      fontSize: modelFontSize ?? 9,
+                                      fontWeight: FontWeight.w300,
+                                      shadows: isOn
+                                          ? [
+                                              Shadow(
+                                                color: const Color(
+                                                  0xFFFF7A00,
+                                                ).withValues(alpha: 0.3),
+                                                blurRadius: 3,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                    maxLines: 1,
+                                  ),
+                                )
+                              else
+                                Text(
+                                  modelName!,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isOn
+                                        ? const Color(0xFFFF7A00)
+                                            .withValues(alpha: 0.8)
+                                        : const Color(0xFF5A5A5A),
+                                    fontSize: modelFontSize ?? 9,
+                                    fontWeight: FontWeight.w300,
+                                    shadows: isOn
+                                        ? [
+                                            Shadow(
+                                              color: const Color(
+                                                0xFFFF7A00,
+                                              ).withValues(alpha: 0.3),
+                                              blurRadius: 3,
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                             ],
                           ],
                         ),
