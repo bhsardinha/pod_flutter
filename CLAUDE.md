@@ -2,31 +2,74 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
 ## Project Overview
 
-Flutter mobile app to control the Line 6 POD XT Pro guitar processor via Bluetooth MIDI. Targets iOS and Android. Reference implementation: [pod-ui](https://github.com/arteme/pod-ui) (Rust/GTK desktop app with sysex protocol details).
+**POD Flutter** is a mobile MIDI controller for the Line 6 POD XT Pro guitar processor. Control all parameters, manage patches, and sync with hardware via Bluetooth MIDI.
 
-## Build & Development Commands
+- **Platform**: Flutter (iOS, Android, macOS)
+- **Target Device**: Line 6 POD XT Pro (NOT POD XT, POD XT Live, or other models)
+- **Communication**: BLE-MIDI and USB MIDI
+- **Reference**: [pod-ui](https://github.com/arteme/pod-ui) (Rust desktop app)
+
+**IMPORTANT**: pod-ui is the authoritative reference for POD XT Pro protocol behavior. When in doubt, check pod-ui implementation.
+
+---
+
+## Quick Reference
+
+### Documentation
+
+**Comprehensive docs** are in `/docs/`:
+- **`ARCHITECTURE.md`** - System design, layers, data flow, architecture decisions
+- **`PROTOCOL.md`** - Complete MIDI protocol reference (CC map, sysex commands, patch structure)
+- **`FEATURES.md`** - What's implemented, what's missing, roadmap
+- **`POD_XT_PRO_DIFFERENCES.md`** - Critical differences from other POD models
+
+**Read these first** before making significant changes!
+
+### Key Files
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `lib/services/pod_controller.dart` | High-level POD API, state management | 852 |
+| `lib/services/ble_midi_service.dart` | BLE/USB MIDI implementation | 390 |
+| `lib/protocol/cc_map.dart` | 70+ CC parameter definitions | 216 |
+| `lib/protocol/sysex.dart` | Sysex message builders/parsers | 250 |
+| `lib/protocol/effect_param_mappers.dart` | Effect-specific parameter mapping | 519 |
+| `lib/models/patch.dart` | Patch data model (160 bytes) | 150 |
+| `lib/ui/screens/main_screen.dart` | Primary UI | 708 |
+
+---
+
+## Build & Development
 
 ```bash
-flutter run              # Run app (requires device/emulator)
-flutter test             # Run all tests
-flutter test test/file.dart  # Run single test
-flutter analyze          # Lint code
-flutter pub get          # Get dependencies
-flutter build apk        # Build Android release
-flutter build ios        # Build iOS release
+# Run app (requires device/emulator)
+flutter run
+
+# Run tests
+flutter test
+flutter test test/file.dart  # Single test
+
+# Code quality
+flutter analyze
+flutter pub get
+
+# Build release
+flutter build apk        # Android
+flutter build ios        # iOS
+flutter build macos      # macOS
 ```
+
+---
 
 ## Coding Standards
 
-**IMPORTANT**
+### CRITICAL - Deprecated APIs
 
-- **THE pod-ui is the only source of truth** always create or edit things ensuring the mimic the exact behaviour of the full working rust app!
-
-**IMPORTANT - Deprecated APIs:**
-- **NEVER use `withOpacity()`** - it's deprecated and causes precision loss
-- **ALWAYS use `.withValues(alpha: value)`** instead
+**NEVER use `withOpacity()`** - it's deprecated and causes precision loss
 
 ```dart
 // ❌ WRONG - deprecated
@@ -36,222 +79,435 @@ Colors.white.withOpacity(0.95)
 Colors.white.withValues(alpha: 0.95)
 ```
 
-## Architecture
+### pod-ui Reference
+
+**THE pod-ui is the only source of truth** for protocol behavior. Always verify against pod-ui when implementing protocol features.
+
+**pod-ui location**: `/pod-ui-master/` in project root
+
+**Key pod-ui files**:
+- `mod-xt/src/config.rs` - POD XT Pro configuration (patch size, parameters)
+- `mod-xt/src/handler.rs` - Message handling (quirks, state machine)
+- `core/src/midi.rs` - MIDI protocol implementation
+
+---
+
+## Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                           Flutter App                                │
-├─────────────────────────────────────────────────────────────────────┤
-│  PodController (lib/services/pod_controller.dart)                   │
-│  - High-level API for controlling POD                               │
-│  - Manages EditBuffer (current patch state)                         │
-│  - Manages PatchLibrary (128 stored patches)                        │
-│  - Exposes streams for state changes                                │
-├─────────────────────────────────────────────────────────────────────┤
-│  MidiService (lib/services/midi_service.dart)                       │
-│  - Abstract interface for MIDI I/O                                  │
-│  BleMidiService (lib/services/ble_midi_service.dart)                │
-│  - Concrete BLE-MIDI implementation using flutter_midi_command      │
-├─────────────────────────────────────────────────────────────────────┤
-│  Protocol Layer (lib/protocol/)                                     │
-│  - constants.dart: Sysex commands, device IDs, pack flags           │
-│  - cc_map.dart: All 70+ CC parameter mappings                       │
-│  - sysex.dart: Sysex message encoding/decoding                      │
-├─────────────────────────────────────────────────────────────────────┤
-│  Models (lib/models/)                                               │
-│  - patch.dart: Patch/EditBuffer data structures (160 bytes)         │
-│  - amp_models.dart: 105 amp models (stock + MS/CC/BX packs)         │
-│  - cab_models.dart: 47 cabinet + 8 mic models                       │
-│  - effect_models.dart: Stomp/Mod/Delay/Reverb/Wah models           │
-└─────────────────────────────────────────────────────────────────────┘
-          │
-          │ BLE-MIDI
-          ▼
-┌─────────────────────┐     MIDI      ┌──────────────┐
-│  BT-MIDI Adapter    │ ───────────► │  POD XT Pro  │
-│  (CME WIDI, etc)    │               │              │
-└─────────────────────┘               └──────────────┘
+Flutter App (iOS/Android/macOS)
+       │
+       ├─── UI Layer (35 files)
+       │    └─ Screens, Modals, Widgets, Theme
+       │
+       ├─── Services (3 files)
+       │    ├─ PodController (main controller, 852 lines)
+       │    ├─ MidiService (abstract interface)
+       │    └─ BleMidiService (BLE/USB implementation)
+       │
+       ├─── Models (6 files)
+       │    ├─ Patch (160-byte data structure)
+       │    ├─ EditBuffer (current patch)
+       │    ├─ PatchLibrary (128 patches)
+       │    └─ Amp/Cab/Effect models
+       │
+       └─── Protocol (5 files)
+            ├─ CC Map (70+ parameters)
+            ├─ Sysex (message builders/parsers)
+            ├─ Constants (commands, device IDs)
+            └─ Effect Param Mappers
+
+       ↓ BLE/USB MIDI
+
+BT-MIDI Adapter → POD XT Pro Hardware
 ```
 
-## Key Files
+**See `docs/ARCHITECTURE.md` for complete details.**
 
-| File | Purpose |
-|------|---------|
-| `lib/protocol/cc_map.dart` | All 70+ CC parameters with addresses |
-| `lib/protocol/sysex.dart` | Sysex encoding, edit buffer requests |
-| `lib/services/pod_controller.dart` | Main controller with convenience APIs |
-| `lib/models/patch.dart` | Patch data model (160 bytes per patch for POD XT Pro) |
+---
 
-## MIDI Protocol Summary
+## POD XT Pro Specifics ⚠️
 
-**Control Changes**: Parameters are controlled via MIDI CC. Each CCParam has:
-- `cc`: MIDI CC number (0-127)
-- `address`: Buffer address for patch storage (offset 32 + CC typically)
+### CRITICAL DIFFERENCES FROM OTHER POD MODELS
 
-**Sysex Format**:
-```
-[0xF0] [0x00 0x01 0x0C] [command...] [data...] [0xF7]
-        └─ Line6 ID ─┘
-```
+**1. Patch Size**: **160 bytes** (NOT 152 like POD XT)
+   - Bytes 0-15: Patch name
+   - Bytes 16-159: Parameter data (144 bytes)
+   - **Code**: `lib/protocol/constants.dart:38`
+
+**2. Sysex Quirk**: POD responds with `03 74` (edit buffer) for patch requests (`03 73`), NOT `03 71` (patch dump)
+   - Must track `_expectedPatchNumber` to determine destination
+   - **Code**: `lib/services/pod_controller.dart:_handleEditBufferDump()`
+
+**3. Patch Dump End**: POD sends `03 72` after EACH patch, not just at end of bulk
+   - Must ignore `03 72` during bulk import
+   - **Code**: `lib/services/pod_controller.dart:_handlePatchDumpEnd()`
+
+**4. Non-Contiguous Mapping**: Patches 64-127 map to MIDI 192-255 (not 64-127)
+   - **Code**: `lib/protocol/sysex.dart:encodePatchNumber()`
+
+**5. Inverted Amp Enable**: CC 111 uses inverted logic (0=on, 127=off)
+   - **Code**: `lib/protocol/cc_map.dart:ampEnable`
+
+**See `docs/POD_XT_PRO_DIFFERENCES.md` for complete details.**
+
+---
+
+## MIDI Protocol Quick Reference
+
+### Control Changes (CC)
+
+70+ parameters controlled via MIDI CC:
+
+**Key Parameters**:
+- Amp Select (CC 12): 0-106 (107 models)
+- Drive, Bass, Mid, Treble, Presence (CC 13-16, 21)
+- Cab Select (CC 71): 0-46 (47 models)
+- Effect Enables (CC 22, 25, 26, 28, 36, 43, 50, 63)
+- EQ (CC 114-121): 4-band parametric
+- Tempo (CC 89+90): 14-bit, 30.0-240.0 BPM
+
+**Complete list**: `docs/PROTOCOL.md` or `lib/protocol/cc_map.dart`
+
+### Sysex Commands
+
+**Line 6 Sysex**: `F0 00 01 0C [command...] [data...] F7`
 
 **Key Commands**:
-- `[0x03, 0x75]` - Request edit buffer dump
-- `[0x03, 0x74]` - Edit buffer dump response
-- `[0x03, 0x73]` - Request patch dump
-- `[0x03, 0x71]` - Patch dump response
+- `03 75` - Request edit buffer dump
+- `03 74` - Edit buffer dump response (also used for patch dumps!)
+- `03 73` - Request patch dump
+- `03 71` - Store patch (send format)
+- `03 72` - Patch dump end marker
+- `03 50` - Store success
+- `03 51` - Store failure
+- `03 0E` - Request/response installed packs
 
-## Expansion Packs
+**Complete protocol**: `docs/PROTOCOL.md`
 
-| Flag | Name |
-|------|------|
-| MS (0x01) | Metal Shop Amp Expansion |
-| CC (0x02) | Collector's Classic Amp Expansion |
-| FX (0x04) | FX Junkie Effects Expansion |
-| BX (0x08) | Bass Expansion |
+---
 
-## POD XT Pro Specifics
+## Usage Examples
 
-**CRITICAL:** This app is for **POD XT Pro** specifically. POD XT and POD XT Pro have differences:
-
-### Patch Size (CRITICAL DIFFERENCE!)
-- **POD XT Pro**: **160 bytes per patch** (verified from hardware)
-- POD XT (non-Pro): 152 bytes (per pod-ui reference)
-- POD XT Live: Different
-- POD X3: Different again
-
-**IMPORTANT:** The pod-ui reference documentation describes POD XT (152 bytes), but POD XT Pro uses a different, larger patch size (160 bytes). This was verified by commit 9effcbf where changing from 152→160 made the app work with actual POD XT Pro hardware.
-
-**Structure** (POD XT Pro):
-- Bytes 0-15: Patch name (16 bytes, space-padded)
-- Bytes 16-159: Parameter data (144 bytes)
-- Total: 160 bytes
-
-### Sysex Message Format (POD XT Pro)
-
-**Edit Buffer Dump Response** (`0x03 0x74`):
-```
-F0 00 01 0C 03 74 [ID] [160 bytes raw data] F7
-- ID: 1 byte device ID
-- Data: 160 bytes (NOT nibble-encoded!)
-```
-
-**Patch Dump Response** (`0x03 0x71`):
-```
-F0 00 01 0C 03 71 [P_LSB] [P_MSB] [ID] [160 bytes raw data] F7
-- P_LSB, P_MSB: Patch number as 2 bytes (LSB, MSB)
-- ID: 1 byte device ID (usually 0x05)
-- Data: 160 bytes (NOT nibble-encoded!)
-```
-
-**Store Patch** (same as Patch Dump):
-```
-F0 00 01 0C 03 71 [P_LSB] [P_MSB] [ID] [160 bytes raw data] F7
-F0 00 01 0C 03 72 F7  # Patch dump end marker (REQUIRED)
-- Must send end marker after store
-- Response: 03 50 (success) or 03 51 (failure)
-```
-
-**CRITICAL**: POD XT Pro does NOT use nibble encoding for patch data (unlike other Line 6 devices). Data is sent raw.
-
-### Critical Quirk: Patch Dump Responses
-
-**POD XT/XT Pro responds to patch dump requests with edit buffer dumps!**
-
-When you request a patch dump (`03 73`), the POD responds with `03 74` (edit buffer dump), **NOT** `03 71` (patch dump).
-
-**Solution**: Track which patch you requested and treat `03 74` responses as patch dumps during bulk import:
+### Connect and Load Edit Buffer
 
 ```dart
-int? _expectedPatchNumber;
-
-// Request patch
-_expectedPatchNumber = 42;
-await sendSysex(requestPatch(42));
-
-// In edit buffer dump handler:
-if (_expectedPatchNumber != null) {
-  // This is a patch dump response, not edit buffer!
-  _patchLibrary[_expectedPatchNumber] = patch;
-  _expectedPatchNumber = null;
-} else {
-  _editBuffer = patch;
-}
-```
-
-This matches pod-ui behavior (handler.rs:292-316).
-
-### Bulk Import
-POD XT Pro does NOT support bulk dump commands. Must request patches individually:
-```dart
-bool _bulkImportInProgress = true;
-
-for (int i = 0; i < 128; i++) {
-  _expectedPatchNumber = i;
-  await sendSysex(requestPatch(i));
-  await waitForResponse();  // Waits for 03 74 edit buffer dump!
-  // POD sends 03 72 after EACH patch - do NOT treat as completion!
-}
-
-_bulkImportInProgress = false;
-```
-
-**CRITICAL**: Must wait for each patch response before requesting next. Simple delays are not sufficient - use Completers or similar to wait for actual responses.
-
-### Critical: Patch Dump End (03 72) Behavior
-
-**POD XT Pro sends `03 72` after EACH individual patch, NOT just at the end of bulk operations!**
-
-This is different from other POD models:
-- **Other POD models**: Support AllProgramsDump, send `03 72` once at the very end
-- **POD XT Pro**: No AllProgramsDump support, sends `03 72` after every single patch response
-
-**Message flow per patch:**
-1. Send `03 73` (Patch Dump Request)
-2. Receive `03 74` (Edit Buffer Dump - contains patch data)
-3. Receive `03 72` (Patch Dump End - just acknowledges this ONE patch)
-
-**Implementation:**
-```dart
-void _handlePatchDumpEnd(SysexMessage message) {
-  // During POD XT Pro bulk import, ignore individual 03 72 markers
-  if (_bulkImportInProgress) {
-    return;  // This is NOT the end of the bulk operation!
-  }
-
-  // Only treat as completion for other POD models
-  _patchesSynced = true;
-}
-```
-
-The actual completion is determined by the import loop finishing all 128 patches, NOT by receiving `03 72`.
-
-## Usage Pattern
-
-```dart
-// Create services
 final midi = BleMidiService();
 final pod = PodController(midi);
 
-// Connect
 final devices = await pod.scanDevices();
 await pod.connect(devices.first);
 
-// Control parameters
-await pod.setDrive(100);
-await pod.setAmpModel(22); // Brit J-800
-await pod.setDelayEnabled(true);
-
-// Listen for changes from device
-pod.onParameterChanged.listen((change) {
-  print('${change.param.name} = ${change.value}');
+// Edit buffer is automatically requested on connection
+pod.onEditBufferChanged.listen((buffer) {
+  print('Loaded: ${buffer.patch.name}');
 });
+```
 
-// Listen for store results
+### Change Parameters
+
+```dart
+// Direct parameter access
+await pod.setParameter(CCParams.drive, 95);
+
+// Convenience setters
+await pod.setDrive(95);
+await pod.setAmpModel(22);  // Brit J-800
+await pod.setDelayEnabled(true);
+```
+
+### Program Change
+
+```dart
+// Select program 5 (Bank A, patch 6)
+await pod.selectProgram(5);
+
+// Listen for program changes
+pod.onProgramChanged.listen((program) {
+  print('Program: $program');
+});
+```
+
+### Save Patch
+
+```dart
+// Save current edit buffer to slot 10
+await pod.savePatchToHardware(10);
+
+// Listen for result
 pod.onStoreResult.listen((result) {
   if (result.success) {
-    print('Patch saved!');
+    print('Saved to ${result.patchNumber}');
   } else {
-    print('Save failed: ${result.error}');
+    print('Failed: ${result.error}');
   }
 });
 ```
+
+### Bulk Import
+
+```dart
+// Import all 128 patches from hardware
+await pod.importAllPatchesFromHardware();
+
+// Listen for progress
+pod.onSyncProgress.listen((progress) {
+  print('${progress.current}/${progress.total}: ${progress.message}');
+});
+
+// Takes ~6.4 seconds (50ms × 128 patches)
+```
+
+---
+
+## Common Tasks
+
+### Adding a New Parameter
+
+1. **Add to CC map** (`lib/protocol/cc_map.dart`):
+   ```dart
+   static const myParam = CCParam(
+     cc: 99,
+     name: 'My Parameter',
+     minValue: 0,
+     maxValue: 127,
+   );
+   ```
+
+2. **Add convenience getter/setter** (`lib/services/pod_controller.dart`):
+   ```dart
+   int get myParam => getParameter(CCParams.myParam);
+   Future<void> setMyParam(int value) => setParameter(CCParams.myParam, value);
+   ```
+
+3. **Add UI control** (e.g., `lib/ui/screens/main_screen.dart`):
+   ```dart
+   RotaryKnob(
+     label: 'My Param',
+     value: _myParam,
+     minValue: 0,
+     maxValue: 127,
+     onChanged: (value) => widget.pod.setMyParam(value.round()),
+   )
+   ```
+
+### Adding a New Effect Model
+
+1. **Add to effect models** (`lib/models/effect_models.dart`):
+   ```dart
+   static const myEffect = EffectModel(
+     id: 99,
+     name: 'My Effect',
+     params: [
+       EffectParam(name: 'Param 1', maxValue: 127),
+       EffectParam(name: 'Param 2', maxValue: 100),
+     ],
+     pack: 'FX',  // or null for stock
+     basedOn: 'Real Effect Name',
+   );
+   ```
+
+2. **Add to mapper** (`lib/protocol/effect_param_mappers.dart`):
+   ```dart
+   // In appropriate mapper (StompParamMapper, ModParamMapper, etc.)
+   @override
+   List<EffectModel> get models => [
+     // ... existing models
+     EffectModels.myEffect,
+   ];
+   ```
+
+3. **Test** by selecting the effect in the UI
+
+### Debugging MIDI Issues
+
+1. **Enable verbose logging**:
+   ```dart
+   // In ble_midi_service.dart
+   print('MIDI RX: ${data.map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
+   ```
+
+2. **Check connection state**:
+   ```dart
+   pod.onConnectionStateChanged.listen((connected) {
+     print('Connected: $connected');
+   });
+   ```
+
+3. **Monitor parameter changes**:
+   ```dart
+   pod.onParameterChanged.listen((change) {
+     print('${change.param.name} = ${change.value}');
+   });
+   ```
+
+4. **Verify sysex responses**:
+   ```dart
+   _midi.onSysex.listen((message) {
+     print('Sysex: ${message.command.map((b) => b.toRadixString(16)).join(' ')}');
+   });
+   ```
+
+---
+
+## Known Issues & Limitations
+
+### Hardware Limitations
+
+- **No bulk dump**: Must request patches individually (~6.4s for 128 patches)
+- **Slow response**: Requires 50ms delay between patch requests
+- **Ambiguous responses**: Same sysex (03 74) for edit buffer and patch dumps
+- **No patch rename sysex**: Must save entire patch to update name
+
+### Software Limitations
+
+- **No patch caching**: Re-imports on every app launch
+- **Limited error recovery**: No retry logic for failed sysex
+- **Single device**: Can only connect to one POD at a time
+- **No undo/redo**: Parameter changes can't be undone
+
+**See `docs/FEATURES.md` for complete list and roadmap.**
+
+---
+
+## Testing
+
+### Current Coverage
+
+- ⚠️ Only basic widget_test.dart exists
+- ⚠️ No unit tests for protocol layer
+- ⚠️ No integration tests for PodController
+- ⚠️ No mock MIDI service
+
+### Testing Locally
+
+```bash
+# Run existing tests
+flutter test
+
+# Test on device
+flutter run
+
+# Test bulk import
+# (In app: Connect → Open connection modal → Tap "Import All Patches")
+
+# Test parameter changes
+# (Change knobs in app, verify on hardware)
+```
+
+### Manual Testing Checklist
+
+- [ ] Connect via BLE MIDI
+- [ ] Edit buffer loads on connection
+- [ ] Change amp model (verify on hardware)
+- [ ] Change effect parameters (verify on hardware)
+- [ ] Select different program (verify loads correctly)
+- [ ] Bulk import all 128 patches (progress updates correctly)
+- [ ] Save patch to hardware (success/failure feedback)
+- [ ] Hardware parameter changes update UI
+- [ ] Disconnect and reconnect (state preserved)
+
+---
+
+## Troubleshooting
+
+### "Can't connect to POD"
+
+1. Check Bluetooth is enabled
+2. Verify POD is powered on
+3. Check BT-MIDI adapter is connected to POD MIDI port
+4. Verify adapter is discoverable (check adapter manual)
+5. Try restarting app
+
+### "Bulk import stalls"
+
+1. Verify POD is responding (check hardware)
+2. Check connection (LED on adapter)
+3. Try again (sometimes hardware is slow)
+4. Check logs for sysex errors
+
+### "Wrong patch loads"
+
+1. Verify POD XT Pro (NOT POD XT or other model)
+2. Check patch mapping code (`encodePatchNumber`)
+3. Verify `_expectedPatchNumber` tracking
+
+### "Patches corrupted after import"
+
+1. **CRITICAL**: Verify you're using POD XT Pro (160 bytes), not POD XT (152 bytes)
+2. Check `programSize` constant
+3. Verify hardware device ID (0x0005 for POD XT Pro)
+
+### "Amp enable button backwards"
+
+1. Check `inverted` flag on `ampEnable` parameter
+2. Verify inversion logic in `Patch.getSwitch()` and `Patch.setSwitch()`
+
+**See `docs/PROTOCOL.md` for more troubleshooting.**
+
+---
+
+## Contributing
+
+### Before Making Changes
+
+1. **Read the docs**: Start with `docs/ARCHITECTURE.md` and `docs/PROTOCOL.md`
+2. **Understand the quirks**: Read `docs/POD_XT_PRO_DIFFERENCES.md`
+3. **Check pod-ui**: Verify behavior against reference implementation
+4. **Test on hardware**: Always test with actual POD XT Pro
+
+### Making Changes
+
+1. **Keep layer separation**: Don't mix protocol/service/UI logic
+2. **Maintain pod-ui compatibility**: Match reference behavior exactly
+3. **Handle quirks correctly**: Don't break critical sysex handling
+4. **Test thoroughly**: Verify on real hardware, not just emulator
+
+### Pull Request Checklist
+
+- [ ] Code follows existing style
+- [ ] All POD XT Pro quirks still handled correctly
+- [ ] Tested on real POD XT Pro hardware
+- [ ] No regressions in existing features
+- [ ] Documentation updated if needed
+- [ ] No deprecated APIs used (e.g., `withOpacity`)
+
+---
+
+## Additional Resources
+
+### Documentation
+
+- `docs/ARCHITECTURE.md` - Complete architecture documentation
+- `docs/PROTOCOL.md` - Full MIDI protocol reference
+- `docs/FEATURES.md` - Feature list and roadmap
+- `docs/POD_XT_PRO_DIFFERENCES.md` - POD XT Pro specific differences
+
+### Reference Implementation
+
+- pod-ui (Rust/GTK): `/pod-ui-master/`
+  - `mod-xt/src/config.rs` - Configuration
+  - `mod-xt/src/handler.rs` - Message handling
+  - `core/src/midi.rs` - MIDI protocol
+
+### Line 6 Resources
+
+- POD XT Pro Manual (MIDI Implementation Chart)
+- Line 6 MIDI specification (not publicly available, reverse-engineered)
+
+---
+
+## Summary
+
+**POD Flutter** is a production-ready mobile controller for POD XT Pro. The codebase is well-structured with clear layer separation and comprehensive POD XT Pro quirk handling.
+
+**Key points**:
+- ✅ Complete parameter control (70+ CC parameters)
+- ✅ Full patch management (128 patches)
+- ✅ All POD XT Pro quirks correctly handled
+- ✅ Stream-based reactive architecture
+- ✅ Production-quality UI with POD hardware appearance
+- ⚠️ Requires POD XT Pro specifically (NOT other models)
+- ⚠️ Limited test coverage (needs improvement)
+
+**Before implementing new features**, read the comprehensive documentation in `/docs/` and verify against pod-ui reference implementation.
