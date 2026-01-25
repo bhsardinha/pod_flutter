@@ -32,9 +32,6 @@ class RotaryKnob extends StatefulWidget {
   /// Size of the knob (diameter)
   final double size;
 
-  /// Whether to show tick marks around the edge
-  final bool showTickMarks;
-
   /// Optional formatter for displaying the value
   /// If null, displays the raw integer value
   final String Function(int value)? valueFormatter;
@@ -53,7 +50,6 @@ class RotaryKnob extends StatefulWidget {
     this.minValue = 0,
     this.maxValue = 127,
     this.size = 80.0,
-    this.showTickMarks = true,
     this.valueFormatter,
     this.labelFontSize = 10.0,
     this.textSpacing = 4.0,
@@ -260,11 +256,7 @@ class _RotaryKnobState extends State<RotaryKnob> {
             height: widget.size,
             child: CustomPaint(
               painter: _RotaryKnobPainter(
-                value: _currentValue,
-                minValue: widget.minValue,
-                maxValue: widget.maxValue,
                 angle: _valueToAngle(_currentValue),
-                showTickMarks: widget.showTickMarks,
               ),
             ),
           ),
@@ -290,21 +282,13 @@ class _RotaryKnobState extends State<RotaryKnob> {
 
 /// Custom painter for the minimalist rotary knob
 class _RotaryKnobPainter extends CustomPainter {
-  final int value;
-  final int minValue;
-  final int maxValue;
   final double angle;
-  final bool showTickMarks;
 
   static const double _startAngle = 135.0 * math.pi / 180.0; // 7:30 position
   static const double _totalArc = 270.0 * math.pi / 180.0;
 
   _RotaryKnobPainter({
-    required this.value,
-    required this.minValue,
-    required this.maxValue,
     required this.angle,
-    required this.showTickMarks,
   });
 
   @override
@@ -354,7 +338,6 @@ class _RotaryKnobPainter extends CustomPainter {
       ).createShader(innerRect);
     canvas.drawCircle(center, innerR, innerPaint);
 
-    // Black center circle
     // Black center circle
     // Scale group (center circle, pointer rectangle, and dash) together
     const double groupScale = 1.32; // scale by 15%
@@ -426,8 +409,6 @@ class _RotaryKnobPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RotaryKnobPainter oldDelegate) {
-    return oldDelegate.value != value ||
-        oldDelegate.angle != angle ||
-        oldDelegate.showTickMarks != showTickMarks;
+    return oldDelegate.angle != angle;
   }
 }
