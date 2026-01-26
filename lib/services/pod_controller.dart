@@ -56,6 +56,9 @@ class PodController {
   int? _expectedPatchNumber;
   bool _bulkImportInProgress = false;
 
+  // Save operation tracking
+  int? _lastSavedPatchNumber;
+
   PodController(this._midi) {
     _setupListeners();
   }
@@ -653,14 +656,27 @@ class PodController {
 
   /// Handle store success response (03 50)
   void _handleStoreSuccess(SysexMessage message) {
-    _storeResultController.add(StoreResult(success: true));
+    // Update patch library with saved patch
+    if (_lastSavedPatchNumber != null) {
+      _patchLibrary.patches[_lastSavedPatchNumber!] = Patch.fromData(_editBuffer.patch.data);
+    }
+
+    _storeResultController.add(
+      StoreResult(success: true, patchNumber: _lastSavedPatchNumber),
+    );
+    _lastSavedPatchNumber = null;
   }
 
   /// Handle store failure response (03 51)
   void _handleStoreFailure(SysexMessage message) {
     _storeResultController.add(
-      StoreResult(success: false, error: 'Store operation failed'),
+      StoreResult(
+        success: false,
+        patchNumber: _lastSavedPatchNumber,
+        error: 'Store operation failed',
+      ),
     );
+    _lastSavedPatchNumber = null;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -753,6 +769,9 @@ class PodController {
 
     print('POD: Saving to hardware slot $patchNumber...');
 
+    // Track which patch we're saving for the result callback
+    _lastSavedPatchNumber = patchNumber;
+
     // Get patch data
     final patchData = _editBuffer.patch.data;
 
@@ -766,6 +785,39 @@ class PodController {
     // Wait for success/failure response (handled in _handleSysex)
     // The response will be 03 50 (success) or 03 51 (failure)
     print('POD: Store command sent, waiting for confirmation...');
+  }
+
+  /// Rename an existing patch slot without loading it
+  ///
+  /// Updates the patch name in the specified slot and saves to hardware
+  Future<void> renamePatch(int patchNumber, String newName) async {
+    if (_connectionState != PodConnectionState.connected) {
+      throw StateError('Not connected to device');
+    }
+
+    if (patchNumber < 0 || patchNumber >= programCount) {
+      throw ArgumentError('Patch number must be 0-${programCount - 1}');
+    }
+
+    print('POD: Renaming patch $patchNumber to "$newName"...');
+
+    // Track which patch we're saving
+    _lastSavedPatchNumber = patchNumber;
+
+    // Get existing patch data from library
+    final patch = _patchLibrary[patchNumber];
+
+    // Update name (max 16 chars, padded with spaces)
+    patch.name = newName;
+
+    // Build and send store command with updated patch
+    final storeMsg = PodXtSysex.storePatch(patchNumber, patch.data);
+    await _midi.sendSysex(storeMsg);
+
+    // Send end marker
+    await _midi.sendSysex(PodXtSysex.requestPatchDumpEnd());
+
+    print('POD: Rename command sent, waiting for confirmation...');
   }
 
   /// Dispose resources
@@ -811,11 +863,12 @@ class SyncProgress {
 /// Store operation result
 class StoreResult {
   final bool success;
+  final int? patchNumber;
   final String? error;
 
-  StoreResult({required this.success, this.error});
+  StoreResult({required this.success, this.patchNumber, this.error});
 
   @override
   String toString() =>
-      success ? 'StoreResult(success)' : 'StoreResult(failed: $error)';
+      success ? 'StoreResult(success, patch=$patchNumber)' : 'StoreResult(failed: $error)';
 }

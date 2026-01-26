@@ -34,6 +34,8 @@ class _PatchListModalState extends State<PatchListModal> {
     super.initState();
     _storeResultSubscription = widget.podController.onStoreResult.listen((result) {
       if (!mounted) return;
+
+      // Show success/failure feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result.success
@@ -43,8 +45,9 @@ class _PatchListModalState extends State<PatchListModal> {
           duration: Duration(seconds: result.success ? 2 : 3),
         ),
       );
-      // Update UI to show new patch name after successful save
-      if (result.success && mounted) {
+
+      // Update UI to show updated patch in the specific slot
+      if (result.success && result.patchNumber != null && mounted) {
         setState(() {});
       }
     });
@@ -86,7 +89,10 @@ class _PatchListModalState extends State<PatchListModal> {
     }
   }
 
-  Future<void> _savePatchToSlot(int slotNumber) async {
+  Future<void> _savePatchToSlot(int slotNumber, String patchName) async {
+    // Update patch name in edit buffer before saving
+    widget.podController.editBuffer.patch.name = patchName;
+
     try {
       await widget.podController.savePatchToHardware(slotNumber);
     } catch (e) {
@@ -102,7 +108,100 @@ class _PatchListModalState extends State<PatchListModal> {
     }
   }
 
+  Future<void> _renamePatch(int patchNumber, String currentName) async {
+    final controller = TextEditingController(text: currentName);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: PodColors.background,
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Rename Patch',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: PodColors.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: PodColors.textSecondary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                maxLength: 16,
+                autofocus: true,
+                style: const TextStyle(color: PodColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Patch Name',
+                  labelStyle: const TextStyle(color: PodColors.textSecondary),
+                  filled: true,
+                  fillColor: PodColors.surfaceLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  counterStyle: const TextStyle(color: PodColors.textSecondary),
+                ),
+                onSubmitted: (value) => Navigator.pop(context, value),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('CANCEL'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, controller.text),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PodColors.accent,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('RENAME'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty && mounted) {
+      try {
+        await widget.podController.renamePatch(patchNumber, newName);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Rename failed: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _showSaveDialog() {
+    final controller = TextEditingController(text: widget.podController.editBuffer.patch.name);
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -131,11 +230,29 @@ class _PatchListModalState extends State<PatchListModal> {
                 ],
               ),
               const SizedBox(height: 16),
+              // Editable patch name field
+              TextField(
+                controller: controller,
+                maxLength: 16,
+                style: const TextStyle(color: PodColors.textPrimary, fontSize: 16),
+                decoration: InputDecoration(
+                  labelText: 'Patch Name',
+                  labelStyle: const TextStyle(color: PodColors.textSecondary),
+                  filled: true,
+                  fillColor: PodColors.surfaceLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  counterStyle: const TextStyle(color: PodColors.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 16),
               Expanded(
                 child: _buildPatchGrid((program) {
                   Navigator.pop(context);
-                  _savePatchToSlot(program);
-                }),
+                  _savePatchToSlot(program, controller.text);
+                }, isRenameMode: false),
               ),
             ],
           ),
@@ -208,7 +325,7 @@ class _PatchListModalState extends State<PatchListModal> {
 
             // Main content
             Expanded(
-              child: _buildPatchGrid(widget.onSelectPatch),
+              child: _buildPatchGrid(widget.onSelectPatch, isRenameMode: true),
             ),
           ],
         ),
@@ -216,16 +333,16 @@ class _PatchListModalState extends State<PatchListModal> {
     );
   }
 
-  Widget _buildPatchGrid(ValueChanged<int> onTap) {
+  Widget _buildPatchGrid(ValueChanged<int> onTap, {required bool isRenameMode}) {
     return ListView.builder(
       itemCount: 32, // 32 banks
       itemBuilder: (context, bankIndex) {
-        return _buildBankRow(bankIndex, onTap);
+        return _buildBankRow(bankIndex, onTap, isRenameMode: isRenameMode);
       },
     );
   }
 
-  Widget _buildBankRow(int bankIndex, ValueChanged<int> onTap) {
+  Widget _buildBankRow(int bankIndex, ValueChanged<int> onTap, {required bool isRenameMode}) {
     final bankNum = bankIndex + 1;
 
     return Padding(
@@ -241,6 +358,7 @@ class _PatchListModalState extends State<PatchListModal> {
           return Expanded(
             child: GestureDetector(
               onTap: () => onTap(program),
+              onLongPress: isRenameMode ? () => _renamePatch(program, patch.name) : null,
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 padding: const EdgeInsets.symmetric(
