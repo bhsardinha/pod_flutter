@@ -27,6 +27,7 @@ class _ConnectionModalState extends State<ConnectionModal> {
   List<MidiDeviceInfo> _devices = [];
   bool _scanning = false;
   String? _error;
+  String? _connectingDeviceId; // Track which device is being connected
   StreamSubscription<List<MidiDeviceInfo>>? _deviceSubscription;
 
   @override
@@ -34,8 +35,9 @@ class _ConnectionModalState extends State<ConnectionModal> {
     super.initState();
 
     // Listen for device changes (hot-plug detection)
+    // But don't update list while connecting to avoid reordering
     _deviceSubscription = widget.podController.onDevicesChanged.listen((devices) {
-      if (mounted) {
+      if (mounted && _connectingDeviceId == null) {
         setState(() {
           _devices = devices;
           _scanning = false;
@@ -85,14 +87,25 @@ class _ConnectionModalState extends State<ConnectionModal> {
   Future<void> _connectToDevice(MidiDeviceInfo device) async {
     if (!mounted) return;
 
+    // Set connecting state immediately for UI feedback
+    setState(() {
+      _connectingDeviceId = device.id;
+      _error = null;
+    });
+
     try {
+      // Start connection in background
       await widget.podController.connect(device);
+
+      // Close modal immediately on success
       if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      // Show error and clear connecting state
       if (mounted) {
         setState(() {
+          _connectingDeviceId = null;
           _error = 'Failed to connect: $e';
         });
       }
@@ -239,7 +252,7 @@ class _ConnectionModalState extends State<ConnectionModal> {
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: _scanDevices,
+                onPressed: _connectingDeviceId == null ? _scanDevices : null,
                 icon: const Icon(Icons.refresh),
                 label: const Text('Scan Again'),
               ),
@@ -255,38 +268,76 @@ class _ConnectionModalState extends State<ConnectionModal> {
               ),
               const SizedBox(height: 12),
               ..._devices.map(
-                (device) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ElevatedButton(
-                    onPressed: () => _connectToDevice(device),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: PodColors.surfaceLight,
-                      foregroundColor: PodColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                (device) {
+                  final isConnecting = _connectingDeviceId == device.id;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ElevatedButton(
+                      onPressed: _connectingDeviceId == null
+                          ? () => _connectToDevice(device)
+                          : null, // Disable all buttons while connecting
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isConnecting
+                            ? PodColors.surfaceLight.withValues(alpha: 0.7)
+                            : PodColors.surfaceLight,
+                        foregroundColor: PodColors.textPrimary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          if (isConnecting)
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  PodColors.textPrimary,
+                                ),
+                              ),
+                            )
+                          else
+                            Icon(
+                              device.isBleMidi ? Icons.bluetooth : Icons.usb,
+                              size: 18,
+                            ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              device.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isConnecting
+                                    ? PodColors.textPrimary.withValues(alpha: 0.7)
+                                    : PodColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (isConnecting)
+                            const Padding(
+                              padding: EdgeInsets.only(left: 8),
+                              child: Text(
+                                'Connecting...',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: PodColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          device.isBleMidi ? Icons.bluetooth : Icons.usb,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            device.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 12),
-              TextButton(onPressed: _scanDevices, child: const Text('Refresh')),
+              TextButton(
+                onPressed: _connectingDeviceId == null ? _scanDevices : null,
+                child: const Text('Refresh'),
+              ),
             ],
           ),
       ],

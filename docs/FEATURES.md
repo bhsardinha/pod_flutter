@@ -342,6 +342,10 @@ This document provides a comprehensive overview of implemented features, known l
 
 ## Not Implemented / Missing Features ❌
 
+### Host / Client for mobile control, without BLE avaliability
+
+- Connect straight to mac via USB, but control via Smartphone Client App - proxy - Exact same interface but different functionality
+
 ### Advanced Patch Management
 
 - ❌ **Patch Copy/Paste**
@@ -436,9 +440,6 @@ This document provides a comprehensive overview of implemented features, known l
   - Currently landscape-only
   - Portrait mode could use scrolling layout
 
-- ❌ **Dark/Light Theme Toggle**
-  - Currently fixed dark theme
-  - Light mode for outdoor use
 
 - ❌ **Custom Color Schemes**
   - User-selectable color palettes
@@ -616,9 +617,6 @@ This document provides a comprehensive overview of implemented features, known l
    - Animated waveforms
    - LFO displays
 
-3. **Custom Color Schemes**
-   - User themes
-   - Dark/light mode
 
 4. **Tablet Optimization**
    - Multi-column layout
@@ -668,7 +666,6 @@ If you'd like to contribute, consider implementing one of the missing features:
 **Easy**:
 - Tuner display
 - Patch export/import (.syx files)
-- Dark/light theme toggle
 
 **Medium**:
 - Undo/redo with command pattern
