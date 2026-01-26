@@ -4,6 +4,7 @@
 library;
 
 import 'dart:async';
+import 'dart:typed_data';
 import '../models/patch.dart';
 import '../models/amp_models.dart';
 import '../models/cab_models.dart';
@@ -58,6 +59,7 @@ class PodController {
 
   // Save operation tracking
   int? _lastSavedPatchNumber;
+  List<int>? _lastSavedPatchData;
 
   PodController(this._midi) {
     _setupListeners();
@@ -656,15 +658,17 @@ class PodController {
 
   /// Handle store success response (03 50)
   void _handleStoreSuccess(SysexMessage message) {
-    // Update patch library with saved patch
-    if (_lastSavedPatchNumber != null) {
-      _patchLibrary.patches[_lastSavedPatchNumber!] = Patch.fromData(_editBuffer.patch.data);
+    // Update patch library with saved patch data
+    if (_lastSavedPatchNumber != null && _lastSavedPatchData != null) {
+      final patchData = Uint8List.fromList(_lastSavedPatchData!);
+      _patchLibrary.patches[_lastSavedPatchNumber!] = Patch.fromData(patchData);
     }
 
     _storeResultController.add(
       StoreResult(success: true, patchNumber: _lastSavedPatchNumber),
     );
     _lastSavedPatchNumber = null;
+    _lastSavedPatchData = null;
   }
 
   /// Handle store failure response (03 51)
@@ -677,6 +681,7 @@ class PodController {
       ),
     );
     _lastSavedPatchNumber = null;
+    _lastSavedPatchData = null;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -769,11 +774,12 @@ class PodController {
 
     print('POD: Saving to hardware slot $patchNumber...');
 
-    // Track which patch we're saving for the result callback
-    _lastSavedPatchNumber = patchNumber;
-
     // Get patch data
     final patchData = _editBuffer.patch.data;
+
+    // Track which patch we're saving for the result callback
+    _lastSavedPatchNumber = patchNumber;
+    _lastSavedPatchData = List<int>.from(patchData);
 
     // Build and send store command
     final storeMsg = PodXtSysex.storePatch(patchNumber, patchData);
@@ -801,17 +807,21 @@ class PodController {
 
     print('POD: Renaming patch $patchNumber to "$newName"...');
 
-    // Track which patch we're saving
+    // Get existing patch data from library and create a copy
+    final existingPatch = _patchLibrary[patchNumber];
+
+    // Create a new patch from the existing data
+    final updatedPatch = Patch.fromData(existingPatch.data);
+
+    // Update name (this modifies the underlying data bytes)
+    updatedPatch.name = newName;
+
+    // Track which patch we're saving and store the data
     _lastSavedPatchNumber = patchNumber;
-
-    // Get existing patch data from library
-    final patch = _patchLibrary[patchNumber];
-
-    // Update name (max 16 chars, padded with spaces)
-    patch.name = newName;
+    _lastSavedPatchData = List<int>.from(updatedPatch.data);
 
     // Build and send store command with updated patch
-    final storeMsg = PodXtSysex.storePatch(patchNumber, patch.data);
+    final storeMsg = PodXtSysex.storePatch(patchNumber, updatedPatch.data);
     await _midi.sendSysex(storeMsg);
 
     // Send end marker
