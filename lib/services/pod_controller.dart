@@ -664,10 +664,21 @@ class PodController {
       final savedPatch = Patch.fromData(patchData);
       _patchLibrary.patches[_lastSavedPatchNumber!] = savedPatch;
 
-      // If we saved/renamed the currently loaded patch, update edit buffer too
+      // If we saved/renamed the currently loaded patch, reload it on hardware
+      // to update the POD's display with the new name
       if (_lastSavedPatchNumber == _currentProgram) {
+        // Update local edit buffer immediately
         _editBuffer.patch = savedPatch;
         _editBufferController.add(_editBuffer);
+
+        // Tell POD to reload the patch from saved slot to update its display
+        // Use program change to force reload
+        _midi.sendProgramChange(_currentProgram);
+
+        // Small delay before requesting edit buffer to ensure POD has switched
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _midi.requestEditBuffer();
+        });
       }
     }
 
