@@ -740,15 +740,15 @@ class _MainScreenState extends State<MainScreen> {
       builder: (context) => Dialog(
         backgroundColor: PodColors.background,
         child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(20),
+          width: MediaQuery.of(context).size.width * 0.6,
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(
                 Icons.warning_amber_rounded,
                 color: Colors.orange,
-                size: 48,
+                size: 56,
               ),
               const SizedBox(height: 16),
               const Text(
