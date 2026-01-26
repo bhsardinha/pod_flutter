@@ -452,6 +452,7 @@ class _MainScreenState extends State<MainScreen> {
                     onPreviousPatch: _previousPatch,
                     onNextPatch: _nextPatch,
                     onPatchTap: _showPatchListModal,
+                    onModifiedTap: _showModifiedIndicatorDialog,
                     onTap: () => widget.podController.sendTapTempo(),
                     onTempoChanged: (newBpm) =>
                         widget.podController.setTempo(newBpm),
@@ -769,43 +770,178 @@ class _MainScreenState extends State<MainScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context, 'cancel'),
-                      child: const Text(
-                        'CANCEL',
-                        style: TextStyle(fontSize: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, 'save_current'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PodColors.accent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'SAVE TO CURRENT',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, 'save_other'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PodColors.accent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'SAVE TO OTHER',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, 'discard'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PodColors.surfaceLight,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'DISCARD',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context, 'cancel'),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'CANCEL',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result == 'save_current') {
+      // Save to current slot then proceed
+      await _saveToCurrentSlot();
+      return true; // Proceed with patch change
+    } else if (result == 'save_other') {
+      // Show save dialog
+      await _showSaveBeforeChangeDialog();
+      return false; // Don't proceed - save dialog handles it
+    }
+
+    // Return true for 'discard', false for 'cancel' or null
+    return result == 'discard';
+  }
+
+  /// Show modified indicator dialog when clicking the asterisk (*)
+  Future<void> _showModifiedIndicatorDialog() async {
+    final result = await showDialog<String>(
+      context: context,
+      barrierColor: PodColors.modalOverlay,
+      builder: (context) => Dialog(
+        backgroundColor: PodColors.background,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.55,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.edit_outlined,
+                color: PodColors.accent,
+                size: 56,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Patch Modified',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: PodColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'This patch has unsaved changes.\nWhat would you like to do?',
+                style: TextStyle(
+                  color: PodColors.textSecondary,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, 'save_current'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PodColors.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text(
+                      'SAVE TO CURRENT SLOT',
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, 'discard'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PodColors.surfaceLight,
-                      ),
-                      child: const Text(
-                        'DISCARD',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, 'save_other'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PodColors.surfaceLight,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text(
+                      'SAVE TO OTHER SLOT',
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context, 'save'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PodColors.accent,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text(
-                        'SAVE & CHANGE',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, 'discard'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text(
+                      'DISCARD CHANGES',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, 'cancel'),
+                    child: const Text(
+                      'CANCEL',
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                 ],
@@ -816,14 +952,38 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
 
-    if (result == 'save') {
-      // Show save dialog
+    if (result == 'save_current') {
+      await _saveToCurrentSlot();
+    } else if (result == 'save_other') {
       await _showSaveBeforeChangeDialog();
-      return false; // Don't proceed - save dialog handles it
+    } else if (result == 'discard') {
+      await _discardChanges();
     }
+  }
 
-    // Return true for 'discard', false for 'cancel' or null
-    return result == 'discard';
+  /// Save current edit buffer to the current slot
+  Future<void> _saveToCurrentSlot() async {
+    try {
+      await widget.podController.savePatchToHardware(_currentProgram);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Save failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Discard changes and reload original patch from library
+  Future<void> _discardChanges() async {
+    if (_patchesSynced && _currentProgram >= 0 && _currentProgram < 128) {
+      // Reload the patch from the library
+      await widget.podController.selectProgram(_currentProgram);
+    }
   }
 
   /// Show save dialog before changing patch

@@ -27,6 +27,9 @@ class PatchBrowser extends StatelessWidget {
   /// Callback when center is tapped (open patch list)
   final VoidCallback onTap;
 
+  /// Callback when modified indicator (*) is tapped
+  final VoidCallback? onModifiedTap;
+
   const PatchBrowser({
     super.key,
     required this.bank,
@@ -35,6 +38,7 @@ class PatchBrowser extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onTap,
+    this.onModifiedTap,
   });
 
   @override
@@ -97,15 +101,18 @@ class PatchBrowser extends StatelessWidget {
                       // Right column: Modified indicator
                       SizedBox(
                         width: 30,
-                        child: Text(
-                          isModified ? '*' : '',
-                          style: const TextStyle(
-                            fontFamily: 'Doto',
-                            fontSize: 24,
-                            color: Color(0xFFFF7A00),
-                            fontWeight: FontWeight.bold,
+                        child: GestureDetector(
+                          onTap: isModified ? onModifiedTap : null,
+                          child: Text(
+                            isModified ? '*' : '',
+                            style: const TextStyle(
+                              fontFamily: 'Doto',
+                              fontSize: 24,
+                              color: Color(0xFFFF7A00),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.right,
                           ),
-                          textAlign: TextAlign.right,
                         ),
                       ),
                     ],

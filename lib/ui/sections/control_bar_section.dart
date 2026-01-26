@@ -24,6 +24,7 @@ class ControlBarSection extends StatelessWidget {
   final VoidCallback onPreviousPatch;
   final VoidCallback onNextPatch;
   final VoidCallback onPatchTap;
+  final VoidCallback? onModifiedTap;
   final VoidCallback onTap;
   final Function(int newBpm) onTempoChanged;
 
@@ -44,6 +45,7 @@ class ControlBarSection extends StatelessWidget {
     required this.onPreviousPatch,
     required this.onNextPatch,
     required this.onPatchTap,
+    this.onModifiedTap,
     required this.onTap,
     required this.onTempoChanged,
   });
@@ -94,6 +96,7 @@ class ControlBarSection extends StatelessWidget {
               onPrevious: onPreviousPatch,
               onNext: onNextPatch,
               onTap: onPatchTap,
+              onModifiedTap: onModifiedTap,
             ),
           ),
         ),
