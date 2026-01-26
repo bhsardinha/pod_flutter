@@ -661,7 +661,14 @@ class PodController {
     // Update patch library with saved patch data
     if (_lastSavedPatchNumber != null && _lastSavedPatchData != null) {
       final patchData = Uint8List.fromList(_lastSavedPatchData!);
-      _patchLibrary.patches[_lastSavedPatchNumber!] = Patch.fromData(patchData);
+      final savedPatch = Patch.fromData(patchData);
+      _patchLibrary.patches[_lastSavedPatchNumber!] = savedPatch;
+
+      // If we saved/renamed the currently loaded patch, update edit buffer too
+      if (_lastSavedPatchNumber == _currentProgram) {
+        _editBuffer.patch = savedPatch;
+        _editBufferController.add(_editBuffer);
+      }
     }
 
     _storeResultController.add(
