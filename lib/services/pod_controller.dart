@@ -125,10 +125,22 @@ class PodController {
     }
 
     final differences = <String>[];
+
+    // Find parameter name for each address
+    String getParamName(int address) {
+      for (final param in PodXtCC.all) {
+        if (param.address == address) {
+          return param.name;
+        }
+      }
+      return 'unknown';
+    }
+
     for (int i = 0; i < editData.length; i++) {
       if (editData[i] != storedData[i]) {
+        final paramName = getParamName(i);
         differences.add(
-          'Byte $i: Edit=${editData[i]} (0x${editData[i].toRadixString(16).padLeft(2, '0')}), '
+          'Byte $i ($paramName): Edit=${editData[i]} (0x${editData[i].toRadixString(16).padLeft(2, '0')}), '
           'Stored=${storedData[i]} (0x${storedData[i].toRadixString(16).padLeft(2, '0')})',
         );
       }
@@ -136,6 +148,17 @@ class PodController {
 
     if (differences.isEmpty) {
       return ['No differences found - patches are identical'];
+    }
+
+    // Add context: show byte 39 and nearby bytes regardless of differences
+    differences.add('\n--- Context around byte 39 (volLevel) ---');
+    for (int i = 35; i <= 45; i++) {
+      if (i < editData.length) {
+        final paramName = getParamName(i);
+        differences.add(
+          'Byte $i ($paramName): Edit=${editData[i]}, Stored=${storedData[i]}',
+        );
+      }
     }
 
     return differences;
