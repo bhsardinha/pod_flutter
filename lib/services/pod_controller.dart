@@ -106,6 +106,38 @@ class PodController {
     return _editBuffer.patch.data.toString() != stored.data.toString();
   }
 
+  /// Debug method: compare edit buffer with stored patch byte-by-byte
+  /// Returns list of differences (byte index, edit buffer value, stored value)
+  List<String> debugComparePatch() {
+    if (!_patchesSynced || _editBuffer.sourceProgram == null) {
+      return ['No patch loaded or patches not synced'];
+    }
+
+    final stored = _patchLibrary[_editBuffer.sourceProgram!];
+    final editData = _editBuffer.patch.data;
+    final storedData = stored.data;
+
+    if (editData.length != storedData.length) {
+      return ['ERROR: Different lengths! Edit=${editData.length}, Stored=${storedData.length}'];
+    }
+
+    final differences = <String>[];
+    for (int i = 0; i < editData.length; i++) {
+      if (editData[i] != storedData[i]) {
+        differences.add(
+          'Byte $i: Edit=${editData[i]} (0x${editData[i].toRadixString(16).padLeft(2, '0')}), '
+          'Stored=${storedData[i]} (0x${storedData[i].toRadixString(16).padLeft(2, '0')})',
+        );
+      }
+    }
+
+    if (differences.isEmpty) {
+      return ['No differences found - patches are identical'];
+    }
+
+    return differences;
+  }
+
   /// Check if expansion pack is installed
   bool hasExpansionPack(int packFlag) => (_installedPacks & packFlag) != 0;
 

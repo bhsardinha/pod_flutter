@@ -130,15 +130,36 @@ class _ConnectionModalState extends State<ConnectionModal> {
             style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              widget.onDisconnect();
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
-            ),
-            child: const Text('Disconnect'),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  final differences = widget.podController.debugComparePatch();
+                  print('\n=== PATCH COMPARISON DEBUG ===');
+                  for (final diff in differences) {
+                    print(diff);
+                  }
+                  print('==============================\n');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: PodColors.surfaceLight,
+                ),
+                child: const Text('Debug Patch'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  widget.onDisconnect();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                ),
+                child: const Text('Disconnect'),
+              ),
+            ],
           ),
         ],
       );
