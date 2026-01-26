@@ -61,6 +61,9 @@ class PodController {
   int? _lastSavedPatchNumber;
   List<int>? _lastSavedPatchData;
 
+  // CC handling - suppress marking as modified right after patch load
+  bool _suppressModifiedFlag = false;
+
   PodController(this._midi) {
     _setupListeners();
   }
@@ -524,7 +527,12 @@ class PodController {
     final param = PodXtCC.byCC[change.cc];
     if (param != null && param.address != null) {
       _editBuffer.patch.setValueAt(param.address!, change.value);
-      _editBuffer.markModified();
+
+      // Only mark as modified if not suppressed (during patch load)
+      if (!_suppressModifiedFlag) {
+        _editBuffer.markModified();
+      }
+
       _parameterChangeController.add(ParameterChange(param, change.value));
       _editBufferController.add(_editBuffer);
 
@@ -609,6 +617,13 @@ class PodController {
       // Normal edit buffer update (not during bulk import)
       _editBuffer = EditBuffer.fromPatch(patch, _currentProgram);
       _editBufferController.add(_editBuffer);
+
+      // Suppress modified flag for incoming CC messages for a brief window
+      // to avoid false positives from POD auto-adjusting parameters on load
+      _suppressModifiedFlag = true;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _suppressModifiedFlag = false;
+      });
     }
   }
 
