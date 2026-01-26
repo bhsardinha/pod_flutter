@@ -30,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ampNameDisplayMode: widget.settings.ampNameDisplayMode,
       gridItemsPerRow: widget.settings.gridItemsPerRow,
       enableTempoScrolling: widget.settings.enableTempoScrolling,
+      warnOnUnsavedChanges: widget.settings.warnOnUnsavedChanges,
     );
   }
 
@@ -52,6 +53,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _updateTempoScrolling(bool value) {
     setState(() {
       _settings.enableTempoScrolling = value;
+    });
+    widget.onSettingsChanged(_settings);
+  }
+
+  void _updateWarnOnUnsaved(bool value) {
+    setState(() {
+      _settings.warnOnUnsavedChanges = value;
     });
     widget.onSettingsChanged(_settings);
   }
@@ -138,6 +146,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Switch(
               value: _settings.enableTempoScrolling,
               onChanged: _updateTempoScrolling,
+              activeTrackColor: const Color(0xFFFF7A00).withValues(alpha: 0.5),
+              activeThumbColor: const Color(0xFFFF7A00),
+            ),
+          ),
+
+          // Warn on unsaved changes setting
+          _buildSettingRow(
+            label: 'Warn on Unsaved Changes',
+            child: Switch(
+              value: _settings.warnOnUnsavedChanges,
+              onChanged: _updateWarnOnUnsaved,
               activeTrackColor: const Color(0xFFFF7A00).withValues(alpha: 0.5),
               activeThumbColor: const Color(0xFFFF7A00),
             ),

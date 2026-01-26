@@ -524,14 +524,17 @@ class _MainScreenState extends State<MainScreen> {
     showDialog(
       context: context,
       barrierColor: PodColors.modalOverlay,
-      builder: (context) => PatchListModal(
+      builder: (dialogContext) => PatchListModal(
         podController: widget.podController,
         currentProgram: _currentProgram,
         patchesSynced: _patchesSynced,
         syncedCount: _syncedCount,
-        onSelectPatch: (program) {
+        onSelectPatch: (program) async {
+          // Check for unsaved changes before switching
+          if (!await _checkUnsavedChanges()) return;
+
           widget.podController.selectProgram(program);
-          Navigator.of(context).pop();
+          if (dialogContext.mounted) Navigator.of(dialogContext).pop();
         },
       ),
     );
@@ -723,14 +726,119 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void _previousPatch() {
+  /// Check for unsaved changes and show warning dialog if needed
+  /// Returns true if should proceed, false if cancelled
+  Future<bool> _checkUnsavedChanges() async {
+    // Skip check if setting is disabled or patch is not modified
+    if (!_settings.warnOnUnsavedChanges || !_isModified) {
+      return true;
+    }
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierColor: PodColors.modalOverlay,
+      builder: (context) => Dialog(
+        backgroundColor: PodColors.background,
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Unsaved Changes',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: PodColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'The current patch has been modified.\nWhat would you like to do?',
+                style: TextStyle(
+                  color: PodColors.textSecondary,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, 'cancel'),
+                      child: const Text('CANCEL'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, 'discard'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PodColors.surfaceLight,
+                      ),
+                      child: const Text('DISCARD'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, 'save'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PodColors.accent,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('SAVE & CHANGE'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (result == 'save') {
+      // Show save dialog
+      await _showSaveBeforeChangeDialog();
+      return false; // Don't proceed - save dialog handles it
+    }
+
+    // Return true for 'discard', false for 'cancel' or null
+    return result == 'discard';
+  }
+
+  /// Show save dialog before changing patch
+  Future<void> _showSaveBeforeChangeDialog() async {
+    // Open patch list modal in save mode
+    _showPatchListModal();
+  }
+
+  void _previousPatch() async {
     if (!_isConnected) return;
+
+    // Check for unsaved changes
+    if (!await _checkUnsavedChanges()) return;
+
     final newProgram = (_currentProgram - 1).clamp(0, 127);
     widget.podController.selectProgram(newProgram);
   }
 
-  void _nextPatch() {
+  void _nextPatch() async {
     if (!_isConnected) return;
+
+    // Check for unsaved changes
+    if (!await _checkUnsavedChanges()) return;
+
     final newProgram = (_currentProgram + 1).clamp(0, 127);
     widget.podController.selectProgram(newProgram);
   }
