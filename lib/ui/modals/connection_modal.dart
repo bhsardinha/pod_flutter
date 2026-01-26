@@ -130,25 +130,15 @@ class _ConnectionModalState extends State<ConnectionModal> {
             style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 24),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  widget.podController.refreshEditBuffer();
-                },
-                child: const Text('Sync from POD'),
-              ),
-              ElevatedButton(
-                onPressed: widget.onDisconnect,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade700,
-                ),
-                child: const Text('Disconnect'),
-              ),
-            ],
+          ElevatedButton(
+            onPressed: () {
+              widget.onDisconnect();
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+            ),
+            child: const Text('Disconnect'),
           ),
         ],
       );
