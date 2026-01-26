@@ -43,6 +43,10 @@ class _PatchListModalState extends State<PatchListModal> {
           duration: Duration(seconds: result.success ? 2 : 3),
         ),
       );
+      // Update UI to show new patch name after successful save
+      if (result.success && mounted) {
+        setState(() {});
+      }
     });
   }
 
@@ -225,97 +229,79 @@ class _PatchListModalState extends State<PatchListModal> {
     final bankNum = bankIndex + 1;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Bank label
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 6),
-            child: Text(
-              'BANK ${bankNum.toString().padLeft(2, '0')}',
-              style: const TextStyle(
-                color: PodColors.textSecondary,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-          // 4 patches (A, B, C, D)
-          Row(
-            children: List.generate(4, (slotIndex) {
-              final program = bankIndex * 4 + slotIndex;
-              final patch = widget.podController.patchLibrary[program];
-              final isSelected = program == widget.currentProgram;
-              final letter = String.fromCharCode('A'.codeUnitAt(0) + slotIndex);
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: List.generate(4, (slotIndex) {
+          final program = bankIndex * 4 + slotIndex;
+          final patch = widget.podController.patchLibrary[program];
+          final isSelected = program == widget.currentProgram;
+          final letter = String.fromCharCode('A'.codeUnitAt(0) + slotIndex);
+          final slotLabel = '$bankNum$letter'; // e.g., "1A", "32D"
 
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(program),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? PodColors.accent.withValues(alpha: 0.25)
-                          : PodColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected
-                            ? PodColors.accent
-                            : PodColors.surfaceLight,
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Slot letter
-                        Text(
-                          letter,
-                          style: TextStyle(
-                            color: isSelected
-                                ? PodColors.accent
-                                : PodColors.textSecondary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // Patch name with dynamic font sizing
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            patch.name.isEmpty ? '(empty)' : patch.name,
-                            style: TextStyle(
-                              color: isSelected
-                                  ? PodColors.textPrimary
-                                  : patch.name.isEmpty
-                                      ? PodColors.textSecondary.withValues(alpha: 0.6)
-                                      : PodColors.textPrimary,
-                              fontSize: 13,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.visible,
-                          ),
-                        ),
-                      ],
-                    ),
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onTap(program),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? PodColors.accent.withValues(alpha: 0.25)
+                      : PodColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected
+                        ? PodColors.accent
+                        : PodColors.surfaceLight,
+                    width: isSelected ? 2 : 1,
                   ),
                 ),
-              );
-            }),
-          ),
-        ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Bank+Slot label (e.g., "1A", "32D")
+                    Text(
+                      slotLabel,
+                      style: TextStyle(
+                        color: isSelected
+                            ? PodColors.accent
+                            : PodColors.textSecondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Patch name with dynamic font sizing
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        patch.name.isEmpty ? '(empty)' : patch.name,
+                        style: TextStyle(
+                          color: isSelected
+                              ? PodColors.textPrimary
+                              : patch.name.isEmpty
+                                  ? PodColors.textSecondary.withValues(alpha: 0.6)
+                                  : PodColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
@@ -341,10 +327,8 @@ class _ImportProgressModalState extends State<_ImportProgressModal> {
   @override
   void initState() {
     super.initState();
-    print('ImportProgressModal: initState - starting to listen for progress');
     // Listen to sync progress stream
     _subscription = widget.podController.onSyncProgress.listen((progress) {
-      print('ImportProgressModal: received progress ${progress.current}/${progress.total}');
       if (mounted) {
         setState(() {
           _current = progress.current;
