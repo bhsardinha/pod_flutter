@@ -205,9 +205,9 @@ class _TunerModalState extends State<TunerModal> {
   }
 
   Widget _build3SegmentTuner(int cents) {
-    final isFlat = cents < 0;
-    final isSharp = cents > 0;
-    final isInTune = cents == 0;
+    final isFlat = cents < -2;
+    final isSharp = cents > 2;
+    final isInTune = cents >= -2 && cents <= 2;
 
     return Container(
       height: 80,
@@ -282,7 +282,7 @@ class _TunerModalState extends State<TunerModal> {
   }
 
   Color _getTunerColor(int cents) {
-    if (cents == 0) {
+    if (cents >= -2 && cents <= 2) {
       return PodColors.buttonOnGreen;
     } else {
       return Colors.red.shade600;
