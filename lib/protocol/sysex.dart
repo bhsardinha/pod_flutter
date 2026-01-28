@@ -4,6 +4,7 @@
 library;
 
 import 'dart:typed_data';
+import 'dart:math' as math;
 import 'constants.dart';
 
 /// Sysex message builder and parser for Line6 POD XT Pro
@@ -120,6 +121,24 @@ class PodXtSysex {
   static Uint8List requestProgramState() {
     // Request format: [0x03, 0x57, 0x11] - the 0x11 is the program number subcommand
     return buildMessage(SysexCommand.programNumberRequest, [SysexCommand.programNumberSubcmd]);
+  }
+
+  /// Request tuner note (current detected note)
+  ///
+  /// Format: F0 00 01 0C 03 57 16 F7
+  /// Response: F0 00 01 0C 03 56 16 P1 P2 P3 P4 F7
+  /// where note = u16 from 4 nibbles (P1 P2 P3 P4)
+  static Uint8List requestTunerNote() {
+    return buildMessage(SysexCommand.tunerRequest, [SysexCommand.tunerNoteSubcmd]);
+  }
+
+  /// Request tuner offset (cents from perfect pitch)
+  ///
+  /// Format: F0 00 01 0C 03 57 17 F7
+  /// Response: F0 00 01 0C 03 56 17 P1 P2 P3 P4 F7
+  /// where offset = i16 from 4 nibbles (P1 P2 P3 P4)
+  static Uint8List requestTunerOffset() {
+    return buildMessage(SysexCommand.tunerRequest, [SysexCommand.tunerOffsetSubcmd]);
   }
 
   /// Parse incoming sysex message
@@ -246,4 +265,82 @@ enum SysexMessageType {
   programState,
   savedPatchNotification,
   unknown,
+}
+
+/// Tuner data from POD XT Pro
+class TunerData {
+  final int? noteNumber; // MIDI note number (0-127+), null = no signal
+  final int cents; // Tuning offset in cents (-50 to +50), 0 = in tune
+  
+  TunerData({
+    this.noteNumber,
+    required this.cents,
+  });
+  
+  /// No signal constant (0xFFFE for note)
+  static const int noSignalNote = 0xFFFE;
+  
+  /// No signal constant (97 for offset)
+  static const int noSignalOffset = 97;
+  
+  /// Check if there's a valid signal
+  bool get hasSignal => noteNumber != null;
+  
+  /// Get note name from MIDI note number
+  /// Note names from pod-ui: ["B", "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb"]
+  String get noteName {
+    if (noteNumber == null) return '—';
+    const notes = ["B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#"];
+    return notes[noteNumber! % 12];
+  }
+  
+  /// Get octave number (1-based like pod-ui)
+  int? get octave {
+    if (noteNumber == null) return null;
+    return (noteNumber! ~/ 12) + 1;
+  }
+  
+  /// Calculate frequency from MIDI note number
+  /// Formula: f = 440 * 2^((n-69)/12) where n is MIDI note number
+  /// A4 (MIDI 69) = 440 Hz
+  double? get frequency {
+    if (noteNumber == null) return null;
+    return 440.0 * math.pow(2, (noteNumber! - 69) / 12.0).toDouble();
+  }
+  
+  /// Parse tuner note response
+  /// Format: F0 00 01 0C 03 56 16 P1 P2 P3 P4 F7
+  static TunerData? parseNote(List<int> payload) {
+    if (payload.length < 5) return null;
+    if (payload[0] != SysexCommand.tunerNoteSubcmd) return null;
+    
+    // Decode 4 nibbles to 16-bit value
+    final note = PodXtSysex.decode4BitTo16(payload.sublist(1, 5));
+    
+    // Check for no signal
+    if (note == noSignalNote) {
+      return TunerData(noteNumber: null, cents: 0);
+    }
+    
+    return TunerData(noteNumber: note, cents: 0);
+  }
+  
+  /// Parse tuner offset response
+  /// Format: F0 00 01 0C 03 56 17 P1 P2 P3 P4 F7
+  static int? parseOffset(List<int> payload) {
+    if (payload.length < 5) return null;
+    if (payload[0] != SysexCommand.tunerOffsetSubcmd) return null;
+    
+    // Decode 4 nibbles to 16-bit value (signed)
+    final rawOffset = PodXtSysex.decode4BitTo16(payload.sublist(1, 5));
+    
+    // Check for no signal
+    if (rawOffset == noSignalOffset) {
+      return null;
+    }
+    
+    // Convert to signed int16 and clamp to -50..+50
+    final offset = (rawOffset > 32767) ? rawOffset - 65536 : rawOffset;
+    return offset.clamp(-50, 50);
+  }
 }

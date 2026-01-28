@@ -46,6 +46,11 @@ class PodController {
   final _editBufferController = StreamController<EditBuffer>.broadcast();
   final _syncProgressController = StreamController<SyncProgress>.broadcast();
   final _storeResultController = StreamController<StoreResult>.broadcast();
+  final _tunerDataController = StreamController<TunerData>.broadcast();
+
+  // Tuner state
+  TunerData? _currentTunerNote;
+  int? _currentTunerOffset;
 
   // Subscriptions
   StreamSubscription? _ccSubscription;
@@ -94,6 +99,9 @@ class PodController {
 
   /// Store operation results (success/failure)
   Stream<StoreResult> get onStoreResult => _storeResultController.stream;
+
+  /// Tuner data stream (note and offset/cents)
+  Stream<TunerData> get onTunerData => _tunerDataController.stream;
 
   /// Get patch name by program number
   String getPatchName(int program) {
@@ -517,6 +525,17 @@ class PodController {
     await _midi.requestEditBuffer();
   }
 
+  /// Request tuner data from POD XT Pro
+  /// Call this repeatedly (e.g., every 1 second) to get live tuner updates
+  /// POD responds with separate note and offset messages
+  Future<void> requestTunerData() async {
+    if (_connectionState != PodConnectionState.connected) return;
+
+    // Request both note and offset (POD responds separately)
+    await _midi.sendSysex(PodXtSysex.requestTunerNote());
+    await _midi.sendSysex(PodXtSysex.requestTunerOffset());
+  }
+
   /// Check if delay is in tempo sync mode (note division vs ms)
   bool get isDelayTempoSynced {
     final noteSelect = getParameter(PodXtCC.delayNoteSelect);
@@ -643,6 +662,8 @@ class PodController {
     } else if (message.isStoreFailure) {
       print('POD: ERROR - Patch store failed');
       _handleStoreFailure(message);
+    } else if (message.isTunerData) {
+      _handleTunerData(message);
     }
   }
 
@@ -821,6 +842,44 @@ class PodController {
     );
     _lastSavedPatchNumber = null;
     _lastSavedPatchData = null;
+  }
+
+  void _handleTunerData(SysexMessage message) {
+    // Tuner data comes in two separate messages:
+    // 1. Note: [0x03, 0x56, 0x16, P1, P2, P3, P4]
+    // 2. Offset: [0x03, 0x56, 0x17, P1, P2, P3, P4]
+
+    if (message.payload.isEmpty) return;
+
+    final subcommand = message.payload[0];
+
+    if (subcommand == SysexCommand.tunerNoteSubcmd) {
+      // Parse note response
+      final noteData = TunerData.parseNote(message.payload);
+      if (noteData != null) {
+        _currentTunerNote = noteData;
+        _emitTunerData();
+      }
+    } else if (subcommand == SysexCommand.tunerOffsetSubcmd) {
+      // Parse offset response
+      final offset = TunerData.parseOffset(message.payload);
+      if (offset != null) {
+        _currentTunerOffset = offset;
+        _emitTunerData();
+      }
+    }
+  }
+
+  void _emitTunerData() {
+    // Only emit when we have both note and offset
+    if (_currentTunerNote != null && _currentTunerOffset != null) {
+      // Combine note and offset into complete tuner data
+      final combinedData = TunerData(
+        noteNumber: _currentTunerNote!.noteNumber,
+        cents: _currentTunerOffset!,
+      );
+      _tunerDataController.add(combinedData);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

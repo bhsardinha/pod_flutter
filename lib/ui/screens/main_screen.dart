@@ -556,7 +556,10 @@ class _MainScreenState extends State<MainScreen> {
     showPodModal(
       context: context,
       title: 'Tuner',
-      child: const TunerModal(),
+      child: TunerModal(
+        podController: widget.podController,
+        isConnected: _isConnected,
+      ),
     );
   }
 

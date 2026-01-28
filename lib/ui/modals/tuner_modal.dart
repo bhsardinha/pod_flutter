@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import '../theme/pod_theme.dart';
+import 'dart:async';
 import 'dart:math' as math;
+import '../theme/pod_theme.dart';
+import '../../services/pod_controller.dart';
+import '../../protocol/sysex.dart';
 
 /// Tuner modal with 3-segment visual tuner display
 ///
@@ -9,37 +12,63 @@ import 'dart:math' as math;
 /// - Green inverted triangle (note is in tune)
 /// - Red arrow pointing down (note is sharp/above pitch)
 /// - Note name display (C, C#, D, etc.)
-/// - Frequency display in Hz
-///
-/// Demo mode: Tap the tuner display to cycle through states
+/// - Frequency display in Hz (calculated from MIDI note)
+/// - Real-time pitch detection from POD XT Pro via MIDI
 class TunerModal extends StatefulWidget {
-  const TunerModal({super.key});
+  final PodController podController;
+  final bool isConnected;
+
+  const TunerModal({
+    super.key,
+    required this.podController,
+    required this.isConnected,
+  });
 
   @override
   State<TunerModal> createState() => _TunerModalState();
 }
 
 class _TunerModalState extends State<TunerModal> {
-  // Demo mode state
-  int _demoStateIndex = 0;
-  final List<_TunerState> _demoStates = [
-    _TunerState(note: 'A', frequency: 440.0, cents: 0), // In tune
-    _TunerState(note: 'A', frequency: 437.5, cents: -20), // Flat
-    _TunerState(note: 'A', frequency: 442.5, cents: 15), // Sharp
-    _TunerState(note: 'E', frequency: 329.0, cents: -10), // Flat
-    _TunerState(note: 'E', frequency: 329.6, cents: 0), // In tune
-    _TunerState(note: 'G', frequency: 392.5, cents: 5), // Slight sharp
-    _TunerState(note: 'C', frequency: 261.6, cents: 0), // In tune
-    _TunerState(note: 'D', frequency: 293.0, cents: -25), // Very flat
-    _TunerState(note: 'B', frequency: 495.0, cents: 10), // Sharp
-  ];
+  Timer? _tunerPollTimer;
+  _TunerState _currentState = _TunerState.noSignal();
+  StreamSubscription<TunerData>? _tunerSubscription;
 
-  _TunerState get _currentState => _demoStates[_demoStateIndex];
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isConnected) {
+      _startTuner();
+    }
+  }
 
-  void _cycleDemoState() {
-    setState(() {
-      _demoStateIndex = (_demoStateIndex + 1) % _demoStates.length;
+  @override
+  void dispose() {
+    _stopTuner();
+    super.dispose();
+  }
+
+  void _startTuner() {
+    // Subscribe to tuner data from POD controller
+    _tunerSubscription = widget.podController.onTunerData.listen((data) {
+      setState(() {
+        _currentState = _TunerState.fromTunerData(data);
+      });
     });
+
+    // Start polling tuner data (1 Hz rate)
+    _tunerPollTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (widget.isConnected) {
+        widget.podController.requestTunerData();
+      }
+    });
+
+    // Request initial tuner data
+    widget.podController.requestTunerData();
+  }
+
+  void _stopTuner() {
+    _tunerPollTimer?.cancel();
+    _tunerSubscription?.cancel();
   }
 
   @override
@@ -62,7 +91,7 @@ class _TunerModalState extends State<TunerModal> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Demo Mode - Tap to cycle states',
+            widget.isConnected ? 'Play a note to tune' : 'Not connected',
             style: TextStyle(
               color: PodColors.textSecondary.withValues(alpha: 0.7),
               fontSize: 11,
@@ -81,33 +110,46 @@ class _TunerModalState extends State<TunerModal> {
               letterSpacing: 4,
             ),
           ),
+          const SizedBox(height: 8),
+          // Octave display
+          if (_currentState.octave != null)
+            Text(
+              '${_currentState.octave}',
+              style: TextStyle(
+                color: PodColors.textSecondary.withValues(alpha: 0.7),
+                fontSize: 24,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           const SizedBox(height: 16),
 
           // Frequency display
-          Text(
-            '${_currentState.frequency.toStringAsFixed(1)} Hz',
-            style: TextStyle(
-              color: PodColors.textSecondary.withValues(alpha: 0.9),
-              fontSize: 20,
-              fontWeight: FontWeight.w500,
+          if (_currentState.frequency != null)
+            Text(
+              '${_currentState.frequency!.toStringAsFixed(1)} Hz',
+              style: TextStyle(
+                color: PodColors.textSecondary.withValues(alpha: 0.9),
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
           const SizedBox(height: 32),
 
           // 3-segment tuner display
-          GestureDetector(
-            onTap: _cycleDemoState,
-            child: _build3SegmentTuner(_currentState.cents),
-          ),
+          _build3SegmentTuner(_currentState.cents),
           const SizedBox(height: 24),
 
           // Cents indicator (numerical)
           Text(
-            _currentState.cents == 0
-                ? 'IN TUNE'
-                : '${_currentState.cents > 0 ? '+' : ''}${_currentState.cents} cents',
+            _currentState.hasSignal
+                ? (_currentState.cents == 0
+                    ? 'IN TUNE'
+                    : '${_currentState.cents > 0 ? '+' : ''}${_currentState.cents} cents')
+                : 'NO SIGNAL',
             style: TextStyle(
-              color: _getTunerColor(_currentState.cents),
+              color: _currentState.hasSignal
+                  ? _getTunerColor(_currentState.cents)
+                  : PodColors.textSecondary,
               fontSize: 16,
               fontWeight: FontWeight.w600,
               letterSpacing: 1,
@@ -210,12 +252,42 @@ class _TunerModalState extends State<TunerModal> {
 /// Tuner state representation
 class _TunerState {
   final String note;
-  final double frequency;
+  final int? octave;
+  final double? frequency;
   final int cents; // -50 to +50, 0 = in tune
+  final bool hasSignal;
 
   _TunerState({
     required this.note,
-    required this.frequency,
+    this.octave,
+    this.frequency,
     required this.cents,
+    this.hasSignal = true,
   });
+
+  /// Create a no-signal state
+  factory _TunerState.noSignal() {
+    return _TunerState(
+      note: '—',
+      octave: null,
+      frequency: null,
+      cents: 0,
+      hasSignal: false,
+    );
+  }
+
+  /// Create from tuner data received from POD
+  factory _TunerState.fromTunerData(TunerData data) {
+    if (!data.hasSignal) {
+      return _TunerState.noSignal();
+    }
+
+    return _TunerState(
+      note: data.noteName,
+      octave: data.octave,
+      frequency: data.frequency,
+      cents: data.cents,
+      hasSignal: true,
+    );
+  }
 }
