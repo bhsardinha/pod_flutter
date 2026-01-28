@@ -162,7 +162,7 @@ class _TunerModalState extends State<TunerModal> {
             // Cents indicator (numerical)
             Text(
               _currentState.hasSignal
-                  ? (_currentState.cents == 0
+                  ? (_currentState.cents.abs() <= 2
                       ? 'IN TUNE'
                       : '${_currentState.cents > 0 ? '+' : ''}${_currentState.cents} cents')
                   : 'NO SIGNAL',
@@ -182,8 +182,8 @@ class _TunerModalState extends State<TunerModal> {
   }
 
   Widget _build3SegmentTuner(int cents) {
-    final isFlat = cents < -5;
-    final isSharp = cents > 5;
+    final isFlat = cents < -2;
+    final isSharp = cents > 2;
     final isInTune = !isFlat && !isSharp;
 
     return Container(
@@ -259,7 +259,7 @@ class _TunerModalState extends State<TunerModal> {
   }
 
   Color _getTunerColor(int cents) {
-    if (cents.abs() <= 5) {
+    if (cents.abs() <= 2) {
       return PodColors.buttonOnGreen;
     } else {
       return Colors.red.shade600;
