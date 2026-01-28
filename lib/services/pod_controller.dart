@@ -525,9 +525,17 @@ class PodController {
     await _midi.requestEditBuffer();
   }
 
+  /// Enable/disable tuner mode on POD XT Pro
+  /// Must be enabled before requesting tuner data
+  /// CC 69: 127 = enable, 0 = disable
+  Future<void> setTunerEnabled(bool enabled) async {
+    await setSwitch(PodXtCC.tunerEnable, enabled);
+  }
+
   /// Request tuner data from POD XT Pro
   /// Call this repeatedly (e.g., every 1 second) to get live tuner updates
   /// POD responds with separate note and offset messages
+  /// NOTE: Tuner mode must be enabled first (setTunerEnabled(true))
   Future<void> requestTunerData() async {
     if (_connectionState != PodConnectionState.connected) return;
 

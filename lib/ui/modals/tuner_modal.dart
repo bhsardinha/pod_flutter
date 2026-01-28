@@ -48,6 +48,9 @@ class _TunerModalState extends State<TunerModal> {
   }
 
   void _startTuner() {
+    // Enable tuner mode on POD (CC 69 = 127)
+    widget.podController.setTunerEnabled(true);
+
     // Subscribe to tuner data from POD controller
     _tunerSubscription = widget.podController.onTunerData.listen((data) {
       setState(() {
@@ -69,93 +72,112 @@ class _TunerModalState extends State<TunerModal> {
   void _stopTuner() {
     _tunerPollTimer?.cancel();
     _tunerSubscription?.cancel();
+
+    // Disable tuner mode on POD (CC 69 = 0)
+    if (widget.isConnected) {
+      widget.podController.setTunerEnabled(false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: MediaQuery.of(context).size.width * 0.8,
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Title
-          const Text(
-            'TUNER',
-            style: TextStyle(
-              color: PodColors.textPrimary,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.isConnected ? 'Play a note to tune' : 'Not connected',
-            style: TextStyle(
-              color: PodColors.textSecondary.withValues(alpha: 0.7),
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 32),
+    final screenHeight = MediaQuery.of(context).size.height;
 
-          // Note name display
-          Text(
-            _currentState.note,
-            style: const TextStyle(
-              color: PodColors.textPrimary,
-              fontSize: 72,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 4,
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.75,
+      constraints: BoxConstraints(
+        maxHeight: screenHeight * 0.8, // Limit to 80% of screen height
+      ),
+      padding: const EdgeInsets.all(20),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title
+            const Text(
+              'TUNER',
+              style: TextStyle(
+                color: PodColors.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          // Octave display
-          if (_currentState.octave != null)
+            const SizedBox(height: 6),
             Text(
-              '${_currentState.octave}',
+              widget.isConnected ? 'Play a note to tune' : 'Not connected',
               style: TextStyle(
                 color: PodColors.textSecondary.withValues(alpha: 0.7),
-                fontSize: 24,
-                fontWeight: FontWeight.w500,
+                fontSize: 10,
+                fontStyle: FontStyle.italic,
               ),
             ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-          // Frequency display
-          if (_currentState.frequency != null)
+            // Note name and octave (horizontal)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  _currentState.note,
+                  style: const TextStyle(
+                    color: PodColors.textPrimary,
+                    fontSize: 56,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                if (_currentState.octave != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '${_currentState.octave}',
+                    style: TextStyle(
+                      color: PodColors.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Frequency display
+            if (_currentState.frequency != null)
+              Text(
+                '${_currentState.frequency!.toStringAsFixed(1)} Hz',
+                style: TextStyle(
+                  color: PodColors.textSecondary.withValues(alpha: 0.9),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            const SizedBox(height: 20),
+
+            // 3-segment tuner display
+            _build3SegmentTuner(_currentState.cents),
+            const SizedBox(height: 16),
+
+            // Cents indicator (numerical)
             Text(
-              '${_currentState.frequency!.toStringAsFixed(1)} Hz',
+              _currentState.hasSignal
+                  ? (_currentState.cents == 0
+                      ? 'IN TUNE'
+                      : '${_currentState.cents > 0 ? '+' : ''}${_currentState.cents} cents')
+                  : 'NO SIGNAL',
               style: TextStyle(
-                color: PodColors.textSecondary.withValues(alpha: 0.9),
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
+                color: _currentState.hasSignal
+                    ? _getTunerColor(_currentState.cents)
+                    : PodColors.textSecondary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1,
               ),
             ),
-          const SizedBox(height: 32),
-
-          // 3-segment tuner display
-          _build3SegmentTuner(_currentState.cents),
-          const SizedBox(height: 24),
-
-          // Cents indicator (numerical)
-          Text(
-            _currentState.hasSignal
-                ? (_currentState.cents == 0
-                    ? 'IN TUNE'
-                    : '${_currentState.cents > 0 ? '+' : ''}${_currentState.cents} cents')
-                : 'NO SIGNAL',
-            style: TextStyle(
-              color: _currentState.hasSignal
-                  ? _getTunerColor(_currentState.cents)
-                  : PodColors.textSecondary,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -166,8 +188,8 @@ class _TunerModalState extends State<TunerModal> {
     final isInTune = !isFlat && !isSharp;
 
     return Container(
-      height: 120,
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -177,14 +199,14 @@ class _TunerModalState extends State<TunerModal> {
               isActive: isFlat,
               child: Icon(
                 Icons.arrow_drop_up,
-                size: 80,
+                size: 60,
                 color: isFlat
                     ? Colors.red.shade600
                     : PodColors.textSecondary.withValues(alpha: 0.2),
               ),
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 12),
 
           // Center segment - In Tune (inverted triangle)
           Expanded(
@@ -194,7 +216,7 @@ class _TunerModalState extends State<TunerModal> {
                 angle: math.pi,
                 child: Icon(
                   Icons.arrow_drop_up,
-                  size: 80,
+                  size: 60,
                   color: isInTune
                       ? PodColors.buttonOnGreen
                       : PodColors.textSecondary.withValues(alpha: 0.2),
@@ -202,7 +224,7 @@ class _TunerModalState extends State<TunerModal> {
               ),
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 12),
 
           // Right segment - Sharp (arrow pointing down)
           Expanded(
@@ -210,7 +232,7 @@ class _TunerModalState extends State<TunerModal> {
               isActive: isSharp,
               child: Icon(
                 Icons.arrow_drop_down,
-                size: 80,
+                size: 60,
                 color: isSharp
                     ? Colors.red.shade600
                     : PodColors.textSecondary.withValues(alpha: 0.2),
