@@ -273,7 +273,7 @@ class AmpSelectorSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Tuner button in top-center (diapason icon)
+                // Tuner button in top-center (letter A)
                 Positioned(
                   top: 0,
                   left: 0,
@@ -282,15 +282,19 @@ class AmpSelectorSection extends StatelessWidget {
                     child: GestureDetector(
                       onTap: onTunerTap,
                       child: Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: Colors.transparent,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Icon(
-                          Icons.graphic_eq, // Diapason/tuning fork symbol
-                          size: 20,
-                          color: PodColors.accent,
+                        child: const Text(
+                          'A',
+                          style: TextStyle(
+                            color: PodColors.accent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0,
+                          ),
                         ),
                       ),
                     ),
