@@ -10,12 +10,14 @@ class AppSettings {
   int gridItemsPerRow;
   bool enableTempoScrolling;
   bool warnOnUnsavedChanges;
+  bool disableAIR;
 
   AppSettings({
     this.ampNameDisplayMode = AmpNameDisplayMode.factory,
     this.gridItemsPerRow = 6,
     this.enableTempoScrolling = true,
     this.warnOnUnsavedChanges = true,
+    this.disableAIR = false,
   });
 
   /// Load settings from persistent storage
@@ -25,12 +27,14 @@ class AppSettings {
     final gridItems = prefs.getInt('grid_items_per_row') ?? 6;
     final tempoScrolling = prefs.getBool('enable_tempo_scrolling') ?? true;
     final warnOnUnsaved = prefs.getBool('warn_on_unsaved_changes') ?? true;
+    final disableAIR = prefs.getBool('disable_air') ?? false;
 
     return AppSettings(
       ampNameDisplayMode: AmpNameDisplayMode.values[modeIndex],
       gridItemsPerRow: gridItems.clamp(4, 6),
       enableTempoScrolling: tempoScrolling,
       warnOnUnsavedChanges: warnOnUnsaved,
+      disableAIR: disableAIR,
     );
   }
 
@@ -41,6 +45,7 @@ class AppSettings {
     await prefs.setInt('grid_items_per_row', gridItemsPerRow);
     await prefs.setBool('enable_tempo_scrolling', enableTempoScrolling);
     await prefs.setBool('warn_on_unsaved_changes', warnOnUnsavedChanges);
+    await prefs.setBool('disable_air', disableAIR);
   }
 
   /// Get display name for the mode

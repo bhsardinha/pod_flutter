@@ -31,6 +31,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       gridItemsPerRow: widget.settings.gridItemsPerRow,
       enableTempoScrolling: widget.settings.enableTempoScrolling,
       warnOnUnsavedChanges: widget.settings.warnOnUnsavedChanges,
+      disableAIR: widget.settings.disableAIR,
     );
   }
 
@@ -60,6 +61,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _updateWarnOnUnsaved(bool value) {
     setState(() {
       _settings.warnOnUnsavedChanges = value;
+    });
+    widget.onSettingsChanged(_settings);
+  }
+
+  void _updateDisableAIR(bool value) {
+    setState(() {
+      _settings.disableAIR = value;
     });
     widget.onSettingsChanged(_settings);
   }
@@ -161,6 +169,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               activeThumbColor: const Color(0xFFFF7A00),
             ),
           ),
+
+          // A.I.R. disabled setting
+          _buildSettingRow(
+            label: 'Disable A.I.R. (Cab/Mic)',
+            child: Switch(
+              value: _settings.disableAIR,
+              onChanged: _updateDisableAIR,
+              activeTrackColor: const Color(0xFFFF7A00).withValues(alpha: 0.5),
+              activeThumbColor: const Color(0xFFFF7A00),
+            ),
+          ),
+          if (_settings.disableAIR)
+            Padding(
+              padding: const EdgeInsets.only(left: 16, bottom: 16),
+              child: Text(
+                'Automatically sets cab to "No Cab" when loading presets or changing amps.\nIdeal for using external IR devices.',
+                style: TextStyle(
+                  color: PodColors.textSecondary.withValues(alpha: 0.8),
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
 
           // Add more settings here in the future
         ],
