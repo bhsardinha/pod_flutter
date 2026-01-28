@@ -34,6 +34,7 @@ class AmpSelectorSection extends StatelessWidget {
   final VoidCallback onCabLongPress;
   final VoidCallback onMicLongPress;
   final VoidCallback onMidiTap;
+  final VoidCallback onTunerTap;
 
   const AmpSelectorSection({
     super.key,
@@ -57,6 +58,7 @@ class AmpSelectorSection extends StatelessWidget {
     required this.onCabLongPress,
     required this.onMicLongPress,
     required this.onMidiTap,
+    required this.onTunerTap,
   });
 
   @override
@@ -266,6 +268,29 @@ class AmpSelectorSection extends StatelessWidget {
                                   ),
                                 ]
                               : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Tuner button in top-center (diapason icon)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: onTunerTap,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Icon(
+                          Icons.graphic_eq, // Diapason/tuning fork symbol
+                          size: 20,
+                          color: PodColors.accent,
                         ),
                       ),
                     ),

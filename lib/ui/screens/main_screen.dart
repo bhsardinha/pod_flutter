@@ -18,6 +18,7 @@ import '../modals/cab_modal.dart';
 import '../modals/mic_modal.dart';
 import '../modals/amp_modal.dart';
 import '../modals/comp_modal.dart';
+import '../modals/tuner_modal.dart';
 import '../widgets/effect_modal.dart';
 import '../../protocol/effect_param_mappers.dart';
 import '../sections/amp_selector_section.dart';
@@ -166,6 +167,9 @@ class _MainScreenState extends State<MainScreen> {
         _updateFromEditBuffer();
         _isModified = widget.podController.editBufferModified;
       });
+
+      // Auto-disable A.I.R. if setting is enabled
+      _applyAIRDisabledIfNeeded();
     });
 
     // Subscribe to program changes
@@ -231,6 +235,20 @@ class _MainScreenState extends State<MainScreen> {
     ]);
 
     super.dispose();
+  }
+
+  /// Apply A.I.R. disabled mode if setting is enabled
+  /// Sets cab to 0 (No Cab) automatically
+  void _applyAIRDisabledIfNeeded() {
+    if (_settings.disableAIR && _isConnected) {
+      // Use Future.delayed to ensure this runs after edit buffer is fully updated
+      Future.delayed(const Duration(milliseconds: 50), () {
+        final currentCab = widget.podController.getParameter(PodXtCC.cabSelect);
+        if (currentCab != 0) {
+          widget.podController.setCabModel(0);
+        }
+      });
+    }
   }
 
   void _updateFromEditBuffer() {
@@ -342,6 +360,7 @@ class _MainScreenState extends State<MainScreen> {
                     onCabLongPress: _handleCabLongPress,
                     onMicLongPress: _handleMicLongPress,
                     onMidiTap: _showConnectionModal,
+                    onTunerTap: _showTunerModal,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -530,6 +549,14 @@ class _MainScreenState extends State<MainScreen> {
           await newSettings.save();
         },
       ),
+    );
+  }
+
+  void _showTunerModal() {
+    showPodModal(
+      context: context,
+      title: 'Tuner',
+      child: const TunerModal(),
     );
   }
 
@@ -732,6 +759,8 @@ class _MainScreenState extends State<MainScreen> {
       await widget.podController.setAmpModel(newId);
       // Request updated parameters from POD (cab, mic, EQ, etc.)
       await widget.podController.refreshEditBuffer();
+      // Apply A.I.R. disabled if setting is enabled
+      _applyAIRDisabledIfNeeded();
     } else {
       await widget.podController.setAmpModelNoDefaults(newId);
     }
@@ -747,6 +776,8 @@ class _MainScreenState extends State<MainScreen> {
       await widget.podController.setAmpModel(newId);
       // Request updated parameters from POD (cab, mic, EQ, etc.)
       await widget.podController.refreshEditBuffer();
+      // Apply A.I.R. disabled if setting is enabled
+      _applyAIRDisabledIfNeeded();
     } else {
       await widget.podController.setAmpModelNoDefaults(newId);
     }
