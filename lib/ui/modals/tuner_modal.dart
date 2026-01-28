@@ -31,42 +31,19 @@ class _TunerModalState extends State<TunerModal> {
   Timer? _tunerPollTimer;
   _TunerState _currentState = _TunerState.noSignal();
   StreamSubscription<TunerData>? _tunerSubscription;
-  StreamSubscription? _ccSubscription;
-  StreamSubscription? _pcSubscription;
 
   @override
   void initState() {
     super.initState();
     if (widget.isConnected) {
       _startTuner();
-      _listenForMidiSignals();
     }
   }
 
   @override
   void dispose() {
     _stopTuner();
-    _ccSubscription?.cancel();
-    _pcSubscription?.cancel();
     super.dispose();
-  }
-
-  /// Listen for any MIDI signal (CC, PC) and close modal
-  /// User may exit tuner mode via hardware (foot controller, POD buttons)
-  void _listenForMidiSignals() {
-    // Close modal on any parameter change (CC messages)
-    _ccSubscription = widget.podController.onParameterChanged.listen((_) {
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    });
-
-    // Close modal on any program change
-    _pcSubscription = widget.podController.onProgramChanged.listen((_) {
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-    });
   }
 
   void _startTuner() {
