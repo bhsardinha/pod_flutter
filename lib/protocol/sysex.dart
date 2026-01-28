@@ -286,26 +286,30 @@ class TunerData {
   /// Check if there's a valid signal
   bool get hasSignal => noteNumber != null;
   
-  /// Get note name from MIDI note number
+  /// Get note name from POD tuner note number
+  /// POD uses different numbering: 0=B, 1=C, 2=C#, ..., 10=A, 11=Bb
   /// Note names from pod-ui: ["B", "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb"]
   String get noteName {
     if (noteNumber == null) return '—';
     const notes = ["B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#"];
     return notes[noteNumber! % 12];
   }
-  
+
   /// Get octave number (1-based like pod-ui)
+  /// POD octave formula: octave = note / 12 + 1
   int? get octave {
     if (noteNumber == null) return null;
     return (noteNumber! ~/ 12) + 1;
   }
-  
-  /// Calculate frequency from MIDI note number
-  /// Formula: f = 440 * 2^((n-69)/12) where n is MIDI note number
-  /// A4 (MIDI 69) = 440 Hz
+
+  /// Calculate frequency from POD tuner note number
+  /// POD note 0 = B0 (MIDI 23), so: MIDI note = POD note + 23
+  /// Then use standard formula: f = 440 * 2^((n-69)/12)
+  /// Simplified: f = 440 * 2^((POD_note + 23 - 69)/12) = 440 * 2^((POD_note - 46)/12)
   double? get frequency {
     if (noteNumber == null) return null;
-    return 440.0 * math.pow(2, (noteNumber! - 69) / 12.0).toDouble();
+    // POD note + 23 = MIDI note, then apply standard frequency formula
+    return 440.0 * math.pow(2, (noteNumber! - 46) / 12.0).toDouble();
   }
   
   /// Parse tuner note response

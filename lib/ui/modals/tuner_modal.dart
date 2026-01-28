@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math' as math;
 import '../theme/pod_theme.dart';
 import '../../services/pod_controller.dart';
 import '../../protocol/sysex.dart';
@@ -208,19 +207,16 @@ class _TunerModalState extends State<TunerModal> {
           ),
           const SizedBox(width: 12),
 
-          // Center segment - In Tune (inverted triangle)
+          // Center segment - In Tune (filled circle)
           Expanded(
             child: _buildSegment(
               isActive: isInTune,
-              child: Transform.rotate(
-                angle: math.pi,
-                child: Icon(
-                  Icons.arrow_drop_up,
-                  size: 60,
-                  color: isInTune
-                      ? PodColors.buttonOnGreen
-                      : PodColors.textSecondary.withValues(alpha: 0.2),
-                ),
+              child: Icon(
+                Icons.circle,
+                size: 48,
+                color: isInTune
+                    ? PodColors.buttonOnGreen
+                    : PodColors.textSecondary.withValues(alpha: 0.2),
               ),
             ),
           ),
