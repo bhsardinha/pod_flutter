@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../theme/pod_theme.dart';
 
 /// A TAP tempo button that blinks at the current BPM
 ///
@@ -147,10 +148,76 @@ class _TapButtonState extends State<TapButton> {
     _dragAccumulator = 0.0;
   }
 
+  void _showBpmEntryDialog() {
+    final controller = TextEditingController(text: '${widget.bpm}');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: PodColors.surface,
+        title: const Text(
+          'SET BPM',
+          style: TextStyle(
+            color: PodColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: PodColors.textPrimary, fontSize: 24),
+          decoration: const InputDecoration(
+            labelText: 'BPM (30-240)',
+            labelStyle: TextStyle(color: PodColors.textSecondary),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: PodColors.accent),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: PodColors.accent, width: 2),
+            ),
+          ),
+          onSubmitted: (value) {
+            final bpm = int.tryParse(value);
+            if (bpm != null && bpm >= 30 && bpm <= 240) {
+              widget.onTempoChanged(bpm);
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(color: PodColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final bpm = int.tryParse(controller.text);
+              if (bpm != null && bpm >= 30 && bpm <= 240) {
+                widget.onTempoChanged(bpm);
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text(
+              'SET',
+              style: TextStyle(color: PodColors.accent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: widget.onTap,
+      onLongPress: _showBpmEntryDialog,
+      onSecondaryTap: _showBpmEntryDialog, // Right-click support
       onVerticalDragStart: widget.enableScrolling ? _handleVerticalDragStart : null,
       onVerticalDragUpdate: widget.enableScrolling ? _handleVerticalDragUpdate : null,
       onVerticalDragEnd: widget.enableScrolling ? _handleVerticalDragEnd : null,

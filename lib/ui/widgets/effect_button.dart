@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/pod_theme.dart';
+import '../utils/button_gestures.dart';
 
 /// A realistic piano-black effect button with outer bevel and glowing text when on.
 ///
@@ -19,8 +20,8 @@ class EffectButton extends StatelessWidget {
   /// Whether the effect is currently ON
   final bool isOn;
 
-  /// Callback when button is tapped (toggle)
-  final VoidCallback onTap;
+  /// Callback when button is tapped (toggle) - optional
+  final VoidCallback? onTap;
 
   /// Callback when button is long-pressed (open modal) - optional
   final VoidCallback? onLongPress;
@@ -56,10 +57,12 @@ class EffectButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      onSecondaryTap: onLongPress,
+    return ButtonGestureDetector(
+      config: ButtonGestureConfig(
+        onTap: onTap,
+        onLongPress: onLongPress,
+        enableSecondaryTap: true,
+      ),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(

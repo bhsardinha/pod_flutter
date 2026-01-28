@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../../models/app_settings.dart';
 import '../../models/amp_models.dart';
+import '../../protocol/cc_map.dart';
 import '../theme/pod_theme.dart';
 import '../widgets/effect_button.dart';
 import '../widgets/dot_matrix_lcd.dart';
@@ -30,7 +31,8 @@ class AmpSelectorSection extends StatelessWidget {
   final VoidCallback onAmpTap;
   final VoidCallback onChainLinkToggle;
   final VoidCallback onCabTap;
-  final VoidCallback onMicTap;
+  final VoidCallback onCabLongPress;
+  final VoidCallback onMicLongPress;
   final VoidCallback onMidiTap;
 
   const AmpSelectorSection({
@@ -52,7 +54,8 @@ class AmpSelectorSection extends StatelessWidget {
     required this.onAmpTap,
     required this.onChainLinkToggle,
     required this.onCabTap,
-    required this.onMicTap,
+    required this.onCabLongPress,
+    required this.onMicLongPress,
     required this.onMidiTap,
   });
 
@@ -106,8 +109,9 @@ class AmpSelectorSection extends StatelessWidget {
                 child: EffectButton(
                   label: 'CAB',
                   modelName: currentCab,
-                  isOn: true,
+                  isOn: podController.getParameter(PodXtCC.cabSelect) != 0,
                   onTap: onCabTap,
+                  onLongPress: onCabLongPress,
                   labelFontSize: 16,
                   useDynamicLabelSize: true,
                 ),
@@ -118,7 +122,8 @@ class AmpSelectorSection extends StatelessWidget {
                   label: 'MIC',
                   modelName: currentMic,
                   isOn: true,
-                  onTap: onMicTap,
+                  onTap: null, // No tap action for MIC
+                  onLongPress: onMicLongPress,
                   labelFontSize: 16,
                   useDynamicLabelSize: true,
                 ),

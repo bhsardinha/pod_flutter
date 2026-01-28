@@ -126,6 +126,7 @@ class ControlBarSection extends StatelessWidget {
               label: 'SET',
               isOn: false,
               onTap: onSettings,
+              onLongPress: onSettings, // Also support long-press for consistency
               icon: Icons.settings,
             ),
           ),

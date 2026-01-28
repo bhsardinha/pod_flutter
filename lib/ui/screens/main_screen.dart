@@ -114,6 +114,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _ampPickerTilesView = false;
   double _ampPickerListScrollPosition = 0.0;
   double _ampPickerTilesScrollPosition = 0.0;
+  int _lastCabSelection = 1; // Track last non-zero cab for toggle
 
   // Cab picker view mode and scroll positions
   bool _cabPickerTilesView = false;
@@ -337,8 +338,9 @@ class _MainScreenState extends State<MainScreen> {
                     onAmpTap: _showAmpPicker,
                     onChainLinkToggle: () =>
                         setState(() => _ampChainLinked = !_ampChainLinked),
-                    onCabTap: _showCabPicker,
-                    onMicTap: _showMicPicker,
+                    onCabTap: _handleCabTap,
+                    onCabLongPress: _handleCabLongPress,
+                    onMicLongPress: _handleMicLongPress,
                     onMidiTap: _showConnectionModal,
                   ),
                 ),
@@ -489,6 +491,29 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+  }
+
+  // CAB/MIC handlers
+  void _handleCabTap() {
+    if (!_isConnected) return;
+
+    final currentCab = widget.podController.getParameter(PodXtCC.cabSelect);
+    if (currentCab == 0) {
+      // Currently "No Cab", restore last selection
+      widget.podController.setCabModel(_lastCabSelection);
+    } else {
+      // Store current cab and switch to "No Cab"
+      _lastCabSelection = currentCab;
+      widget.podController.setCabModel(0);
+    }
+  }
+
+  void _handleCabLongPress() {
+    _showCabPicker();
+  }
+
+  void _handleMicLongPress() {
+    _showMicPicker();
   }
 
   // Modal launchers
