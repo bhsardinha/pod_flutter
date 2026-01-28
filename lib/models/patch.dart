@@ -25,12 +25,17 @@ class Patch {
   /// Patch name (first 16 bytes, space-padded)
   String get name {
     final nameBytes = _data.sublist(0, programNameLength);
-    // Find the last non-space character
+    // Find the last non-space/non-null character
     int end = programNameLength;
-    while (end > 0 && nameBytes[end - 1] == 0x20) {
+    while (end > 0 && (nameBytes[end - 1] == 0x20 || nameBytes[end - 1] == 0x00)) {
       end--;
     }
-    return String.fromCharCodes(nameBytes.sublist(0, end));
+    // If all bytes are spaces or nulls, return empty string
+    if (end == 0) return '';
+
+    // Filter out any remaining null bytes from the name
+    final validBytes = nameBytes.sublist(0, end).where((b) => b != 0x00).toList();
+    return String.fromCharCodes(validBytes);
   }
 
   set name(String value) {

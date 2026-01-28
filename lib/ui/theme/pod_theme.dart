@@ -244,7 +244,11 @@ class PodTheme {
           elevation: 2,
           shadowColor: PodColors.knobShadow.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          textStyle: PodTextStyles.valueMedium,
+          textStyle: const TextStyle(
+            fontFamily: 'Copperplate',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
 
@@ -252,7 +256,11 @@ class PodTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: PodColors.accent,
-          textStyle: PodTextStyles.valueMedium,
+          textStyle: const TextStyle(
+            fontFamily: 'Copperplate',
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
 
@@ -301,18 +309,38 @@ class PodTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: PodColors.accent, width: 2),
         ),
-        labelStyle: PodTextStyles.labelMedium,
-        hintStyle: PodTextStyles.secondary,
+        labelStyle: const TextStyle(
+          fontFamily: 'Copperplate',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: PodColors.textLabel,
+        ),
+        hintStyle: const TextStyle(
+          fontFamily: 'Copperplate',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: PodColors.textSecondary,
+        ),
       ),
 
-      // Dialog
+      // Dialog - Use Copperplate for better readability
       dialogTheme: DialogThemeData(
         backgroundColor: PodColors.surface,
         elevation: 8,
         shadowColor: PodColors.knobShadow.withValues(alpha: 0.7),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        titleTextStyle: PodTextStyles.header,
-        contentTextStyle: PodTextStyles.valueMedium,
+        titleTextStyle: const TextStyle(
+          fontFamily: 'Copperplate',
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: PodColors.textPrimary,
+        ),
+        contentTextStyle: const TextStyle(
+          fontFamily: 'Copperplate',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: PodColors.textPrimary,
+        ),
       ),
 
       // Divider
@@ -322,7 +350,7 @@ class PodTheme {
         space: 1,
       ),
 
-      // Text theme - OPTICopperplate as default font
+      // Text theme - OPTICopperplate as default font for main UI
       fontFamily: 'OPTICopperplate',
       textTheme: const TextTheme(
         displayLarge: PodTextStyles.header,
@@ -352,6 +380,23 @@ class PodTheme {
         unselectedItemColor: PodColors.textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
+      ),
+
+      // ListTile - Use Copperplate for readability
+      listTileTheme: const ListTileThemeData(
+        textColor: PodColors.textPrimary,
+        titleTextStyle: TextStyle(
+          fontFamily: 'Copperplate',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: PodColors.textPrimary,
+        ),
+        subtitleTextStyle: TextStyle(
+          fontFamily: 'Copperplate',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: PodColors.textSecondary,
+        ),
       ),
 
       // Tooltip

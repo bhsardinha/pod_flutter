@@ -443,6 +443,57 @@ class PodController {
     throw UnimplementedError('Save to program not yet implemented');
   }
 
+  /// Load a patch to the edit buffer and send all parameters to hardware
+  Future<void> loadPatchToHardware(Patch patch) async {
+    // Update edit buffer
+    _editBuffer.patch = patch.copy();
+    _editBuffer.modified = true;
+    _editBuffer.sourceProgram = null; // No source program
+
+    _suppressModifiedFlag = true;
+
+    // Send all key parameters to hardware via CC
+    // Amp section
+    await setParameter(PodXtCC.ampSelect, patch.getValue(PodXtCC.ampSelect));
+    await setParameter(PodXtCC.drive, patch.getValue(PodXtCC.drive));
+    await setParameter(PodXtCC.bass, patch.getValue(PodXtCC.bass));
+    await setParameter(PodXtCC.mid, patch.getValue(PodXtCC.mid));
+    await setParameter(PodXtCC.treble, patch.getValue(PodXtCC.treble));
+    await setParameter(PodXtCC.presence, patch.getValue(PodXtCC.presence));
+    await setParameter(PodXtCC.chanVolume, patch.getValue(PodXtCC.chanVolume));
+    await setSwitch(PodXtCC.ampEnable, patch.getSwitch(PodXtCC.ampEnable));
+
+    // Cab section
+    await setParameter(PodXtCC.cabSelect, patch.getValue(PodXtCC.cabSelect));
+    await setParameter(PodXtCC.micSelect, patch.getValue(PodXtCC.micSelect));
+    await setParameter(PodXtCC.room, patch.getValue(PodXtCC.room));
+
+    // Effects enables
+    await setSwitch(PodXtCC.noiseGateEnable, patch.getSwitch(PodXtCC.noiseGateEnable));
+    await setSwitch(PodXtCC.wahEnable, patch.getSwitch(PodXtCC.wahEnable));
+    await setSwitch(PodXtCC.stompEnable, patch.getSwitch(PodXtCC.stompEnable));
+    await setSwitch(PodXtCC.modEnable, patch.getSwitch(PodXtCC.modEnable));
+    await setSwitch(PodXtCC.delayEnable, patch.getSwitch(PodXtCC.delayEnable));
+    await setSwitch(PodXtCC.reverbEnable, patch.getSwitch(PodXtCC.reverbEnable));
+    await setSwitch(PodXtCC.compressorEnable, patch.getSwitch(PodXtCC.compressorEnable));
+    await setSwitch(PodXtCC.eqEnable, patch.getSwitch(PodXtCC.eqEnable));
+
+    // Effect models
+    await setParameter(PodXtCC.stompSelect, patch.getValue(PodXtCC.stompSelect));
+    await setParameter(PodXtCC.modSelect, patch.getValue(PodXtCC.modSelect));
+    await setParameter(PodXtCC.delaySelect, patch.getValue(PodXtCC.delaySelect));
+    await setParameter(PodXtCC.reverbSelect, patch.getValue(PodXtCC.reverbSelect));
+
+    // Delay/Reverb mix
+    await setParameter(PodXtCC.delayMix, patch.getValue(PodXtCC.delayMix));
+    await setParameter(PodXtCC.reverbLevel, patch.getValue(PodXtCC.reverbLevel));
+
+    _suppressModifiedFlag = false;
+
+    // Notify listeners
+    _editBufferController.add(_editBuffer);
+  }
+
   /// Refresh edit buffer from device
   Future<void> refreshEditBuffer() async {
     await _midi.requestEditBuffer();
@@ -860,9 +911,9 @@ class PodController {
       throw ArgumentError('Patch number must be 0-${programCount - 1}');
     }
 
-    print('POD: Saving to hardware slot $patchNumber...');
+    print('POD: Saving current edit buffer to hardware slot $patchNumber...');
 
-    // Get patch data
+    // Get patch data from current edit buffer
     final patchData = _editBuffer.patch.data;
 
     // Track which patch we're saving for the result callback
@@ -879,6 +930,39 @@ class PodController {
     // Wait for success/failure response (handled in _handleSysex)
     // The response will be 03 50 (success) or 03 51 (failure)
     print('POD: Store command sent, waiting for confirmation...');
+  }
+
+  /// Export a specific patch to a hardware slot without loading it to edit buffer
+  ///
+  /// This is different from savePatchToHardware which saves the current edit buffer.
+  /// Use this when you want to save a patch from local library directly to hardware.
+  Future<void> exportPatchToHardware(Patch patch, int patchNumber) async {
+    if (_connectionState != PodConnectionState.connected) {
+      throw StateError('Not connected to device');
+    }
+
+    if (patchNumber < 0 || patchNumber >= programCount) {
+      throw ArgumentError('Patch number must be 0-${programCount - 1}');
+    }
+
+    print('POD: Exporting "${patch.name}" to hardware slot $patchNumber...');
+
+    // Use the provided patch data (not edit buffer)
+    final patchData = patch.data;
+
+    // Track which patch we're saving for the result callback
+    _lastSavedPatchNumber = patchNumber;
+    _lastSavedPatchData = List<int>.from(patchData);
+
+    // Build and send store command
+    final storeMsg = PodXtSysex.storePatch(patchNumber, patchData);
+    await _midi.sendSysex(storeMsg);
+
+    // Send end marker
+    await _midi.sendSysex(PodXtSysex.requestPatchDumpEnd());
+
+    // Wait for success/failure response (handled in _handleSysex)
+    print('POD: Export command sent, waiting for confirmation...');
   }
 
   /// Rename an existing patch slot without loading it

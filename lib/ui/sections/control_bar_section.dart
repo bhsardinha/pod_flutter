@@ -112,8 +112,6 @@ class ControlBarSection extends StatelessWidget {
               enableScrolling: enableTempoScrolling,
               onTap: onTap,
               onTempoChanged: onTempoChanged,
-              labelFontSize: 12,
-              bpmFontSize: 10,
               useDynamicSize: true,
             ),
           ),

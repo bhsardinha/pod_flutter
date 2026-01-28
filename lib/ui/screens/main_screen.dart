@@ -12,7 +12,7 @@ import '../widgets/brushed_metal_background.dart';
 import '../theme/pod_theme.dart';
 import '../utils/value_formatters.dart';
 import '../modals/connection_modal.dart';
-import '../modals/patch_list_modal.dart';
+import '../modals/patch_library_modal.dart';
 import '../modals/gate_modal.dart';
 import '../modals/cab_modal.dart';
 import '../modals/mic_modal.dart';
@@ -525,7 +525,7 @@ class _MainScreenState extends State<MainScreen> {
     showDialog(
       context: context,
       barrierColor: PodColors.modalOverlay,
-      builder: (dialogContext) => PatchListModal(
+      builder: (dialogContext) => PatchLibraryModal(
         podController: widget.podController,
         currentProgram: _currentProgram,
         patchesSynced: _patchesSynced,

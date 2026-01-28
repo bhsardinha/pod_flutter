@@ -149,6 +149,13 @@ BT-MIDI Adapter → POD XT Pro Hardware
 **5. Inverted Amp Enable**: CC 111 uses inverted logic (0=on, 127=off)
    - **Code**: `lib/protocol/cc_map.dart:ampEnable`
 
+**6. No Manual Mode via MIDI**: Manual mode (PC 0) is **NOT available** on POD XT Pro via MIDI
+   - Manual mode is controlled exclusively via **FBV shortboard** (proprietary RJ-45 protocol)
+   - FBV shortboard activates manual mode by holding A/B/C/D buttons (no MIDI messages sent)
+   - PC 0 does not trigger manual mode on POD XT Pro (only works on POD 2.0 and Bass XT)
+   - **Reference**: `pod-ui-master/mod-xt/src/config.rs:473` shows `pc_manual_mode: None`
+   - **Conclusion**: Manual mode cannot be triggered via BLE-MIDI/USB-MIDI connection
+
 **See `docs/POD_XT_PRO_DIFFERENCES.md` for complete details.**
 
 ---
