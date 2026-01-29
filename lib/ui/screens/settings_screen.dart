@@ -5,15 +5,18 @@ import 'package:flutter/material.dart';
 import '../theme/pod_theme.dart';
 import '../../models/app_settings.dart';
 import '../../models/amp_models.dart';
+import '../../services/pod_controller.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppSettings settings;
   final Function(AppSettings) onSettingsChanged;
+  final PodController? podController;
 
   const SettingsScreen({
     super.key,
     required this.settings,
     required this.onSettingsChanged,
+    this.podController,
   });
 
   @override
@@ -180,15 +183,71 @@ class _SettingsScreenState extends State<SettingsScreen> {
               activeThumbColor: const Color(0xFFFF7A00),
             ),
           ),
-          if (_settings.disableAIR)
-            Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 16),
-              child: Text(
-                'Automatically sets cab to "No Cab" when loading presets or changing amps.\nIdeal for using external IR devices.',
-                style: TextStyle(
-                  color: PodColors.textSecondary.withValues(alpha: 0.8),
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
+
+          // Volume Pedal Position setting
+          if (widget.podController != null)
+            _buildSettingRow(
+              label: 'Volume Pedal Position',
+              child: GestureDetector(
+                onTap: () async {
+                  final isPost = widget.podController!.volumePositionPost;
+                  await widget.podController!.setVolumePosition(!isPost);
+                  setState(() {});
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: widget.podController!.volumePositionPost
+                      ? PodColors.surfaceLight
+                      : PodColors.background,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: widget.podController!.volumePositionPost
+                        ? PodColors.accent
+                        : PodColors.textSecondary.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'PRE',
+                        style: TextStyle(
+                          color: !widget.podController!.volumePositionPost
+                            ? PodColors.accent
+                            : PodColors.textSecondary.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: !widget.podController!.volumePositionPost
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '/',
+                        style: TextStyle(
+                          color: PodColors.textSecondary.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'POST',
+                        style: TextStyle(
+                          color: widget.podController!.volumePositionPost
+                            ? PodColors.accent
+                            : PodColors.textSecondary.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: widget.podController!.volumePositionPost
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

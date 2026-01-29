@@ -548,6 +548,7 @@ class _MainScreenState extends State<MainScreen> {
           });
           await newSettings.save();
         },
+        podController: widget.podController,
       ),
     );
   }

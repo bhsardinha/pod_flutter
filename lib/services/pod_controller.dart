@@ -429,6 +429,25 @@ class PodController {
     return setParameter16(PodXtCC.tempoMsb, PodXtCC.tempoLsb, internalValue);
   }
 
+  // Effect Positioning (PRE/POST amp)
+  // 0 or <64 = PRE (before amp), >=64 or 127 = POST (after amp)
+
+  bool get modPositionPost => getParameter(PodXtCC.modPosition) >= 64;
+  Future<void> setModPosition(bool post) =>
+    setParameter(PodXtCC.modPosition, post ? 127 : 0);
+
+  bool get delayPositionPost => getParameter(PodXtCC.delayPosition) >= 64;
+  Future<void> setDelayPosition(bool post) =>
+    setParameter(PodXtCC.delayPosition, post ? 127 : 0);
+
+  bool get reverbPositionPost => getParameter(PodXtCC.reverbPosition) >= 64;
+  Future<void> setReverbPosition(bool post) =>
+    setParameter(PodXtCC.reverbPosition, post ? 127 : 0);
+
+  bool get volumePositionPost => getParameter(PodXtCC.volPedalPosition) >= 64;
+  Future<void> setVolumePosition(bool post) =>
+    setParameter(PodXtCC.volPedalPosition, post ? 127 : 0);
+
   // ═══════════════════════════════════════════════════════════════════════════
   // PUBLIC API - Program Management
   // ═══════════════════════════════════════════════════════════════════════════

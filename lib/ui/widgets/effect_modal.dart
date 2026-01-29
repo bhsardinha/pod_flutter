@@ -7,6 +7,7 @@ import '../../protocol/cc_map.dart';
 import '../../protocol/effect_param_mappers.dart';
 import 'effect_model_selector.dart';
 import 'lcd_knob_array.dart';
+import '../theme/pod_theme.dart';
 
 /// Unified modal for all effect types (Wah, Stomp, Mod, Delay, Reverb)
 /// Dynamically generates controls based on selected model and mapper
@@ -189,6 +190,38 @@ class _EffectModalState extends State<EffectModal> {
     widget.podController.setParameter(mapping.lsbParam!, lsb);
   }
 
+  /// Check if this effect supports PRE/POST positioning
+  bool get _supportsPositioning {
+    return widget.mapper is ModParamMapper ||
+        widget.mapper is DelayParamMapper ||
+        widget.mapper is ReverbParamMapper;
+  }
+
+  /// Get current position (PRE or POST)
+  bool get _isPostPosition {
+    if (widget.mapper is ModParamMapper) {
+      return widget.podController.modPositionPost;
+    } else if (widget.mapper is DelayParamMapper) {
+      return widget.podController.delayPositionPost;
+    } else if (widget.mapper is ReverbParamMapper) {
+      return widget.podController.reverbPositionPost;
+    }
+    return false;
+  }
+
+  /// Toggle position
+  Future<void> _togglePosition() async {
+    final isPost = _isPostPosition;
+    if (widget.mapper is ModParamMapper) {
+      await widget.podController.setModPosition(!isPost);
+    } else if (widget.mapper is DelayParamMapper) {
+      await widget.podController.setDelayPosition(!isPost);
+    } else if (widget.mapper is ReverbParamMapper) {
+      await widget.podController.setReverbPosition(!isPost);
+    }
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentModel = widget.mapper.models.firstWhere(
@@ -205,6 +238,72 @@ class _EffectModalState extends State<EffectModal> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // PRE/POST toggle (MOD, DELAY, REVERB only)
+          if (_supportsPositioning) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: widget.isConnected ? _togglePosition : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _isPostPosition
+                      ? PodColors.surfaceLight
+                      : PodColors.background,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _isPostPosition
+                        ? PodColors.accent
+                        : PodColors.textSecondary.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'PRE',
+                        style: TextStyle(
+                          color: !_isPostPosition
+                            ? PodColors.accent
+                            : PodColors.textSecondary.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: !_isPostPosition
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '/',
+                        style: TextStyle(
+                          color: PodColors.textSecondary.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'POST',
+                        style: TextStyle(
+                          color: _isPostPosition
+                            ? PodColors.accent
+                            : PodColors.textSecondary.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: _isPostPosition
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Model selector
           EffectModelSelector(
             models: widget.mapper.models,
