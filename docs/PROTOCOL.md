@@ -82,7 +82,7 @@ class CCParam {
 | Amp Enable | 111 | 143 | **INVERTED** (0=on, 127=off) |
 | Compressor Enable | 26 | 58 | |
 | EQ Enable | 63 | 95 | |
-| Tuner Enable | 68 | null | MIDI-only |
+| Tuner Enable | 69 | null | MIDI-only (CC 69 = 127 enables, CC 69 = 0 disables) |
 | Volume Pedal Enable | 47 | null | MIDI-only |
 | Loop Enable | 61 | 93 | |
 
@@ -418,14 +418,75 @@ if (program < 64) {
 }
 ```
 
-#### Tuner Data
+#### Tuner Protocol
 
-**Receive**: `F0 00 01 0C 03 56 [note] [cents] F7`
+**Enable Tuner Mode**: Send CC 69 = 127 (via MIDI CC message)
 
-**NOTE**: Tuner data uses same command (03 56) as program number response, but without the 0x11 subcommand byte.
+**Disable Tuner Mode**: Send CC 69 = 0 (via MIDI CC message)
 
-- `note`: MIDI note number (0-127)
-- `cents`: Cents offset (-64 to +63, add 64 for unsigned)
+**Request Tuner Note**:
+
+**Send**: `F0 00 01 0C 03 57 16 F7`
+
+**Response**: `F0 00 01 0C 03 56 16 [P1] [P2] [P3] [P4] F7`
+
+- `P1-P4`: Four nibbles encoding 16-bit note value
+- Decode: `note = (P1 << 12) | (P2 << 8) | (P3 << 4) | P4`
+- Special value `0xFFFE` = no signal detected
+
+**Request Tuner Offset**:
+
+**Send**: `F0 00 01 0C 03 57 17 F7`
+
+**Response**: `F0 00 01 0C 03 56 17 [P1] [P2] [P3] [P4] F7`
+
+- `P1-P4`: Four nibbles encoding 16-bit signed offset value (cents)
+- Decode: `offset = (P1 << 12) | (P2 << 8) | (P3 << 4) | P4`
+- Convert to signed: `if (offset > 32767) offset = offset - 65536`
+- Special value `97` = no signal detected
+- Range: -50 to +50 cents (clamped)
+
+**POD Note Numbering**:
+- POD note 0 = B0 (not C-1 like standard MIDI)
+- Offset of +23 semitones from standard MIDI note numbering
+- POD note to MIDI note: `midiNote = podNote + 23`
+
+**Frequency Calculation**:
+```dart
+// POD note to frequency (A440 standard)
+double frequency = 440.0 * pow(2, (podNote - 46) / 12.0);
+```
+
+**Note Names** (POD uses B-based numbering):
+```
+0=B, 1=C, 2=C#, 3=D, 4=D#, 5=E, 6=F, 7=F#, 8=G, 9=G#, 10=A, 11=A#
+```
+
+**Octave Calculation**:
+```dart
+int octave = (podNote ~/ 12) + 1;  // 1-based octave numbering
+```
+
+**Usage Notes**:
+- Tuner data must be polled periodically (recommended: 1 Hz)
+- Not event-driven - POD doesn't send tuner data automatically
+- Must enable tuner mode via CC 69 before requesting data
+- Disable tuner mode when done to avoid interfering with normal operation
+
+**Example**:
+```dart
+// Enable tuner
+await midi.sendControlChange(0, 69, 127);
+
+// Poll tuner data at 1 Hz
+Timer.periodic(Duration(seconds: 1), (_) async {
+  await midi.sendSysex([0xF0, 0x00, 0x01, 0x0C, 0x03, 0x57, 0x16, 0xF7]);
+  await midi.sendSysex([0xF0, 0x00, 0x01, 0x0C, 0x03, 0x57, 0x17, 0xF7]);
+});
+
+// Disable tuner when done
+await midi.sendControlChange(0, 69, 0);
+```
 
 ### All Programs Dump (NOT SUPPORTED)
 

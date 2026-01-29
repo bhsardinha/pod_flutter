@@ -17,7 +17,7 @@ POD Flutter is a mobile MIDI controller for the Line 6 POD XT Pro guitar process
                 ▼                 ▼                 ▼
     ┌──────────────────┐  ┌──────────────┐  ┌────────────────┐
     │   UI Layer       │  │   Services   │  │    Models      │
-    │   (35 files)     │  │   (3 files)  │  │   (6 files)    │
+    │   (44 files)     │  │   (3 files)  │  │   (6 files)    │
     └──────────────────┘  └──────────────┘  └────────────────┘
                                   │
                     ┌─────────────┴─────────────┐
@@ -118,7 +118,7 @@ class SysexMessage {
 - `amp_models.dart` (180 lines) - 107 amp models
 - `cab_models.dart` (120 lines) - 47 cab + 8 mic models
 - `effect_models.dart` (796 lines) - All effect models (Stomp/Mod/Delay/Reverb/Wah)
-- `app_settings.dart` (65 lines) - User preferences
+- `app_settings.dart` (65 lines) - User preferences (amp display mode, grid items, tempo scrolling, warn on unsaved changes, disable A.I.R.)
 
 **Key Abstractions**:
 ```dart
@@ -256,13 +256,14 @@ class PodController {
   int? _expectedPatchNumber;
   bool _bulkImportInProgress = false;
 
-  // Stream controllers (6 broadcast streams)
+  // Stream controllers (7 broadcast streams)
   final _connectionStateController = StreamController<bool>.broadcast();
   final _editBufferController = StreamController<EditBuffer>.broadcast();
   final _programChangedController = StreamController<int>.broadcast();
   final _parameterChangedController = StreamController<ParameterChange>.broadcast();
   final _syncProgressController = StreamController<SyncProgress>.broadcast();
   final _storeResultController = StreamController<StoreResult>.broadcast();
+  final _tunerDataController = StreamController<TunerData>.broadcast();
 }
 ```
 
@@ -291,7 +292,13 @@ class PodController {
    - Emit events for UI updates
    - Track edit buffer modifications
 
-5. **POD XT Pro Quirks**:
+5. **Tuner Control**:
+   - Enable/disable tuner mode (CC 69)
+   - Request tuner data (note and offset)
+   - Parse tuner sysex responses
+   - Emit tuner data events
+
+6. **POD XT Pro Quirks**:
    - Handle 03 74 as patch dump response
    - Ignore individual 03 72 markers during bulk import
    - Non-contiguous patch mapping (64-127 → 192-255)
@@ -316,6 +323,9 @@ Stream<SyncProgress> get onSyncProgress;
 
 // Store operation results
 Stream<StoreResult> get onStoreResult;
+
+// Tuner data updates (note, cents, frequency)
+Stream<TunerData> get onTunerData;
 ```
 
 **Critical Bulk Import Logic**:
@@ -369,6 +379,9 @@ lib/ui/
 ├── screens/              # Main screens
 │   ├── main_screen.dart         (708 lines) - Primary controller UI
 │   └── settings_screen.dart     - User preferences
+├── tabs/                 # Tab views
+│   ├── local_library_tab.dart   - Local patch library storage
+│   └── pod_presets_tab.dart     - POD hardware presets
 ├── sections/             # UI sections (modular components)
 │   ├── amp_selector_section.dart
 │   ├── tone_controls_section.dart
@@ -377,13 +390,15 @@ lib/ui/
 │   └── control_bar_section.dart
 ├── modals/              # Modal dialogs
 │   ├── connection_modal.dart
-│   ├── patch_list_modal.dart
+│   ├── patch_list_modal.dart        - Tabbed (Local Library / POD Presets)
 │   ├── amp_modal.dart
 │   ├── cab_modal.dart
 │   ├── mic_modal.dart
 │   ├── gate_modal.dart
 │   ├── comp_modal.dart
 │   ├── effect_modal.dart
+│   ├── tuner_modal.dart             - 3-segment tuner display
+│   ├── unsaved_changes_modal.dart   - Save/discard/cancel dialog
 │   └── pod_model_selector_modal.dart
 ├── widgets/             # Reusable widgets
 │   ├── rotary_knob.dart

@@ -134,7 +134,20 @@ This document provides a comprehensive overview of implemented features, known l
   - BPM setting (30.0-240.0 BPM)
   - 14-bit precision (300-2400 internal units)
   - Tap tempo button
+  - Vertical drag to adjust BPM
+  - Hold/right-click for BPM number entry dialog
   - Tempo-synced effects (Delay/Mod)
+
+- ✅ **Tuner**
+  - Enable/disable via CC 69
+  - Real-time pitch detection via MIDI sysex
+  - 3-segment visual display (flat/in-tune/sharp)
+  - Note name and octave display
+  - Frequency display (Hz)
+  - ±2 cent tolerance for "in tune" indication
+  - Red arrows for out-of-tune (>±2 cents)
+  - Green circle for in-tune range (±2 cents)
+  - POD-specific note numbering and frequency calculation
 
 ### Patch Management
 
@@ -170,10 +183,15 @@ This document provides a comprehensive overview of implemented features, known l
   - 5-second timeout
 
 - ✅ **Patch Browser**
+  - Tabbed interface (Local Library / POD Presets)
+  - Local library with persistent storage (SharedPreferences)
   - List view with all 128 patches
   - Bank organization (A/B/C/D, 1-32 per bank)
   - Current patch highlighting
   - Modified patches indicator
+  - Clickable modified indicator (*) with save/discard dialog
+  - Import from POD hardware to local library
+  - Backup/restore functionality
 
 ### User Interface
 
@@ -206,8 +224,14 @@ This document provides a comprehensive overview of implemented features, known l
 - ✅ **Effect Buttons**
   - Enable/disable toggle
   - LED indicator (on/off/bypassed states)
-  - Opens effect modal on tap
+  - Tap to toggle on/off
+  - Hold or right-click to open effect modal
   - Displays effect name
+  - Consistent interaction across all buttons (CAB, MIC, SET, TAP)
+  - CAB button: Tap toggles between current cab and "No Cab", hold opens selector
+  - MIC button: Tap does nothing, hold opens selector
+  - SET button: Tap or hold opens settings
+  - TAP button: Tap for tap tempo, vertical drag for BPM, hold for number entry
 
 - ✅ **Dot-Matrix LCD Display**
   - Patch name display
@@ -268,6 +292,16 @@ This document provides a comprehensive overview of implemented features, known l
   - Threshold slider
   - Gain slider
 
+- ✅ **Tuner Modal**
+  - 3-segment visual tuner (flat/in-tune/sharp)
+  - Note name and octave display
+  - Frequency display in Hz
+  - Cents offset display
+  - "IN TUNE" indicator (0 cents only)
+  - Real-time updates (1 Hz polling)
+  - Automatically enables/disables tuner mode (CC 69)
+  - Opened by tapping "A" button on LCD
+
 #### Settings
 
 - ✅ **Amp Name Display Modes**
@@ -281,6 +315,16 @@ This document provides a comprehensive overview of implemented features, known l
 
 - ✅ **Tempo Scrolling**
   - Enable/disable tempo knob scrolling
+
+- ✅ **Warn on Unsaved Changes**
+  - Confirmation dialog when switching patches with unsaved edits
+  - Option to save, discard, or cancel
+  - Can be disabled in settings
+
+- ✅ **Disable A.I.R.**
+  - Disable Advanced Impulse Response (A.I.R.) processing
+  - For users with external IR devices
+  - Bypasses cabinet and mic simulation
 
 - ✅ **Settings Persistence**
   - SharedPreferences storage
@@ -320,13 +364,12 @@ This document provides a comprehensive overview of implemented features, known l
 
 ### Patch Management
 
-- ⚠️ **Patch Rename**
-  - UI has text input field
-  - Changes name in edit buffer
-  - Does NOT send sysex to update hardware name directly
-  - Name is saved when patch is saved to hardware
-
-**Status**: Functional but indirect (requires full patch save)
+- ✅ **Patch Rename**
+  - UI text input field with inline editing
+  - Changes name in edit buffer and hardware
+  - Forces hardware to reload patch after rename
+  - Updates UI immediately
+  - Properly handles currently loaded patch renaming
 
 ### Testing
 
@@ -386,11 +429,6 @@ This document provides a comprehensive overview of implemented features, known l
   - Multiple setlists
 
 ### Effects & Visualization
-
-- ❌ **Tuner Display**
-  - POD sends tuner data (03 56)
-  - App receives data but doesn't display
-  - Needs visual tuner meter (needle or LED-style)
 
 - ❌ **Effect Parameter Animations**
   - Animated waveforms for mod effects
@@ -550,20 +588,15 @@ This document provides a comprehensive overview of implemented features, known l
 
 ### Short-Term (Next Sprint)
 
-1. **Patch Caching**
-   - Cache patch library to SharedPreferences or local file
-   - Significantly reduce app startup time
-   - Invalidate cache on manual request
-
-2. **Tuner Display**
-   - Parse tuner sysex (03 56)
-   - Display note name and cents offset
-   - Visual tuner meter
-
-3. **Error Recovery**
+1. **Error Recovery**
    - Retry failed sysex messages
-   - Timeout handling for store operations
+   - Better timeout handling for store operations
    - Auto-reconnect on connection loss
+
+2. **Performance Optimization**
+   - Reduce UI rebuilds (use const widgets)
+   - Optimize parameter change handling
+   - Lazy loading for large lists
 
 ### Medium-Term (Next Month)
 
@@ -637,6 +670,9 @@ This document provides a comprehensive overview of implemented features, known l
 - ✅ Non-contiguous patch mapping
 - ✅ 160-byte patch size
 - ✅ Inverted amp enable
+- ✅ Tuner protocol (CC 69, sysex note/offset requests)
+- ✅ Patch rename and hardware update
+- ✅ Local patch library storage
 
 ### Features NOT Yet Implemented from POD-UI
 
@@ -653,9 +689,17 @@ This document provides a comprehensive overview of implemented features, known l
 - ✅ POD hardware-inspired appearance
 - ✅ Stream-based reactive architecture
 - ✅ Modal dialogs for detailed settings
-- ✅ Settings persistence
+- ✅ Settings persistence (SharedPreferences)
 - ✅ Hot-plug device detection
 - ✅ BLE MIDI support (POD-UI is USB-only)
+- ✅ Tabbed patch library (Local + POD Presets)
+- ✅ Local patch storage and backup
+- ✅ Unsaved changes warning
+- ✅ Clickable modified indicator with save/discard options
+- ✅ Button interaction consistency (tap/hold/right-click)
+- ✅ Visual tuner with 3-segment display
+- ✅ BPM number entry dialog
+- ✅ A.I.R. disable setting
 
 ---
 
