@@ -54,7 +54,8 @@ class LcdKnob extends StatelessWidget {
       sensitivity = 200.0;
     } else if (range <= 15) {
       // Custom sensitivity for small-range knobs (e.g., Heads, Bits)
-      sensitivity = 400.0; // Much less sensitive
+      // Lower sensitivity = more responsive to scroll
+      sensitivity = 50.0; // About 1 step per scroll tick
     } else {
       // Default for standard (0-127) and large-range (e.g., 0-16383) params
       sensitivity = 35.0;
