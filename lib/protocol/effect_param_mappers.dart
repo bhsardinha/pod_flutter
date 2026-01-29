@@ -349,8 +349,10 @@ class DelayParamMapper extends EffectParamMapper {
       int Function(int)? scaler;
 
       if (paramName.contains('heads') || paramName.contains('bits')) {
-        // Scale 0-8 knob value to 0-112 MIDI value in steps of 14
-        scaler = (v) => (v * 14).clamp(0, 127);
+        // Scale 0-8 knob value to 0-127 MIDI value in even steps
+        // Maps 9 positions (0-8) to MIDI range 0-127
+        // Position 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→95, 7→111, 8→127
+        scaler = (v) => (v * 127 / 8).round().clamp(0, 127);
       }
 
       mappings.add(
@@ -384,10 +386,10 @@ class DelayParamMapper extends EffectParamMapper {
 
     if (lower.contains('heads')) {
       // Heads parameter: 0-8 range with labels for tape head combinations
-      // MIDI to step conversion: divide 128 values into 9 steps
-      // Step 0: MIDI 0-13, Step 1: MIDI 14-27, ... Step 8: MIDI 112-127
+      // MIDI to step conversion: reverse of (step * 127 / 8)
+      // MIDI values: 0, 16, 32, 48, 64, 80, 95, 111, 127
       return (v) {
-        final step = (v * 9 / 128).floor().clamp(0, 8);
+        final step = (v * 8 / 127).round().clamp(0, 8);
         const labels = ['12--', '1-3-', '1--4', '-23-', '123-', '12-4', '1-34', '-234', '1234'];
         return labels[step];
       };
@@ -395,10 +397,10 @@ class DelayParamMapper extends EffectParamMapper {
 
     if (lower.contains('bits')) {
       // Bits parameter: 0-8 range showing bit depth (12-bit down to 4-bit)
-      // MIDI to step conversion: divide 128 values into 9 steps
-      // Step 0: MIDI 0-13, Step 1: MIDI 14-27, ... Step 8: MIDI 112-127
+      // MIDI to step conversion: reverse of (step * 127 / 8)
+      // MIDI values: 0, 16, 32, 48, 64, 80, 95, 111, 127
       return (v) {
-        final step = (v * 9 / 128).floor().clamp(0, 8);
+        final step = (v * 8 / 127).round().clamp(0, 8);
         const labels = ['12', '11', '10', '9', '8', '7', '6', '5', '4'];
         return labels[step];
       };
