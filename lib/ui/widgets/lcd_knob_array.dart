@@ -54,15 +54,16 @@ class LcdKnob extends StatelessWidget {
       sensitivity = 200.0;
     } else if (range <= 15) {
       // Custom sensitivity for small-range knobs (e.g., Heads, Bits)
-      // Lower sensitivity = more responsive to scroll
-      // Typical scroll wheel tick = 20 pixels, so sensitivity ~15-20 ensures 1 step per tick
-      sensitivity = 15.0;
+      // Higher sensitivity = less responsive (need more scroll to change)
+      // ~80-100px per step (4-5 scroll ticks)
+      sensitivity = 100.0;
     } else {
       // Default for standard (0-127) and large-range (e.g., 0-16383) params
       sensitivity = 35.0;
     }
 
-    final steps = (delta / sensitivity).round();
+    // Use truncate instead of round for more gradual, non-snapping feel
+    final steps = (delta / sensitivity).truncate();
     if (steps != 0) {
       final newValue = (value + steps).clamp(minValue, maxValue);
       if (newValue != value) {

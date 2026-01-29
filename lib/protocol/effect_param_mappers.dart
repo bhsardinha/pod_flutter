@@ -385,24 +385,18 @@ class DelayParamMapper extends EffectParamMapper {
     }
 
     if (lower.contains('heads')) {
-      // Heads parameter: 0-8 range with labels for tape head combinations
-      // MIDI to step conversion: reverse of (step * 127 / 8)
-      // MIDI values: 0, 16, 32, 48, 64, 80, 95, 111, 127
+      // Heads parameter: knob value is already a step (0-8), just map to label
       return (v) {
-        final step = (v * 8 / 127).round().clamp(0, 8);
         const labels = ['12--', '1-3-', '1--4', '-23-', '123-', '12-4', '1-34', '-234', '1234'];
-        return labels[step];
+        return labels[v.clamp(0, 8)];
       };
     }
 
     if (lower.contains('bits')) {
-      // Bits parameter: 0-8 range showing bit depth (12-bit down to 4-bit)
-      // MIDI to step conversion: reverse of (step * 127 / 8)
-      // MIDI values: 0, 16, 32, 48, 64, 80, 95, 111, 127
+      // Bits parameter: knob value is already a step (0-8), just map to label
       return (v) {
-        final step = (v * 8 / 127).round().clamp(0, 8);
         const labels = ['12', '11', '10', '9', '8', '7', '6', '5', '4'];
-        return labels[step];
+        return labels[v.clamp(0, 8)];
       };
     }
 
