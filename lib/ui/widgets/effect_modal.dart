@@ -77,8 +77,23 @@ class _EffectModalState extends State<EffectModal> {
       // Load model-specific params
       final modelParams = widget.mapper.mapModelParams(model);
       for (final param in modelParams) {
-        _paramValues[param.ccParam] =
-            widget.podController.getParameter(param.ccParam);
+        final midiValue = widget.podController.getParameter(param.ccParam);
+
+        // If this param has a scaler, we need to reverse it when reading
+        // Scaler converts UI value → MIDI, so we need MIDI → UI
+        if (param.valueScaler != null) {
+          final paramName = param.label.toLowerCase();
+          if (paramName.contains('heads') || paramName.contains('bits')) {
+            // Reverse of (v * 127 / 8).round()
+            // MIDI to step: (midiValue * 8 / 127).round()
+            final stepValue = (midiValue * 8 / 127).round().clamp(0, 8);
+            _paramValues[param.ccParam] = stepValue;
+          } else {
+            _paramValues[param.ccParam] = midiValue;
+          }
+        } else {
+          _paramValues[param.ccParam] = midiValue;
+        }
       }
 
       // Load fixed params
