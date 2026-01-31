@@ -73,11 +73,14 @@ class _MicModalState extends State<MicModal> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: ElevatedButton(
                   onPressed: () async {
+                    // Close modal immediately
+                    Navigator.of(context).pop();
+
+                    // Then update hardware in background
                     if (widget.isConnected) {
                       widget.podController.setMicModel(mic.position);
                       await widget.podController.refreshEditBuffer();
                     }
-                    if (mounted) Navigator.of(context).pop();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isSelected

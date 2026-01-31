@@ -197,6 +197,8 @@ class _BackupOperationsTabState extends State<BackupOperationsTab> {
         return;
       }
 
+      if (!mounted) return;
+
       // Confirm overwrite
       final confirmed = await showDialog<bool>(
         context: context,

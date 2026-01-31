@@ -283,6 +283,8 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
         return;
       }
 
+      if (!mounted) return;
+
       // Confirm overwrite
       final confirmed = await showDialog<bool>(
         context: context,
