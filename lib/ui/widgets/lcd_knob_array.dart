@@ -71,11 +71,21 @@ class _LcdKnobState extends State<LcdKnob> {
       widget.onTap!();
     }
 
-    // DISTANCE-BASED movement: accumulate scroll distance, only step when threshold reached
     final delta = event.scrollDelta.dy;
+    final range = widget.maxValue - widget.minValue;
+
+    // SIMPLE 2-POSITION SWITCH: just check direction
+    if (range <= 1) {
+      final newValue = delta < 0 ? widget.maxValue : widget.minValue; // scroll up = max (FAST), down = min (SLOW)
+      if (newValue != widget.value) {
+        widget.onValueChanged(newValue);
+      }
+      return;
+    }
+
+    // DISTANCE-BASED movement: accumulate scroll distance, only step when threshold reached
     _accumulatedScrollDistance += delta;
 
-    final range = widget.maxValue - widget.minValue;
     double threshold;
 
     if (widget.value < 0) {
@@ -113,10 +123,6 @@ class _LcdKnobState extends State<LcdKnob> {
       }
 
       if (newValue != widget.value) {
-        if (range <= 15) {
-          print('[LcdKnob] Scroll: accumulated=${_accumulatedScrollDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
-        }
-
         // Reset accumulation if crossing between note division and ms/Hz mode
         _resetAccumulationOnModeChange(widget.value, newValue);
 
@@ -139,10 +145,20 @@ class _LcdKnobState extends State<LcdKnob> {
       widget.onTap!();
     }
 
+    final range = widget.maxValue - widget.minValue;
+
+    // SIMPLE 2-POSITION SWITCH: just check direction
+    if (range <= 1) {
+      final newValue = details.delta.dy < 0 ? widget.maxValue : widget.minValue; // drag up = max (FAST), down = min (SLOW)
+      if (newValue != widget.value) {
+        widget.onValueChanged(newValue);
+      }
+      return;
+    }
+
     // DISTANCE-BASED movement: accumulate drag distance, only step when threshold reached
     _accumulatedDragDistance -= details.delta.dy;  // Negative because drag up = increase
 
-    final range = widget.maxValue - widget.minValue;
     double threshold;
 
     if (widget.value < 0) {
@@ -180,10 +196,6 @@ class _LcdKnobState extends State<LcdKnob> {
       }
 
       if (newValue != widget.value) {
-        if (range <= 15) {
-          print('[LcdKnob] Drag: accumulated=${_accumulatedDragDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
-        }
-
         // Reset accumulation if crossing between note division and ms/Hz mode
         _resetAccumulationOnModeChange(widget.value, newValue);
 

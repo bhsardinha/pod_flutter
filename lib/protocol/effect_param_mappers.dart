@@ -74,6 +74,8 @@ class MsbLsbParamMapping {
   final int minValue;
   final int maxValue;
   final bool isNoteSelectBased;  // True if this uses noteSelect (negative values = divisions, 0+ = time/Hz)
+  final List<String>? positionLabels;  // If present, renders as discrete positions (e.g., ["Slow", "Fast"])
+  final List<int>? positionValues;     // Corresponding MIDI values for each position
 
   const MsbLsbParamMapping({
     required this.label,
@@ -83,7 +85,37 @@ class MsbLsbParamMapping {
     this.minValue = 0,
     this.maxValue = 16383,
     this.isNoteSelectBased = false,
+    this.positionLabels,
+    this.positionValues,
   });
+
+  /// Whether this is a discrete position parameter (2-position switch, etc.)
+  bool get isPositionBased => positionLabels != null && positionValues != null;
+
+  /// Get MIDI value for a specific position index (0, 1, etc.)
+  int getPositionValue(int positionIndex) {
+    if (!isPositionBased) return positionIndex;
+    return positionValues![positionIndex.clamp(0, positionValues!.length - 1)];
+  }
+
+  /// Get position index from MIDI value
+  int getPositionFromValue(int value) {
+    if (!isPositionBased) return value;
+
+    // Find closest position
+    int closestIndex = 0;
+    int closestDiff = (value - positionValues![0]).abs();
+
+    for (int i = 1; i < positionValues!.length; i++) {
+      final diff = (value - positionValues![i]).abs();
+      if (diff < closestDiff) {
+        closestDiff = diff;
+        closestIndex = i;
+      }
+    }
+
+    return closestIndex;
+  }
 }
 
 /// Base mapper class for all effect types
@@ -109,7 +141,8 @@ abstract class EffectParamMapper {
   List<EffectParamMapping> getFixedParams();
 
   /// Get MSB/LSB parameters (time, speed)
-  List<MsbLsbParamMapping> getMsbLsbParams();
+  /// Optional model parameter for model-specific behavior
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]);
 
   /// Whether this effect supports tempo sync
   bool get hasTempoSync => false;
@@ -150,7 +183,7 @@ class WahParamMapper extends EffectParamMapper {
   }
 
   @override
-  List<MsbLsbParamMapping> getMsbLsbParams() => [];
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]) => [];
 }
 
 /// Stomp parameter mapper
@@ -330,7 +363,7 @@ class StompParamMapper extends EffectParamMapper {
   List<EffectParamMapping> getFixedParams() => [];
 
   @override
-  List<MsbLsbParamMapping> getMsbLsbParams() => [];
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]) => [];
 }
 
 /// Mod parameter mapper
@@ -349,6 +382,19 @@ class ModParamMapper extends EffectParamMapper {
 
   @override
   List<EffectParamMapping> mapModelParams(EffectModel model) {
+    // Rotary effects (8, 9) have Speed handled separately in getMsbLsbParams()
+    // Only map Tone parameter here
+    if (model.id == 8 || model.id == 9) {
+      return [
+        EffectParamMapping(
+          label: 'TONE',
+          ccParam: PodXtCC.modParam3, // Tone uses param3 (skip param2 for Speed)
+          formatter: (v) => '${(v * 100 / 127).round()}%',
+        ),
+      ];
+    }
+
+    // All other mod effects use sequential params
     final ccParams = [
       PodXtCC.modParam2,
       PodXtCC.modParam3,
@@ -406,7 +452,36 @@ class ModParamMapper extends EffectParamMapper {
   }
 
   @override
-  List<MsbLsbParamMapping> getMsbLsbParams() {
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]) {
+    // Rotary effects (Drum + Horn, Drum) use 2-position speed (slow/fast)
+    // Formula: Hz = (value × 14.9/16383.0) + 0.1
+    // Inverse: value = (Hz - 0.1) × 16383.0 / 14.9
+    // Slow (1.0 Hz) ≈ 990, Fast (8.0 Hz) ≈ 8684
+    if (model != null && (model.id == 8 || model.id == 9)) {
+      const slowValue = 990;   // ~1.0 Hz
+      const fastValue = 8684;  // ~8.0 Hz
+
+      return [
+        MsbLsbParamMapping(
+          label: 'SPEED',
+          msbParam: PodXtCC.modNoteSelect,
+          lsbParam: PodXtCC.modSpeedLsb,
+          formatter: (v) {
+            // This formatter is used for display - but with position labels,
+            // the labels take precedence
+            if (v < 2200) return 'SLOW';
+            return 'FAST';
+          },
+          minValue: 0,      // UI position range: 0-1
+          maxValue: 1,
+          isNoteSelectBased: false,
+          positionLabels: ['SLOW', 'FAST'],      // Display labels
+          positionValues: [slowValue, fastValue], // Actual MIDI values
+        ),
+      ];
+    }
+
+    // All other mod effects use full-range speed
     return [
       MsbLsbParamMapping(
         label: 'SPEED',
@@ -535,7 +610,7 @@ class DelayParamMapper extends EffectParamMapper {
   }
 
   @override
-  List<MsbLsbParamMapping> getMsbLsbParams() {
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]) {
     return [
       MsbLsbParamMapping(
         label: 'TIME',
@@ -622,5 +697,5 @@ class ReverbParamMapper extends EffectParamMapper {
   }
 
   @override
-  List<MsbLsbParamMapping> getMsbLsbParams() => [];
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]) => [];
 }

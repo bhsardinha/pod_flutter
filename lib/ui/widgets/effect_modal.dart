@@ -141,9 +141,23 @@ class _EffectModalState extends State<EffectModal> {
       }
 
       // Load MSB/LSB params (combined into single value)
-      final msbLsbParams = widget.mapper.getMsbLsbParams();
+      final msbLsbParams = widget.mapper.getMsbLsbParams(model);
       for (final param in msbLsbParams) {
-        if (param.isNoteSelectBased) {
+        if (param.isPositionBased) {
+          // Position-based (e.g., 2-position Slow/Fast for rotary)
+          // Read actual MSB/LSB value from speed registers (not noteSelect)
+          final isMod = widget.mapper is ModParamMapper;
+          final msbParam = isMod ? PodXtCC.modSpeedMsb : PodXtCC.delayTimeMsb;
+          final lsbParam = isMod ? PodXtCC.modSpeedLsb : PodXtCC.delayTimeLsb;
+
+          final msb = widget.podController.getParameter(msbParam);
+          final lsb = widget.podController.getParameter(lsbParam);
+          final msbLsbValue = (msb << 7) | lsb;
+
+          // Convert MIDI value to position index (0, 1, etc.)
+          final position = param.getPositionFromValue(msbLsbValue);
+          _paramValues[param.msbParam] = position;
+        } else if (param.isNoteSelectBased) {
           // NoteSelect-based: Check if in tempo sync (1-13) or MS/Hz mode (0)
           final noteSelect = widget.podController.getParameter(param.msbParam);
           if (noteSelect >= 1 && noteSelect <= 13) {
@@ -242,6 +256,31 @@ class _EffectModalState extends State<EffectModal> {
     widget.podController.setParameter(mapping.lsbParam!, lsb);
   }
 
+  void _onPositionParamChanged(MsbLsbParamMapping mapping, int positionIndex) {
+    // Position-based parameter (e.g., 2-position Slow/Fast)
+    // positionIndex is 0, 1, etc. - convert to actual MIDI value
+    final midiValue = mapping.getPositionValue(positionIndex);
+
+    // Split into MSB and LSB
+    final msb = (midiValue >> 7) & 0x7F;
+    final lsb = midiValue & 0x7F;
+
+    setState(() {
+      _paramValues[mapping.msbParam] = positionIndex;
+    });
+
+    // Send noteSelect = 0 to enable MSB/LSB mode (not tempo sync)
+    widget.podController.setParameter(mapping.msbParam, 0);
+
+    // Send MSB/LSB
+    final isMod = widget.mapper is ModParamMapper;
+    final msbParam = isMod ? PodXtCC.modSpeedMsb : PodXtCC.delayTimeMsb;
+    final lsbParam = isMod ? PodXtCC.modSpeedLsb : PodXtCC.delayTimeLsb;
+
+    widget.podController.setParameter(msbParam, msb);
+    widget.podController.setParameter(lsbParam, lsb);
+  }
+
   /// Check if this effect supports PRE/POST positioning
   bool get _supportsPositioning {
     return widget.mapper is ModParamMapper ||
@@ -289,7 +328,7 @@ class _EffectModalState extends State<EffectModal> {
         : modelParams;
 
     final fixedParams = widget.mapper.getFixedParams();
-    final msbLsbParams = widget.mapper.getMsbLsbParams();
+    final msbLsbParams = widget.mapper.getMsbLsbParams(currentModel);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -380,9 +419,21 @@ class _EffectModalState extends State<EffectModal> {
               fixedParams.isNotEmpty)
             LcdKnobArray(
               knobs: [
-                // MSB/LSB knobs (time, speed) - may be noteSelect-based or true MSB/LSB
+                // MSB/LSB knobs (time, speed) - may be position-based, noteSelect-based, or true MSB/LSB
                 ...msbLsbParams.map((param) {
-                  if (param.isNoteSelectBased) {
+                  if (param.isPositionBased) {
+                    // Position-based: discrete positions with labels (e.g., ["SLOW", "FAST"])
+                    final value = _paramValues[param.msbParam] ?? 0;
+
+                    return LcdKnobConfig(
+                      label: param.label,
+                      value: value,
+                      minValue: 0,
+                      maxValue: param.positionLabels!.length - 1,
+                      onValueChanged: (v) => _onPositionParamChanged(param, v),
+                      valueFormatter: (v) => param.positionLabels![v.clamp(0, param.positionLabels!.length - 1)],
+                    );
+                  } else if (param.isNoteSelectBased) {
                     // NoteSelect-based: Linear knob from -13 to 16383
                     // Negative values (-13 to -1): note divisions
                     // Positive values (0 to 16383): MS/Hz mode
