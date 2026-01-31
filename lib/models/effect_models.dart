@@ -157,7 +157,7 @@ class StompModels {
     EffectModel(
       15,
       'Dingo-Tron',
-      [EffectParam('-'), EffectParam('Sens'), EffectParam('Q')],
+      [EffectParam('Sens'), EffectParam('Q')],
       'FX',
       'Mu-Tron III',
     ),
@@ -171,14 +171,14 @@ class StompModels {
     EffectModel(
       17,
       'Seismik Synth',
-      [EffectParam('Wave'), EffectParam('-'), EffectParam('-'), EffectParam('Mix')],
+      [EffectParam('Wave'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
     EffectModel(
       18,
       'Double Bass',
-      [EffectParam('-1 OctG'), EffectParam('-2 OctG'), EffectParam('-'), EffectParam('Mix')],
+      [EffectParam('-1 OctG'), EffectParam('-2 OctG'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
@@ -209,7 +209,7 @@ class StompModels {
     EffectModel(
       21,
       'Saturn 5 Ring M',
-      [EffectParam('Wave'), EffectParam('-'), EffectParam('-'), EffectParam('Mix')],
+      [EffectParam('Wave'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
@@ -241,8 +241,8 @@ class StompModels {
       24,
       'Synth Harmony',
       [
-        EffectParam('Octave 1'),
-        EffectParam('Octave 2'),
+        EffectParam('Octave 1', maxValue: 8),
+        EffectParam('Octave 2', maxValue: 8),
         EffectParam('Wave'),
         EffectParam('Mix'),
       ],

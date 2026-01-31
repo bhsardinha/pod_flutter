@@ -167,16 +167,40 @@ class StompParamMapper extends EffectParamMapper {
   @override
   CCParam get selectParam => PodXtCC.stompSelect;
 
-  @override
-  List<EffectParamMapping> mapModelParams(EffectModel model) {
-    // Generic CC params for stomp: stompParam2 through stompParam6
-    final ccParams = [
+  /// Get CC parameter indices for a specific effect, accounting for skip()
+  List<CCParam> _getCCParamsForEffect(EffectModel model) {
+    // Default CC params for stomp: stompParam2 through stompParam6
+    final allParams = [
       PodXtCC.stompParam2,  // Index 0
       PodXtCC.stompParam3,  // Index 1
       PodXtCC.stompParam4,  // Index 2
       PodXtCC.stompParam5,  // Index 3
       PodXtCC.stompParam6,  // Index 4
     ];
+
+    // Handle effects with skip() in pod-ui config
+    switch (model.id) {
+      case 15: // Dingo-Tron: skip().control("Sens").control("Q")
+        return [allParams[1], allParams[2]]; // Skip param2, use param3 and param4
+      case 17: // Seismik Synth: wave("Wave").skip().skip().control("Mix")
+        return [allParams[0], allParams[3]]; // param2, skip param3/param4, param5
+      case 18: // Double Bass: control("-1OCTG").control("-2OCTG").skip().control("Mix")
+        return [allParams[0], allParams[1], allParams[3]]; // param2, param3, skip param4, param5
+      case 21: // Saturn 5 Ring M: wave("Wave").skip().skip().control("Mix")
+        return [allParams[0], allParams[3]]; // param2, skip param3/param4, param5
+      case 28: // Bronze Master: control("Drive").wave("Tone").skip().control("Blend")
+        return [allParams[0], allParams[1], allParams[3]]; // param2, param3, skip param4, param5
+      case 29: // Sub Octaves: control("-1OCTG").control("-2OCTG").skip().control("Mix")
+        return [allParams[0], allParams[1], allParams[3]]; // param2, param3, skip param4, param5
+      default:
+        // Most effects use sequential params
+        return allParams.sublist(0, model.params.length);
+    }
+  }
+
+  @override
+  List<EffectParamMapping> mapModelParams(EffectModel model) {
+    final ccParams = _getCCParamsForEffect(model);
 
     final mappings = <EffectParamMapping>[];
     for (int i = 0; i < model.params.length; i++) {
@@ -216,6 +240,14 @@ class StompParamMapper extends EffectParamMapper {
 
           print('[StompParamMapper] heel/toe scaler: display $v → internal $internal → MIDI $midi');
           return midi;
+        };
+      } else if (paramName.contains('octave')) {
+        // Octave parameters: 9 discrete steps (0-8) mapped to MIDI
+        // Based on pod-ui: short!(@edge 0, 8) - same as Heads/Bits
+        // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112, 8→127
+        scaler = (v) {
+          print('[StompParamMapper] octave scaler: step $v → MIDI ${v >= 8 ? 127 : v * 16}');
+          return v >= 8 ? 127 : v * 16;
         };
       }
 
@@ -266,6 +298,24 @@ class StompParamMapper extends EffectParamMapper {
     if (lower.contains('heel') || lower.contains('toe')) {
       // Heel/Toe parameters: display -24 to +24 with sign
       return (v) => v >= 0 ? '+$v' : '$v';
+    }
+
+    if (lower.contains('octave')) {
+      // Octave parameters: knob value is already a step (0-8), map to interval labels
+      // Different labels for Octave 1 vs Octave 2
+      if (lower.contains('1')) {
+        // Octave 1: -1 oct, -maj 6th, -min 6th, -4th, unison, min 3rd, maj 3rd, 5th, 1 oct
+        return (v) {
+          const labels = ['-1 oct', '-maj 6th', '-min 6th', '-4th', 'unison', 'min 3rd', 'maj 3rd', '5th', '1 oct'];
+          return labels[v.clamp(0, 8)];
+        };
+      } else {
+        // Octave 2: -1 oct, -5th, -4th, -2nd, unison, 4th, 5th, 7th, 1 oct
+        return (v) {
+          const labels = ['-1 oct', '-5th', '-4th', '-2nd', 'unison', '4th', '5th', '7th', '1 oct'];
+          return labels[v.clamp(0, 8)];
+        };
+      }
     }
 
     // Default: percentage
