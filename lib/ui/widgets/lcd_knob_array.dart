@@ -46,6 +46,7 @@ class LcdKnob extends StatefulWidget {
 class _LcdKnobState extends State<LcdKnob> {
   double _accumulatedScrollDistance = 0.0;
   double _accumulatedDragDistance = 0.0;
+  bool _needsReleaseToCrossBoundary = false;
 
   /// Reset accumulated distances when crossing between note division mode and ms/Hz mode
   void _resetAccumulationOnModeChange(int oldValue, int newValue) {
@@ -57,6 +58,11 @@ class _LcdKnobState extends State<LcdKnob> {
       _accumulatedScrollDistance = 0.0;
       _accumulatedDragDistance = 0.0;
     }
+  }
+
+  /// Handle pointer release to allow crossing boundary after release
+  void _onPointerUp(PointerUpEvent event) {
+    _needsReleaseToCrossBoundary = false;
   }
 
   void _handleScroll(PointerScrollEvent event) {
@@ -94,6 +100,18 @@ class _LcdKnobState extends State<LcdKnob> {
 
     if (steps != 0) {
       final newValue = (widget.value + steps).clamp(widget.minValue, widget.maxValue);
+
+      // Check if trying to cross boundary between note mode and ms/Hz mode
+      // Boundary is between -1 (WHOLE note) and 0 (20ms)
+      final crossingToMs = (widget.value == -1 && newValue >= 0);
+      final crossingToNote = (widget.value == 0 && newValue < 0);
+
+      if ((crossingToMs || crossingToNote) && _needsReleaseToCrossBoundary) {
+        // Block crossing - user must release and start new gesture
+        _accumulatedScrollDistance = 0.0;
+        return;
+      }
+
       if (newValue != widget.value) {
         if (range <= 15) {
           print('[LcdKnob] Scroll: accumulated=${_accumulatedScrollDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
@@ -103,6 +121,11 @@ class _LcdKnobState extends State<LcdKnob> {
         _resetAccumulationOnModeChange(widget.value, newValue);
 
         widget.onValueChanged(newValue);
+
+        // If we just reached the boundary, require release before crossing
+        if (newValue == -1 || newValue == 0) {
+          _needsReleaseToCrossBoundary = true;
+        }
 
         // Subtract the distance we "consumed" for these steps
         _accumulatedScrollDistance -= steps * threshold;
@@ -144,6 +167,18 @@ class _LcdKnobState extends State<LcdKnob> {
 
     if (steps != 0) {
       final newValue = (widget.value + steps).clamp(widget.minValue, widget.maxValue);
+
+      // Check if trying to cross boundary between note mode and ms/Hz mode
+      // Boundary is between -1 (WHOLE note) and 0 (20ms)
+      final crossingToMs = (widget.value == -1 && newValue >= 0);
+      final crossingToNote = (widget.value == 0 && newValue < 0);
+
+      if ((crossingToMs || crossingToNote) && _needsReleaseToCrossBoundary) {
+        // Block crossing - user must release and start new gesture
+        _accumulatedDragDistance = 0.0;
+        return;
+      }
+
       if (newValue != widget.value) {
         if (range <= 15) {
           print('[LcdKnob] Drag: accumulated=${_accumulatedDragDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
@@ -154,10 +189,19 @@ class _LcdKnobState extends State<LcdKnob> {
 
         widget.onValueChanged(newValue);
 
+        // If we just reached the boundary, require release before crossing
+        if (newValue == -1 || newValue == 0) {
+          _needsReleaseToCrossBoundary = true;
+        }
+
         // Subtract the distance we "consumed" for these steps
         _accumulatedDragDistance -= steps * threshold;
       }
     }
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    _needsReleaseToCrossBoundary = false;
   }
 
   @override
@@ -170,8 +214,10 @@ class _LcdKnobState extends State<LcdKnob> {
           _handleScroll(event);
         }
       },
+      onPointerUp: _onPointerUp,
       child: GestureDetector(
         onPanUpdate: _handleDrag,
+        onPanEnd: _onDragEnd,
         onTap: widget.onTap,
         child: SizedBox(
           width: widget.width,
