@@ -171,14 +171,14 @@ class StompModels {
     EffectModel(
       17,
       'Seismik Synth',
-      [EffectParam('Wave'), EffectParam('Mix')],
+      [EffectParam('Wave'), EffectParam('-'), EffectParam('-'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
     EffectModel(
       18,
       'Double Bass',
-      [EffectParam('-1 OctG'), EffectParam('-2 OctG'), EffectParam('Mix')],
+      [EffectParam('-1 OctG'), EffectParam('-2 OctG'), EffectParam('-'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
@@ -209,7 +209,7 @@ class StompModels {
     EffectModel(
       21,
       'Saturn 5 Ring M',
-      [EffectParam('Wave'), EffectParam('Mix')],
+      [EffectParam('Wave'), EffectParam('-'), EffectParam('-'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
@@ -297,7 +297,7 @@ class StompModels {
     EffectModel(
       29,
       'Sub Octaves',
-      [EffectParam('-1 OctG'), EffectParam('-2 OctGf'), EffectParam('Mix')],
+      [EffectParam('-1 OctG'), EffectParam('-2 OctG'), EffectParam('Mix')],
       'BX',
       'Line 6 Original',
     ),
