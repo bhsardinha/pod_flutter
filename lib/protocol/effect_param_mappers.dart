@@ -210,10 +210,11 @@ class StompParamMapper extends EffectParamMapper {
       int maxValue = param.maxValue;
       int minValue = param.minValue;
 
-      if (paramName.contains('wave')) {
+      if (paramName.contains('wave') && model.id != 24) {
         // Wave parameter: 8 discrete steps (0-7) mapped to MIDI
         // Based on pod-ui: steps!(0, 16, 32, 48, 64, 80, 96, 112)
         // Display as Wave 1-8
+        // Exception: Synth Harmony (24) uses percentage for Wave, not discrete steps
         maxValue = 7;  // 8 steps: 0-7
         scaler = (v) {
           // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112
@@ -241,8 +242,8 @@ class StompParamMapper extends EffectParamMapper {
           print('[StompParamMapper] heel/toe scaler: display $v → internal $internal → MIDI $midi');
           return midi;
         };
-      } else if (paramName.contains('octave')) {
-        // Octave parameters: 9 discrete steps (0-8) mapped to MIDI
+      } else if (paramName.contains('1m335') || paramName.contains('1457')) {
+        // Synth Harmony octave parameters: 9 discrete steps (0-8) mapped to MIDI
         // Based on pod-ui: short!(@edge 0, 8) - same as Heads/Bits
         // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112, 8→127
         scaler = (v) {
@@ -255,7 +256,7 @@ class StompParamMapper extends EffectParamMapper {
         EffectParamMapping(
           label: param.name.toUpperCase(),
           ccParam: ccParams[i],
-          formatter: _getFormatterForParam(param.name),
+          formatter: _getFormatterForParam(param.name, model.id),
           minValue: minValue,
           maxValue: maxValue,
           valueScaler: scaler,
@@ -265,7 +266,7 @@ class StompParamMapper extends EffectParamMapper {
     return mappings;
   }
 
-  String Function(int) _getFormatterForParam(String paramName) {
+  String Function(int) _getFormatterForParam(String paramName, int modelId) {
     final lower = paramName.toLowerCase();
 
     // Smart formatters based on parameter name patterns
@@ -292,6 +293,10 @@ class StompParamMapper extends EffectParamMapper {
 
     if (lower.contains('wave')) {
       // Wave parameter: knob value is already a step (0-7), display as Wave 1-8
+      // Exception: Synth Harmony (24) uses percentage for Wave
+      if (modelId == 24) {
+        return (v) => '${(v * 100 / 127).round()}%';
+      }
       return (v) => 'Wave ${v + 1}';
     }
 
@@ -300,22 +305,21 @@ class StompParamMapper extends EffectParamMapper {
       return (v) => v >= 0 ? '+$v' : '$v';
     }
 
-    if (lower.contains('octave')) {
-      // Octave parameters: knob value is already a step (0-8), map to interval labels
-      // Different labels for Octave 1 vs Octave 2
-      if (lower.contains('1')) {
-        // Octave 1: -1 oct, -maj 6th, -min 6th, -4th, unison, min 3rd, maj 3rd, 5th, 1 oct
-        return (v) {
-          const labels = ['-1 oct', '-maj 6th', '-min 6th', '-4th', 'unison', 'min 3rd', 'maj 3rd', '5th', '1 oct'];
-          return labels[v.clamp(0, 8)];
-        };
-      } else {
-        // Octave 2: -1 oct, -5th, -4th, -2nd, unison, 4th, 5th, 7th, 1 oct
-        return (v) {
-          const labels = ['-1 oct', '-5th', '-4th', '-2nd', 'unison', '4th', '5th', '7th', '1 oct'];
-          return labels[v.clamp(0, 8)];
-        };
-      }
+    // Synth Harmony octave parameters: "1M335" and "1457"
+    if (paramName == '1M335') {
+      // 1M335: -1 oct, -maj 6th, -min 6th, -4th, unison, min 3rd, maj 3rd, 5th, 1 oct
+      return (v) {
+        const labels = ['-1 oct', '-maj 6th', '-min 6th', '-4th', 'unison', 'min 3rd', 'maj 3rd', '5th', '1 oct'];
+        return labels[v.clamp(0, 8)];
+      };
+    }
+
+    if (paramName == '1457') {
+      // 1457: -1 oct, -5th, -4th, -2nd, unison, 4th, 5th, 7th, 1 oct
+      return (v) {
+        const labels = ['-1 oct', '-5th', '-4th', '-2nd', 'unison', '4th', '5th', '7th', '1 oct'];
+        return labels[v.clamp(0, 8)];
+      };
     }
 
     // Default: percentage

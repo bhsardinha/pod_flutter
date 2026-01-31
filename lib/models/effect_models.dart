@@ -241,8 +241,8 @@ class StompModels {
       24,
       'Synth Harmony',
       [
-        EffectParam('Octave 1', maxValue: 8),
-        EffectParam('Octave 2', maxValue: 8),
+        EffectParam('1M335', maxValue: 8),
+        EffectParam('1457', maxValue: 8),
         EffectParam('Wave'),
         EffectParam('Mix'),
       ],

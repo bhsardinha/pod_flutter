@@ -117,8 +117,8 @@ class _EffectModalState extends State<EffectModal> {
             final displayValue = internal - 24;
             print('[EffectModal] descaler: MIDI $midiValue → internal $internal → display $displayValue (${param.label})');
             _paramValues[param.ccParam] = displayValue;
-          } else if (paramName.contains('octave')) {
-            // Reverse of Octave step → MIDI conversion (9 steps: 0-8)
+          } else if (paramName.contains('1m335') || paramName.contains('1457')) {
+            // Reverse of Synth Harmony octave step → MIDI conversion (9 steps: 0-8)
             // Based on pod-ui: short!(@edge 0, 8) - same as Heads/Bits
             // step = value / 16, with special case: value == 127 → 8
             // Maps: 0-15→0, 16-31→1, 32-47→2, 48-63→3, 64-79→4, 80-95→5, 96-111→6, 112-126→7, 127→8
