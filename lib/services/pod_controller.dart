@@ -576,7 +576,8 @@ class PodController {
     // Wait a moment for the connection to stabilize
     await Future.delayed(const Duration(milliseconds: 500));
 
-    // Reset sync state
+    // Reset sync state - patches are NOT synced on connection
+    // User must explicitly import patches via importAllPatchesFromHardware()
     _patchesSynced = false;
     _patchesSyncedCount = 0;
 
@@ -588,15 +589,12 @@ class PodController {
     await _midi.requestProgramState();
     await Future.delayed(const Duration(milliseconds: 400));
 
-    // Request current edit buffer
+    // Request current edit buffer (active patch only)
     await _midi.requestEditBuffer();
 
-    // TODO: Implement individual patch requests if bulk request doesn't work
-    // For now, mark as synced since we have the edit buffer
-    _patchesSynced = true;
-    _syncProgressController.add(
-      SyncProgress(programCount, programCount, 'Ready'),
-    );
+    // Note: Patches are not synced on connection. The edit buffer contains
+    // the currently active patch, but the full patch library is empty until
+    // the user explicitly imports all patches via the UI.
   }
 
   void _handleControlChange(({int cc, int value}) change) {
