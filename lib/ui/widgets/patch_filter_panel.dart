@@ -162,7 +162,7 @@ class _PatchFilterPanelState extends State<PatchFilterPanel> {
                       Expanded(
                         flex: 1,
                         child: DropdownButtonFormField<SortOrder>(
-                          value: widget.sortOrder,
+                          initialValue: widget.sortOrder,
                           decoration: const InputDecoration(
                             labelText: 'Sort',
                             labelStyle: TextStyle(fontSize: 12),
@@ -233,7 +233,7 @@ class _PatchFilterPanelState extends State<PatchFilterPanel> {
                       // Genre
                       Expanded(
                         child: DropdownButtonFormField<PatchGenre?>(
-                          value: widget.criteria.genre,
+                          initialValue: widget.criteria.genre,
                           decoration: const InputDecoration(
                             labelText: 'Genre',
                             labelStyle: TextStyle(fontSize: 12),
@@ -264,7 +264,7 @@ class _PatchFilterPanelState extends State<PatchFilterPanel> {
                       // Use case
                       Expanded(
                         child: DropdownButtonFormField<PatchUseCase?>(
-                          value: widget.criteria.useCase,
+                          initialValue: widget.criteria.useCase,
                           decoration: const InputDecoration(
                             labelText: 'Use Case',
                             labelStyle: TextStyle(fontSize: 12),

@@ -165,7 +165,7 @@ class _PatchMetadataEditorDialogState
 
                     // Genre
                     DropdownButtonFormField<PatchGenre>(
-                      value: _genre,
+                      initialValue: _genre,
                       decoration: const InputDecoration(
                         labelText: 'Genre',
                       ),
@@ -187,7 +187,7 @@ class _PatchMetadataEditorDialogState
 
                     // Use Case
                     DropdownButtonFormField<PatchUseCase>(
-                      value: _useCase,
+                      initialValue: _useCase,
                       decoration: const InputDecoration(
                         labelText: 'Use Case',
                       ),
