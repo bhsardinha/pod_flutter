@@ -38,6 +38,12 @@ String formatModSpeed(int value) {
   return '${hz.toStringAsFixed(2)} Hz';
 }
 
+/// Format 0-127 value as percentage (0%-100%)
+String formatPercentage(int value) {
+  final percent = (value / 127 * 100).round();
+  return '$percent%';
+}
+
 /// Represents a parameter mapping from EffectParam to CC control
 class EffectParamMapping {
   final String label; // Display label (from EffectParam.name or custom)
@@ -172,17 +178,36 @@ class StompParamMapper extends EffectParamMapper {
       PodXtCC.stompParam6,  // Index 4
     ];
 
-    // Map each parameter from the model to its corresponding CC
-    return List.generate(
-      model.params.length,
-      (i) => EffectParamMapping(
-        label: model.params[i].name.toUpperCase(),
-        ccParam: ccParams[i],
-        formatter: _getFormatterForParam(model.params[i].name),
-        minValue: model.params[i].minValue,
-        maxValue: model.params[i].maxValue,
-      ),
-    );
+    final mappings = <EffectParamMapping>[];
+    for (int i = 0; i < model.params.length; i++) {
+      final param = model.params[i];
+      final paramName = param.name.toLowerCase();
+      int Function(int)? scaler;
+      int maxValue = param.maxValue;
+
+      if (paramName.contains('wave')) {
+        // Wave parameter: 8 discrete steps (0-7) mapped to MIDI
+        // Based on pod-ui: steps!(0, 16, 32, 48, 64, 80, 96, 112)
+        // Display as Wave 1-8
+        maxValue = 7;  // 8 steps: 0-7
+        scaler = (v) {
+          // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112
+          return v * 16;
+        };
+      }
+
+      mappings.add(
+        EffectParamMapping(
+          label: param.name.toUpperCase(),
+          ccParam: ccParams[i],
+          formatter: _getFormatterForParam(param.name),
+          minValue: param.minValue,
+          maxValue: maxValue,
+          valueScaler: scaler,
+        ),
+      );
+    }
+    return mappings;
   }
 
   String Function(int) _getFormatterForParam(String paramName) {
@@ -211,8 +236,8 @@ class StompParamMapper extends EffectParamMapper {
     }
 
     if (lower.contains('wave')) {
-      // Wave type - raw value
-      return (v) => '$v';
+      // Wave parameter: knob value is already a step (0-7), display as Wave 1-8
+      return (v) => 'Wave ${v + 1}';
     }
 
     // Default: percentage
@@ -277,7 +302,7 @@ class ModParamMapper extends EffectParamMapper {
     }
 
     if (lower.contains('wave')) {
-      return (v) => '$v';
+      return formatPercentage;
     }
 
     if (lower.contains('q')) {
