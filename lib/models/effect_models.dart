@@ -150,7 +150,7 @@ class StompModels {
     EffectModel(
       14,
       'Blue Comp Treb',
-      [EffectParam('Level'), EffectParam('Sustain')],
+      [EffectParam('Sustain'), EffectParam('Level')],
       'FX',
       'Boss CS-1',
     ),
