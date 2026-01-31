@@ -1,8 +1,8 @@
 # POD Flutter
 
-A mobile MIDI controller for the Line 6 POD XT Pro guitar processor.
+A cross-platform MIDI controller for the Line 6 POD XT Pro guitar processor.
 
-Control all parameters, manage patches, and sync with your POD XT Pro hardware via Bluetooth MIDI.
+Control all parameters, manage patches, and sync with your POD XT Pro hardware via USB or Bluetooth MIDI.
 
 ---
 
@@ -29,14 +29,18 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 ### Hardware
 
 - **Line 6 POD XT Pro** (this app is specifically for POD XT Pro, NOT other POD models)
-- **BT-MIDI Adapter** (e.g., CME WIDI Master, Yamaha MD-BT01) OR
-- **USB MIDI Connection** (iOS/macOS via Camera Connection Kit, Android via USB OTG)
+- **BT-MIDI Adapter** (e.g., CME WIDI Master, Yamaha MD-BT01) for wireless connection OR
+- **USB MIDI Connection**:
+  - iOS/macOS: Camera Connection Kit or direct USB-C
+  - Android: USB OTG cable
+  - Windows: Direct USB connection with official Line 6 drivers
 
 ### Software
 
 - **iOS**: 12.0 or later
 - **Android**: 5.0 (API 21) or later
 - **macOS**: 10.14 or later
+- **Windows**: 10 or later (USB MIDI only)
 
 ---
 
@@ -69,6 +73,7 @@ flutter run
 flutter build apk        # Android
 flutter build ios        # iOS
 flutter build macos      # macOS
+flutter build windows    # Windows
 ```
 
 ---

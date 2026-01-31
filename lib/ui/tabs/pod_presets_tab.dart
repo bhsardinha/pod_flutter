@@ -566,12 +566,12 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
           return Expanded(
             child: GestureDetector(
               onTap: () => onTap(program),
-              // macOS: Right-click shows context menu or warning
-              onSecondaryTapDown: Platform.isMacOS
+              // Desktop: Right-click shows context menu or warning
+              onSecondaryTapDown: (Platform.isMacOS || Platform.isWindows)
                   ? (details) => _showPatchActionMenu(program, details.globalPosition)
                   : null,
-              // Mobile/Other: Long-press shows bottom sheet or warning
-              onLongPress: !Platform.isMacOS
+              // Mobile: Long-press shows bottom sheet or warning
+              onLongPress: !(Platform.isMacOS || Platform.isWindows)
                   ? () => _showPatchActionMenu(program, null)
                   : null,
               child: Container(

@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**POD Flutter** is a mobile MIDI controller for the Line 6 POD XT Pro guitar processor. Control all parameters, manage patches, and sync with hardware via Bluetooth MIDI.
+**POD Flutter** is a cross-platform MIDI controller for the Line 6 POD XT Pro guitar processor. Control all parameters, manage patches, and sync with hardware via USB or Bluetooth MIDI.
 
-- **Platform**: Flutter (iOS, Android, macOS)
+- **Platform**: Flutter (iOS, Android, macOS, Windows)
 - **Target Device**: Line 6 POD XT Pro (NOT POD XT, POD XT Live, or other models)
-- **Communication**: BLE-MIDI and USB MIDI
+- **Communication**: USB MIDI and BLE-MIDI (Windows: USB only)
 - **Reference**: [pod-ui](https://github.com/arteme/pod-ui) (Rust desktop app)
 
 **IMPORTANT**: pod-ui is the authoritative reference for POD XT Pro protocol behavior. When in doubt, check pod-ui implementation.
@@ -61,6 +61,7 @@ flutter pub get
 flutter build apk        # Android
 flutter build ios        # iOS
 flutter build macos      # macOS
+flutter build windows    # Windows
 ```
 
 ---

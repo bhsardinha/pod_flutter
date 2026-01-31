@@ -1,5 +1,5 @@
 /// Platform-specific action menu for patch operations
-/// macOS: Right-click context menu
+/// Desktop (macOS/Windows): Right-click context menu
 /// Mobile/Other: Bottom sheet
 
 library;
@@ -106,11 +106,11 @@ Future<void> showPatchActionMenu({
     return;
   }
 
-  if (Platform.isMacOS && position != null) {
-    // macOS: Show context menu at cursor position
-    await _showMacOSContextMenu(context, actions, position);
+  if ((Platform.isMacOS || Platform.isWindows) && position != null) {
+    // Desktop: Show context menu at cursor position
+    await _showDesktopContextMenu(context, actions, position);
   } else {
-    // Mobile/Other: Show bottom sheet with haptic feedback
+    // Mobile: Show bottom sheet with haptic feedback
     HapticFeedback.mediumImpact();
     await _showMobileBottomSheet(context, actions);
   }
@@ -205,8 +205,8 @@ List<_ActionMenuItem> _buildActionList(PatchActionConfig config) {
   return actions;
 }
 
-/// Show macOS context menu
-Future<void> _showMacOSContextMenu(
+/// Show desktop context menu (macOS/Windows)
+Future<void> _showDesktopContextMenu(
   BuildContext context,
   List<_ActionMenuItem> actions,
   Offset position,

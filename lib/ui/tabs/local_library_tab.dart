@@ -643,12 +643,12 @@ class _LocalLibraryTabState extends State<LocalLibraryTab> {
 
           return GestureDetector(
             onTap: () => setState(() => _selectedPatch = patch),
-            // macOS: Right-click shows context menu
-            onSecondaryTapDown: Platform.isMacOS
+            // Desktop: Right-click shows context menu
+            onSecondaryTapDown: (Platform.isMacOS || Platform.isWindows)
                 ? (details) => _showPatchActionMenu(patch, details.globalPosition)
                 : null,
-            // Mobile/Other: Long-press shows bottom sheet
-            onLongPress: !Platform.isMacOS
+            // Mobile: Long-press shows bottom sheet
+            onLongPress: !(Platform.isMacOS || Platform.isWindows)
                 ? () => _showPatchActionMenu(patch, null)
                 : null,
             child: Container(

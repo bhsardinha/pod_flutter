@@ -1,5 +1,5 @@
 name: pod_flutter
-description: "Mobile controller for Line 6 POD XT Pro via Bluetooth MIDI"
+description: "Cross-platform controller for Line 6 POD XT Pro via USB/Bluetooth MIDI"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
