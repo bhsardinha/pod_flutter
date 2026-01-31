@@ -1,16 +1,19 @@
 /// Tabbed patch library modal - replaces old patch_list_modal.dart
-/// Three tabs: POD Presets | Local Library | Backup & Restore
+/// Two tabs: POD Presets | Local Library
 
 library;
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:uuid/uuid.dart';
+import '../../models/local_patch.dart';
 import '../../services/pod_controller.dart';
 import '../../services/local_library_service.dart';
 import '../theme/pod_theme.dart';
+import '../widgets/pod_modal.dart';
 import '../tabs/pod_presets_tab.dart';
 import '../tabs/local_library_tab.dart';
-import '../tabs/backup_operations_tab.dart';
 
 /// Main patch library modal with tabs
 class PatchLibraryModal extends StatefulWidget {
@@ -45,19 +48,12 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
     super.initState();
     // Initialize tab controller - always opens on POD Presets tab (index 0)
     _tabController = TabController(
-      length: 3,
+      length: 2,
       vsync: this,
       initialIndex: 0,
     );
-    _tabController.addListener(_onTabChanged);
 
     _initializeLibraryService();
-  }
-
-  void _onTabChanged() {
-    if (!_tabController.indexIsChanging) {
-      setState(() {}); // Rebuild to show/hide menu button
-    }
   }
 
   Future<void> _initializeLibraryService() async {
@@ -81,11 +77,11 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
+  // Single Patch Operations
   Future<void> _importPatchFromFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
@@ -129,24 +125,104 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
     }
   }
 
-  Future<void> _exportAllPatchesToFile() async {
+  // Export Operations
+  Future<void> _exportAllHardwarePatches() async {
+    // Show progress modal
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (context) => _ImportProgressModal(
+        podController: widget.podController,
+      ),
+    );
+
+    await Future.delayed(const Duration(milliseconds: 100));
+
+    try {
+      // Import all 128 patches from hardware
+      await widget.podController.importAllPatchesFromHardware();
+
+      if (mounted) {
+        Navigator.of(context).pop(); // Close progress modal
+
+        // Prompt for save location
+        final path = await FilePicker.platform.saveFile(
+          dialogTitle: 'Export Hardware Patches',
+          fileName: 'POD_XT_Pro_Backup.podlibrary',
+          type: FileType.custom,
+          allowedExtensions: ['podlibrary'],
+        );
+
+        if (path != null) {
+          // Convert all patches to LocalPatch format
+          const uuid = Uuid();
+          final localPatches = <LocalPatch>[];
+          for (var i = 0; i < 128; i++) {
+            final patch = widget.podController.patchLibrary[i];
+            localPatches.add(LocalPatch(
+              id: uuid.v4(),
+              patch: patch.copy(),
+              metadata: PatchMetadata(
+                author: '',
+                description: '',
+                favorite: false,
+                genre: PatchGenre.unspecified,
+                useCase: PatchUseCase.general,
+                tags: [],
+                importSource: 'hardware',
+              ),
+            ));
+          }
+
+          // Export to file
+          await _localLibraryService.exportLibraryToFile(localPatches, path);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Hardware patches exported successfully!'),
+                backgroundColor: PodColors.accent,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close progress modal
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportLocalLibrary() async {
     try {
       final patches = await _localLibraryService.loadAllPatches();
 
-      if (patches.isEmpty && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No patches to export'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 2),
-          ),
-        );
+      if (patches.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Local library is empty'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
         return;
       }
 
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Export All Patches',
-        fileName: 'pod_library_backup',
+        dialogTitle: 'Export Local Library',
+        fileName: 'My_Patches.podlibrary',
         type: FileType.custom,
         allowedExtensions: ['podlibrary'],
       );
@@ -157,9 +233,9 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Exported ${patches.length} patches successfully'),
+              content: Text('Exported ${patches.length} patches successfully!'),
               backgroundColor: PodColors.accent,
-              duration: const Duration(seconds: 2),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -177,35 +253,160 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
     }
   }
 
-  Future<void> _importLibraryFromFile() async {
+  // Import Operations
+  Future<void> _importLibraryToHardware() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['podlibrary'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        final patches = await _localLibraryService.importLibraryFromFile(
-          result.files.single.path!,
-        );
+      if (result == null || result.files.single.path == null) {
+        return;
+      }
 
-        // Save all imported patches
-        for (final patch in patches) {
-          await _localLibraryService.savePatch(patch);
+      // Load library from file
+      final patches = await _localLibraryService.importLibraryFromFile(
+        result.files.single.path!,
+      );
+
+      if (patches.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Library file is empty'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Confirm overwrite
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: PodColors.background,
+          title: const Text(
+            'Import to Hardware?',
+            style: TextStyle(color: PodColors.textPrimary),
+          ),
+          content: Text(
+            'This will overwrite the first ${patches.length} patches on your POD XT Pro. Continue?',
+            style: const TextStyle(color: PodColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PodColors.accent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('IMPORT'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true || !mounted) return;
+
+      // Show progress
+      int currentPatch = 0;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withValues(alpha: 0.7),
+        builder: (context) => PodModal(
+          maxWidth: 300,
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: patches.isNotEmpty ? currentPatch / patches.length : 0,
+                          backgroundColor: PodColors.surfaceLight,
+                          color: PodColors.accent,
+                          strokeWidth: 8,
+                        ),
+                        Text(
+                          '${(currentPatch / patches.length * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            color: PodColors.accent,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Importing to hardware...',
+                    style: TextStyle(
+                      color: PodColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$currentPatch/${patches.length} patches',
+                    style: const TextStyle(
+                      color: PodColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      );
+
+      try {
+        // Import patches to hardware slots
+        for (var i = 0; i < patches.length && i < 128; i++) {
+          // Export the specific patch to hardware (not the edit buffer)
+          await widget.podController.exportPatchToHardware(patches[i].patch, i);
+
+          // Update local patch library after successful export
+          widget.podController.patchLibrary.patches[i] = patches[i].patch.copy();
+
+          currentPatch = i + 1;
+          await Future.delayed(const Duration(milliseconds: 50));
         }
 
         if (mounted) {
-          // Switch to local library tab to show the imported patches
-          _tabController.animateTo(1);
-
-          // Trigger refresh of LocalLibraryTab
-          _refreshLocalLibrary?.call();
-
+          Navigator.of(context).pop(); // Close progress modal
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Imported ${patches.length} patches from library'),
+              content: Text('Imported ${patches.length} patches to hardware!'),
               backgroundColor: PodColors.accent,
-              duration: const Duration(seconds: 2),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.of(context).pop(); // Close progress modal
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Import failed: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -223,7 +424,69 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
     }
   }
 
-  void _showLocalLibraryMenu() {
+  Future<void> _importLibraryToLocal() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['podlibrary'],
+      );
+
+      if (result == null || result.files.single.path == null) {
+        return;
+      }
+
+      // Load library from file
+      final patches = await _localLibraryService.importLibraryFromFile(
+        result.files.single.path!,
+      );
+
+      if (patches.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Library file is empty'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Save all patches to local library
+      for (final patch in patches) {
+        await _localLibraryService.savePatch(patch);
+      }
+
+      if (mounted) {
+        // Switch to local library tab to show the imported patches
+        _tabController.animateTo(1);
+
+        // Trigger refresh of LocalLibraryTab
+        _refreshLocalLibrary?.call();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Imported ${patches.length} patches to local library!'),
+            backgroundColor: PodColors.accent,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Import failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  void _showOperationsMenu() {
     showModalBottomSheet(
       context: context,
       backgroundColor: PodColors.surface,
@@ -231,69 +494,127 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Single Patch',
-                style: TextStyle(
-                  fontFamily: 'Copperplate',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: PodColors.textSecondary,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Single Patch Section
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Single Patch',
+                  style: TextStyle(
+                    fontFamily: 'Copperplate',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PodColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_upload, color: PodColors.accent, size: 20),
-              title: const Text(
-                'Import Patch (.podpatch)',
-                style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+              ListTile(
+                leading: const Icon(Icons.file_upload, color: PodColors.accent, size: 20),
+                title: const Text(
+                  'Import Patch (.podpatch)',
+                  style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _importPatchFromFile();
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _importPatchFromFile();
-              },
-            ),
-            const Divider(height: 1),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Bulk Library',
-                style: TextStyle(
-                  fontFamily: 'Copperplate',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: PodColors.textSecondary,
+              const Divider(height: 1),
+
+              // Export Section
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Export',
+                  style: TextStyle(
+                    fontFamily: 'Copperplate',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PodColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.upload_file, color: PodColors.accent, size: 20),
-              title: const Text(
-                'Import Library (.podlibrary)',
-                style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+              ListTile(
+                leading: const Icon(Icons.router, color: PodColors.accent, size: 20),
+                title: const Text(
+                  'Export All Hardware Patches',
+                  style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  'Import from POD and save to file (~6.4s)',
+                  style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportAllHardwarePatches();
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _importLibraryFromFile();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_download, color: PodColors.accent, size: 20),
-              title: const Text(
-                'Export All Patches (.podlibrary)',
-                style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+              ListTile(
+                leading: const Icon(Icons.library_books, color: PodColors.accent, size: 20),
+                title: const Text(
+                  'Export Local Library',
+                  style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  'Save your collection to file',
+                  style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _exportLocalLibrary();
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _exportAllPatchesToFile();
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+              const Divider(height: 1),
+
+              // Import Section
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Import',
+                  style: TextStyle(
+                    fontFamily: 'Copperplate',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PodColors.textSecondary,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.router, color: PodColors.accent, size: 20),
+                title: const Text(
+                  'Import to Hardware',
+                  style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  'Load from file and write to POD slots',
+                  style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _importLibraryToHardware();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.library_add, color: PodColors.accent, size: 20),
+                title: const Text(
+                  'Import to Local Library',
+                  style: TextStyle(color: PodColors.textPrimary, fontSize: 14),
+                ),
+                subtitle: const Text(
+                  'Add patches from file to your collection',
+                  style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _importLibraryToLocal();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
@@ -333,13 +654,12 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Show menu button only on Local Library tab
-                      if (_tabController.index == 1)
-                        IconButton(
-                          icon: const Icon(Icons.menu, color: PodColors.textSecondary),
-                          onPressed: _showLocalLibraryMenu,
-                          tooltip: 'Import/Export',
-                        ),
+                      // Show menu button on all tabs
+                      IconButton(
+                        icon: const Icon(Icons.menu, color: PodColors.textSecondary),
+                        onPressed: _showOperationsMenu,
+                        tooltip: 'Import/Export',
+                      ),
                       IconButton(
                         icon: const Icon(Icons.close, color: PodColors.textSecondary),
                         onPressed: () => Navigator.of(context).pop(),
@@ -364,10 +684,6 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
                   Tab(
                     icon: Icon(Icons.library_music, size: 20),
                     text: 'LOCAL LIBRARY',
-                  ),
-                  Tab(
-                    icon: Icon(Icons.backup, size: 20),
-                    text: 'BACKUP',
                   ),
                 ],
                 labelColor: PodColors.accent,
@@ -403,12 +719,6 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
                           podController: widget.podController,
                           onRefreshCallback: (callback) => _refreshLocalLibrary = callback,
                         ),
-
-                        // Tab 3: Backup & Restore
-                        BackupOperationsTab(
-                          localLibraryService: _localLibraryService,
-                          podController: widget.podController,
-                        ),
                       ],
                     )
                   : const Center(
@@ -429,6 +739,102 @@ class _PatchLibraryModalState extends State<PatchLibraryModal>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Progress modal for patch import
+class _ImportProgressModal extends StatefulWidget {
+  final PodController podController;
+
+  const _ImportProgressModal({
+    required this.podController,
+  });
+
+  @override
+  State<_ImportProgressModal> createState() => _ImportProgressModalState();
+}
+
+class _ImportProgressModalState extends State<_ImportProgressModal> {
+  int _current = 0;
+  int _total = 128;
+  StreamSubscription? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = widget.podController.onSyncProgress.listen((progress) {
+      if (mounted) {
+        setState(() {
+          _current = progress.current;
+          _total = progress.total;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final percentage =
+        _total > 0 ? (_current / _total * 100).toStringAsFixed(0) : '0';
+
+    return PodModal(
+      maxWidth: 300,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 100,
+            height: 100,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: CircularProgressIndicator(
+                    value: _total > 0 ? _current / _total : 0,
+                    backgroundColor: PodColors.surfaceLight,
+                    color: PodColors.accent,
+                    strokeWidth: 8,
+                  ),
+                ),
+                Text(
+                  '$percentage%',
+                  style: const TextStyle(
+                    color: PodColors.accent,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Importing patches...',
+            style: TextStyle(
+              color: PodColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$_current/$_total patches',
+            style: const TextStyle(
+              color: PodColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -12,7 +12,8 @@ import 'dot_matrix_lcd.dart';
 /// - Vertical drag to change values
 /// - Scroll wheel control (up = increase, down = decrease)
 /// - Supports 14-bit values (0-16383) for MSB/LSB parameters
-class LcdKnob extends StatelessWidget {
+/// - Distance-based movement (not velocity-based)
+class LcdKnob extends StatefulWidget {
   final String label;
   final int value;
   final int minValue;
@@ -38,73 +39,110 @@ class LcdKnob extends StatelessWidget {
     this.height = 80,
   });
 
+  @override
+  State<LcdKnob> createState() => _LcdKnobState();
+}
+
+class _LcdKnobState extends State<LcdKnob> {
+  double _accumulatedScrollDistance = 0.0;
+  double _accumulatedDragDistance = 0.0;
+
   void _handleScroll(PointerScrollEvent event) {
     // Activate this knob when scrolling
-    if (!isActive && onTap != null) {
-      onTap!();
+    if (!widget.isActive && widget.onTap != null) {
+      widget.onTap!();
     }
 
-    // Linear knob behavior: scroll down = CW = increase value
+    // DISTANCE-BASED movement: accumulate scroll distance, only step when threshold reached
     final delta = event.scrollDelta.dy;
-    final range = maxValue - minValue;
-    double sensitivity;
+    _accumulatedScrollDistance += delta;
 
-    if (value < 0) {
+    final range = widget.maxValue - widget.minValue;
+    double threshold;
+
+    if (widget.value < 0) {
       // Note divisions (-13 to -1), a small range of negative values
-      sensitivity = 200.0;
+      // Higher threshold = more pixels needed per step = very deliberate changes
+      threshold = 400.0;
     } else if (range <= 15) {
-      // Custom sensitivity for small-range knobs (e.g., Heads, Bits)
-      // Higher sensitivity = less responsive (need more scroll to change)
-      // ~80-100px per step (4-5 scroll ticks)
-      sensitivity = 100.0;
+      // Small-range knobs (e.g., Heads, Bits)
+      // Higher threshold = more distance needed per step
+      threshold = 120.0;
+    } else if (range > 10000) {
+      // Large-range knobs (delay time MS/Hz mode: 0-16383)
+      // Lower threshold = less pixels needed = smoother, faster scrolling
+      threshold = 15.0;
     } else {
-      // Default for standard (0-127) and large-range (e.g., 0-16383) params
-      sensitivity = 35.0;
+      // Default for standard (0-127) params
+      threshold = 50.0;
     }
 
-    // Use truncate instead of round for more gradual, non-snapping feel
-    final steps = (delta / sensitivity).truncate();
+    // Calculate how many steps we've accumulated
+    final steps = (_accumulatedScrollDistance / threshold).truncate();
+
     if (steps != 0) {
-      final newValue = (value + steps).clamp(minValue, maxValue);
-      if (newValue != value) {
-        onValueChanged(newValue);
+      final newValue = (widget.value + steps).clamp(widget.minValue, widget.maxValue);
+      if (newValue != widget.value) {
+        if (range <= 15) {
+          print('[LcdKnob] Scroll: accumulated=${_accumulatedScrollDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
+        }
+        widget.onValueChanged(newValue);
+
+        // Subtract the distance we "consumed" for these steps
+        _accumulatedScrollDistance -= steps * threshold;
       }
     }
   }
 
   void _handleDrag(DragUpdateDetails details) {
     // Activate this knob when dragging
-    if (!isActive && onTap != null) {
-      onTap!();
+    if (!widget.isActive && widget.onTap != null) {
+      widget.onTap!();
     }
 
-    // Linear knob behavior: drag up = CCW = increase value
-    final range = maxValue - minValue;
-    double sensitivity;
+    // DISTANCE-BASED movement: accumulate drag distance, only step when threshold reached
+    _accumulatedDragDistance -= details.delta.dy;  // Negative because drag up = increase
 
-    if (value < 0) {
+    final range = widget.maxValue - widget.minValue;
+    double threshold;
+
+    if (widget.value < 0) {
       // Note divisions (-13 to -1), a small range of negative values
-      sensitivity = 5.0;
+      // Higher threshold = more pixels needed per step = very deliberate changes
+      threshold = 15.0;
     } else if (range <= 15) {
-      // Custom sensitivity for small-range knobs (e.g., Heads, Bits)
-      sensitivity = 25.0; // Much less sensitive
+      // Small-range knobs (e.g., Heads, Bits)
+      // Higher threshold = more distance needed per step
+      threshold = 25.0;
+    } else if (range > 10000) {
+      // Large-range knobs (delay time MS/Hz mode: 0-16383)
+      // Lower threshold = less pixels needed = smoother, faster dragging
+      threshold = 0.5;
     } else {
-      // Default for standard (0-127) and large-range (e.g., 0-16383) params
-      sensitivity = 1.5;
+      // Default for standard (0-127) params
+      threshold = 2.5;
     }
 
-    final steps = (-details.delta.dy / sensitivity).round();
+    // Calculate how many steps we've accumulated
+    final steps = (_accumulatedDragDistance / threshold).truncate();
+
     if (steps != 0) {
-      final newValue = (value + steps).clamp(minValue, maxValue);
-      if (newValue != value) {
-        onValueChanged(newValue);
+      final newValue = (widget.value + steps).clamp(widget.minValue, widget.maxValue);
+      if (newValue != widget.value) {
+        if (range <= 15) {
+          print('[LcdKnob] Drag: accumulated=${_accumulatedDragDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
+        }
+        widget.onValueChanged(newValue);
+
+        // Subtract the distance we "consumed" for these steps
+        _accumulatedDragDistance -= steps * threshold;
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final normalizedValue = (value - minValue) / (maxValue - minValue);
+    final normalizedValue = (widget.value - widget.minValue) / (widget.maxValue - widget.minValue);
 
     return Listener(
       onPointerSignal: (event) {
@@ -114,20 +152,20 @@ class LcdKnob extends StatelessWidget {
       },
       child: GestureDetector(
         onPanUpdate: _handleDrag,
-        onTap: onTap,
+        onTap: widget.onTap,
         child: SizedBox(
-          width: width,
-          height: height,
+          width: widget.width,
+          height: widget.height,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             mainAxisSize: MainAxisSize.max,
             children: [
               // Label (inverted when active) - pushed to top
               _DotText(
-                label,
+                widget.label,
                 size: 15,
-                color: isActive ? Colors.black : const Color(0xFFFF7A00),
-                backgroundColor: isActive
+                color: widget.isActive ? Colors.black : const Color(0xFFFF7A00),
+                backgroundColor: widget.isActive
                     ? const Color(0xFFFF7A00)
                     : Colors.transparent,
                 isBold: true,
@@ -136,11 +174,11 @@ class LcdKnob extends StatelessWidget {
               _LcdKnobIndicator(
                 value: normalizedValue,
                 size: 34,
-                isActive: isActive,
+                isActive: widget.isActive,
               ),
               // Value display - pushed to bottom
               _DotText(
-                valueFormatter(value),
+                widget.valueFormatter(widget.value),
                 size: 14,
                 color: const Color(0xFFFF7A00),
                 isBold: true,

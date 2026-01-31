@@ -61,8 +61,8 @@ class RotaryKnob extends StatefulWidget {
 
 class _RotaryKnobState extends State<RotaryKnob> {
   late int _currentValue;
-  Offset? _lastDragPosition;
-  double _accumulatedDelta = 0.0;
+  double _accumulatedDragDistance = 0.0;
+  double _accumulatedScrollDistance = 0.0;
 
   // Rotation angles: 7:30 (135°) to 4:30 (45°), 270° arc through the top
   // Start at 135° (7:30 position), sweep 270° clockwise to 45° (4:30 position)
@@ -91,125 +91,62 @@ class _RotaryKnobState extends State<RotaryKnob> {
     return _startAngle + (normalizedValue * _totalArc);
   }
 
-  /// Convert angle (in radians) to value
-  int _angleToValue(double angle) {
-    // Normalize angle to 0-2π range, then shift to match our start angle
-    double normalizedAngle = angle;
-
-    // Handle the wrap-around: our range goes from 135° through 360°/0° to 45°
-    // First normalize to 0-2π
-    while (normalizedAngle < 0) {
-      normalizedAngle += 2 * math.pi;
-    }
-    while (normalizedAngle > 2 * math.pi) {
-      normalizedAngle -= 2 * math.pi;
-    }
-
-    // Calculate how far we are from start angle
-    double deltaFromStart = normalizedAngle - _startAngle;
-    if (deltaFromStart < 0) deltaFromStart += 2 * math.pi;
-
-    // Clamp to valid arc range
-    if (deltaFromStart > _totalArc) {
-      // We're in the dead zone (bottom of knob)
-      // Snap to nearest end
-      if (deltaFromStart > _totalArc + (2 * math.pi - _totalArc) / 2) {
-        deltaFromStart = 0; // Snap to min
-      } else {
-        deltaFromStart = _totalArc; // Snap to max
-      }
-    }
-
-    // Convert to 0-1 range
-    double normalizedValue = deltaFromStart / _totalArc;
-
-    // Convert to value range
-    int value =
-        (widget.minValue +
-                normalizedValue * (widget.maxValue - widget.minValue))
-            .round();
-
-    return value.clamp(widget.minValue, widget.maxValue);
-  }
-
-  void _handleVerticalDrag(DragUpdateDetails details) {
-    // Vertical drag: up = increase, down = decrease
+  void _handleDrag(DragUpdateDetails details) {
+    // DISTANCE-BASED drag: only vertical movement, accumulate distance
     // Negate delta.dy so upward drag (negative dy) increases value
-    _accumulatedDelta -= details.delta.dy;
+    _accumulatedDragDistance -= details.delta.dy;
 
-    // Sensitivity: pixels per value step (higher = less sensitive)
-    const sensitivity = 5.0;
+    // Distance threshold: pixels needed per step (higher = more distance needed)
+    // More distance = more sensible, controlled changes
+    const double threshold = 5.0;
 
-    if (_accumulatedDelta.abs() >= sensitivity) {
-      final steps = (_accumulatedDelta / sensitivity).floor();
-      _accumulatedDelta -= steps * sensitivity;
+    // Calculate how many steps we've accumulated
+    final steps = (_accumulatedDragDistance / threshold).truncate();
 
-      final newValue = (_currentValue + steps).clamp(
-        widget.minValue,
-        widget.maxValue,
-      );
-
-      if (newValue != _currentValue) {
-        setState(() {
-          _currentValue = newValue;
-        });
-        widget.onValueChanged(newValue);
-      }
-    }
-  }
-
-  void _handleCircularDrag(DragUpdateDetails details, Offset center) {
-    final position = details.localPosition;
-    final delta = position - center;
-    final angle = math.atan2(delta.dy, delta.dx);
-
-    final newValue = _angleToValue(angle);
-
-    if (newValue != _currentValue) {
-      setState(() {
-        _currentValue = newValue;
-      });
-      widget.onValueChanged(newValue);
-    }
-  }
-
-  void _handleDragUpdate(DragUpdateDetails details, Offset center) {
-    if (_lastDragPosition == null) {
-      _lastDragPosition = details.localPosition;
-      return;
-    }
-
-    final distanceFromCenter = (details.localPosition - center).distance;
-    final knobRadius = widget.size / 2;
-
-    if (distanceFromCenter < knobRadius * 1.2) {
-      _handleCircularDrag(details, center);
-    } else {
-      _handleVerticalDrag(details);
-    }
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    _lastDragPosition = null;
-    _accumulatedDelta = 0.0;
-  }
-
-  void _handleScroll(PointerScrollEvent event) {
-    // Scroll handling: map scroll delta directly (adjusted for natural scroll)
-    final delta = event.scrollDelta.dy;
-    const sensitivity = 50.0; // pixels per value step (higher = less sensitive)
-
-    final steps = (delta / sensitivity).round();
     if (steps != 0) {
       final newValue = (_currentValue + steps).clamp(
         widget.minValue,
         widget.maxValue,
       );
+
       if (newValue != _currentValue) {
         setState(() {
           _currentValue = newValue;
         });
         widget.onValueChanged(newValue);
+
+        // Subtract the distance we "consumed" for these steps
+        _accumulatedDragDistance -= steps * threshold;
+      }
+    }
+  }
+
+  void _handleScroll(PointerScrollEvent event) {
+    // DISTANCE-BASED scroll: accumulate scroll distance, only step when threshold reached
+    final delta = event.scrollDelta.dy;
+    _accumulatedScrollDistance += delta;
+
+    // Distance threshold: pixels needed per step (higher = more distance needed)
+    // More distance = more sensible, controlled changes
+    const double threshold = 80.0;
+
+    // Calculate how many steps we've accumulated
+    final steps = (_accumulatedScrollDistance / threshold).truncate();
+
+    if (steps != 0) {
+      final newValue = (_currentValue + steps).clamp(
+        widget.minValue,
+        widget.maxValue,
+      );
+
+      if (newValue != _currentValue) {
+        setState(() {
+          _currentValue = newValue;
+        });
+        widget.onValueChanged(newValue);
+
+        // Subtract the distance we "consumed" for these steps
+        _accumulatedScrollDistance -= steps * threshold;
       }
     }
   }
@@ -230,12 +167,7 @@ class _RotaryKnobState extends State<RotaryKnob> {
         }
       },
       child: GestureDetector(
-        onPanUpdate: (details) {
-          final RenderBox box = context.findRenderObject() as RenderBox;
-          final center = Offset(box.size.width / 2, widget.size / 2);
-          _handleDragUpdate(details, center);
-        },
-        onPanEnd: _handleDragEnd,
+        onPanUpdate: _handleDrag,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

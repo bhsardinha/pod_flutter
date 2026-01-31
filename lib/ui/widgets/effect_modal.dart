@@ -84,9 +84,13 @@ class _EffectModalState extends State<EffectModal> {
         if (param.valueScaler != null) {
           final paramName = param.label.toLowerCase();
           if (paramName.contains('heads') || paramName.contains('bits')) {
-            // Reverse of (v * 127 / 8).round()
-            // MIDI to step: (midiValue * 8 / 127).round()
-            final stepValue = (midiValue * 8 / 127).round().clamp(0, 8);
+            // Reverse of step → MIDI conversion
+            // Based on pod-ui RangeConfig::Short edge algorithm:
+            // scale = 128 / (8 - 0 + 1) = 16
+            // step = value / 16, with special case: value == 127 → 8
+            // Maps: 0-15→0, 16-31→1, 32-47→2, 48-63→3, 64-79→4, 80-95→5, 96-111→6, 112-126→7, 127→8
+            final stepValue = midiValue == 127 ? 8 : (midiValue ~/ 16).clamp(0, 8);
+            print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (${param.label})');
             _paramValues[param.ccParam] = stepValue;
           } else {
             _paramValues[param.ccParam] = midiValue;

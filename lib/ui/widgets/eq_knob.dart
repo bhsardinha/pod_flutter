@@ -26,8 +26,8 @@ class EqKnob extends StatefulWidget {
 
 class _EqKnobState extends State<EqKnob> {
   late int _currentValue;
-  Offset? _lastDragPosition;
-  double _accumulatedDelta = 0.0;
+  double _accumulatedDragDistance = 0.0;
+  double _accumulatedScrollDistance = 0.0;
 
   @override
   void initState() {
@@ -50,27 +50,18 @@ class _EqKnobState extends State<EqKnob> {
     return minAngle + (normalized * (maxAngle - minAngle));
   }
 
-  int _angleToValue(double angle) {
-    const minAngle = -math.pi * 0.75 - math.pi / 2; // Rotated 90° counterclockwise
-    const maxAngle = math.pi * 0.75 - math.pi / 2;
+  void _handleDrag(DragUpdateDetails details) {
+    // DISTANCE-BASED drag: only vertical movement, accumulate distance
+    // Negate delta.dy so upward drag (negative dy) increases value
+    _accumulatedDragDistance -= details.delta.dy;
 
-    var normalizedAngle = angle;
-    if (normalizedAngle < minAngle) normalizedAngle = minAngle;
-    if (normalizedAngle > maxAngle) normalizedAngle = maxAngle;
+    // Distance threshold: pixels needed per step (higher = more distance needed)
+    const double threshold = 2.5;
 
-    final normalized = (normalizedAngle - minAngle) / (maxAngle - minAngle);
-    return (normalized * 127).round().clamp(0, 127);
-  }
+    // Calculate how many steps we've accumulated
+    final steps = (_accumulatedDragDistance / threshold).truncate();
 
-  void _handleVerticalDrag(DragUpdateDetails details) {
-    _accumulatedDelta -= details.delta.dy;
-
-    const sensitivity = 5.0;
-
-    if (_accumulatedDelta.abs() >= sensitivity) {
-      final steps = (_accumulatedDelta / sensitivity).floor();
-      _accumulatedDelta -= steps * sensitivity;
-
+    if (steps != 0) {
       final newValue = (_currentValue + steps).clamp(0, 127);
 
       if (newValue != _currentValue) {
@@ -78,58 +69,35 @@ class _EqKnobState extends State<EqKnob> {
           _currentValue = newValue;
         });
         widget.onValueChanged(newValue);
+
+        // Subtract the distance we "consumed" for these steps
+        _accumulatedDragDistance -= steps * threshold;
       }
     }
   }
 
-  void _handleCircularDrag(DragUpdateDetails details, Offset center) {
-    final position = details.localPosition;
-    final delta = position - center;
-    final angle = math.atan2(delta.dy, delta.dx);
-
-    final newValue = _angleToValue(angle);
-
-    if (newValue != _currentValue) {
-      setState(() {
-        _currentValue = newValue;
-      });
-      widget.onValueChanged(newValue);
-    }
-  }
-
-  void _handleDragUpdate(DragUpdateDetails details, Offset center) {
-    if (_lastDragPosition == null) {
-      _lastDragPosition = details.localPosition;
-      return;
-    }
-
-    final distanceFromCenter = (details.localPosition - center).distance;
-    final knobRadius = widget.size / 2;
-
-    if (distanceFromCenter < knobRadius * 1.2) {
-      _handleCircularDrag(details, center);
-    } else {
-      _handleVerticalDrag(details);
-    }
-  }
-
-  void _handleDragEnd(DragEndDetails details) {
-    _lastDragPosition = null;
-    _accumulatedDelta = 0.0;
-  }
-
   void _handleScroll(PointerScrollEvent event) {
+    // DISTANCE-BASED scroll: accumulate scroll distance, only step when threshold reached
     final delta = event.scrollDelta.dy;
-    const sensitivity = 50.0;
+    _accumulatedScrollDistance += delta;
 
-    final steps = (delta / sensitivity).round();
+    // Distance threshold: pixels needed per step (higher = more distance needed)
+    const double threshold = 50.0;
+
+    // Calculate how many steps we've accumulated
+    final steps = (_accumulatedScrollDistance / threshold).truncate();
+
     if (steps != 0) {
       final newValue = (_currentValue + steps).clamp(0, 127);
+
       if (newValue != _currentValue) {
         setState(() {
           _currentValue = newValue;
         });
         widget.onValueChanged(newValue);
+
+        // Subtract the distance we "consumed" for these steps
+        _accumulatedScrollDistance -= steps * threshold;
       }
     }
   }
@@ -143,12 +111,7 @@ class _EqKnobState extends State<EqKnob> {
         }
       },
       child: GestureDetector(
-        onPanUpdate: (details) {
-          final RenderBox box = context.findRenderObject() as RenderBox;
-          final center = Offset(box.size.width / 2, widget.size / 2);
-          _handleDragUpdate(details, center);
-        },
-        onPanEnd: _handleDragEnd,
+        onPanUpdate: _handleDrag,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

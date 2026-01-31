@@ -14,7 +14,11 @@ class BrushedMetalBackground extends StatelessWidget {
     return Stack(
       children: [
         // Base brushed metal layer
-        Positioned.fill(child: CustomPaint(painter: BrushedMetalPainter())),
+        Positioned.fill(
+          child: CustomPaint(
+            painter: BrushedMetalPainter(),
+          ),
+        ),
         // Child content on top
         child,
       ],
@@ -27,7 +31,7 @@ class BrushedMetalPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Base color - much darker (stronger black)
-    final baseColor = const ui.Color.fromARGB(255, 148, 1, 30);
+    final baseColor = const ui.Color.fromARGB(255, 201, 7, 46);
 
     // Draw base layer
     final basePaint = Paint()
@@ -64,14 +68,14 @@ class BrushedMetalPainter extends CustomPainter {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), brushPaint);
     }
 
-    // Add stronger gradient overlay for depth
+    // Add very subtle gradient overlay for depth
     final gradient = ui.Gradient.linear(
       Offset(0, 0),
       Offset(size.width, 0),
       [
-        Colors.black.withValues(alpha: 0.04),
+        Colors.black.withValues(alpha: 0.01),
         Colors.transparent,
-        Colors.black.withValues(alpha: 0.05),
+        Colors.black.withValues(alpha: 0.01),
       ],
       [0.0, 0.5, 1.0],
     );
@@ -83,27 +87,6 @@ class BrushedMetalPainter extends CustomPainter {
     canvas.drawRect(
       Rect.fromLTWH(0, 0, size.width, size.height),
       gradientPaint,
-    );
-
-    // Add very subtle vignette effect (almost imperceptible)
-    final vignette = ui.Gradient.radial(
-      Offset(size.width / 2, size.height / 2),
-      math.max(size.width, size.height) * 0.7,
-      [
-        Colors.transparent,
-        Colors.black.withValues(alpha: 0.0001),
-        Colors.black.withValues(alpha: 0.0002),
-      ],
-      [0.0, 0.95, 1.0],
-    );
-
-    final vignettePaint = Paint()
-      ..shader = vignette
-      ..style = PaintingStyle.fill;
-
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      vignettePaint,
     );
   }
 

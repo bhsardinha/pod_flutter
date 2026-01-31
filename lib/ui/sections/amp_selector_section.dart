@@ -123,9 +123,11 @@ class AmpSelectorSection extends StatelessWidget {
                 child: EffectButton(
                   label: 'MIC',
                   modelName: currentMic,
-                  isOn: true,
+                  isOn: podController.getParameter(PodXtCC.cabSelect) != 0, // Gray when No Cab selected
                   onTap: null, // No tap action for MIC
-                  onLongPress: onMicLongPress,
+                  onLongPress: podController.getParameter(PodXtCC.cabSelect) != 0
+                      ? onMicLongPress
+                      : null, // Disable long-press when No Cab
                   labelFontSize: 16,
                   useDynamicLabelSize: true,
                 ),

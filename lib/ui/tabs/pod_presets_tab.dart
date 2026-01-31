@@ -5,6 +5,7 @@ library;
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../services/pod_controller.dart';
 import '../../models/local_patch.dart';
 import '../../services/local_library_service.dart';
@@ -44,6 +45,7 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
   @override
   void initState() {
     super.initState();
+
     _storeResultSubscription = widget.podController.onStoreResult.listen((result) {
       if (!mounted) return;
 
@@ -69,6 +71,9 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
     super.dispose();
   }
 
+  /// Check if user has clicked IMPORT ALL and it completed (persists in controller)
+  bool get _importCompleted => widget.podController.userImportedAllPatches;
+
   Future<void> _importAllPatches() async {
     if (!mounted) return;
 
@@ -87,12 +92,25 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
 
     try {
       await widget.podController.importAllPatchesFromHardware();
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        setState(() => _importing = false);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Import complete! All 128 patches loaded successfully.'),
+            backgroundColor: PodColors.accent,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     } catch (e) {
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+        setState(() => _importing = false);
+      }
       rethrow;
-    } finally {
-      if (mounted) setState(() => _importing = false);
     }
   }
 
@@ -319,6 +337,59 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
     }
   }
 
+  Future<void> _exportPatchToFile(int patchNumber) async {
+    final patch = widget.podController.patchLibrary[patchNumber];
+
+    // Create LocalPatch with metadata
+    final localPatch = LocalPatch(
+      id: _uuid.v4(),
+      patch: patch.copy(),
+      metadata: PatchMetadata(
+        author: '',
+        description: '',
+        favorite: false,
+        genre: PatchGenre.unspecified,
+        useCase: PatchUseCase.general,
+        tags: [],
+        importSource: 'hardware',
+      ),
+    );
+
+    try {
+      // Prompt for save location
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Export Patch',
+        fileName: patch.name.isEmpty ? "Patch_$patchNumber" : patch.name,
+        type: FileType.custom,
+        allowedExtensions: ['podpatch'],
+      );
+
+      if (path != null) {
+        await widget.localLibraryService.exportPatchToFile(localPatch, path);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Exported "${patch.name}" to file'),
+              backgroundColor: PodColors.accent,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _importFromLocalLibrary(int targetSlot) async {
     // This would show a picker to select from local library
     // For now, show a placeholder message
@@ -394,6 +465,19 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
   }
 
   void _showPatchActionMenu(int patchNumber, Offset? position) {
+    // Only show action menu if IMPORT ALL has completed
+    if (!_importCompleted) {
+      // Show warning that patches need to be imported first
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please click "IMPORT ALL" to load patches from hardware before using patch actions.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final patch = widget.podController.patchLibrary[patchNumber];
 
     showPatchActionMenu(
@@ -405,6 +489,7 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
         onCopyTo: () => _copyPatchToAnotherSlot(patchNumber),
         onSaveToLibrary: () => _saveToLocalLibrary(patchNumber),
         onImportFromLibrary: () => _importFromLocalLibrary(patchNumber),
+        onSaveToFile: () => _exportPatchToFile(patchNumber),
       ),
     );
   }
@@ -481,11 +566,11 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
           return Expanded(
             child: GestureDetector(
               onTap: () => onTap(program),
-              // macOS: Right-click shows context menu
+              // macOS: Right-click shows context menu or warning
               onSecondaryTapDown: Platform.isMacOS
                   ? (details) => _showPatchActionMenu(program, details.globalPosition)
                   : null,
-              // Mobile/Other: Long-press shows bottom sheet
+              // Mobile/Other: Long-press shows bottom sheet or warning
               onLongPress: !Platform.isMacOS
                   ? () => _showPatchActionMenu(program, null)
                   : null,

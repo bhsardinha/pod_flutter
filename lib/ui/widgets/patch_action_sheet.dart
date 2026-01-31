@@ -47,6 +47,7 @@ class PatchActionConfig {
     VoidCallback? onCopyTo,
     VoidCallback? onSaveToLibrary,
     VoidCallback? onImportFromLibrary,
+    VoidCallback? onSaveToFile,
   }) {
     return PatchActionConfig(
       onRename: onRename,
@@ -54,6 +55,7 @@ class PatchActionConfig {
       onCopyTo: onCopyTo,
       onSaveToLibrary: onSaveToLibrary,
       onImportFromLibrary: onImportFromLibrary,
+      onSaveToFile: onSaveToFile,
     );
   }
 
@@ -187,10 +189,7 @@ List<_ActionMenuItem> _buildActionList(PatchActionConfig config) {
     actions.add(_ActionMenuItem(
       icon: Icons.file_download,
       label: 'Export to File',
-      onTap: () {
-        print('DEBUG: Export to File menu item tapped');
-        config.onSaveToFile!();
-      },
+      onTap: config.onSaveToFile!,
     ));
   }
 

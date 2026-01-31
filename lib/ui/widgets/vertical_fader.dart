@@ -64,6 +64,7 @@ class VerticalFader extends StatefulWidget {
 
 class _VerticalFaderState extends State<VerticalFader> {
   double _currentValue = 0.0;
+  double _accumulatedDragDistance = 0.0;
 
   @override
   void initState() {
@@ -80,17 +81,34 @@ class _VerticalFaderState extends State<VerticalFader> {
   }
 
   void _handleDragUpdate(DragUpdateDetails details, double height) {
+    // DISTANCE-BASED (LINEAR): accumulate drag distance, velocity doesn't matter
+    _accumulatedDragDistance -= details.delta.dy;
+
+    // Calculate how much value change corresponds to accumulated distance
+    // Use sensitivity to fine-tune responsiveness
+    final double pixelsPerFullRange = height / widget.sensitivity;
+    final double valueChange = _accumulatedDragDistance / pixelsPerFullRange * (widget.max - widget.min);
+
+    if (valueChange.abs() >= 0.01) {
+      setState(() {
+        _currentValue += valueChange;
+        _currentValue = _currentValue.clamp(widget.min, widget.max);
+
+        if (_currentValue.abs() <= widget.snapThreshold) {
+          _currentValue = 0.0;
+        }
+
+        widget.onChanged(_currentValue);
+
+        // Reset accumulated distance after consuming it
+        _accumulatedDragDistance = 0.0;
+      });
+    }
+  }
+
+  void _handleDoubleTap() {
     setState(() {
-      final double baseSensitivity = (widget.max - widget.min) / height;
-      final double adjustedSensitivity = baseSensitivity * widget.sensitivity;
-
-      _currentValue -= details.delta.dy * adjustedSensitivity;
-      _currentValue = _currentValue.clamp(widget.min, widget.max);
-
-      if (_currentValue.abs() <= widget.snapThreshold) {
-        _currentValue = 0.0;
-      }
-
+      _currentValue = 0.0;
       widget.onChanged(_currentValue);
     });
   }
@@ -157,6 +175,7 @@ class _VerticalFaderState extends State<VerticalFader> {
               child: GestureDetector(
                 onVerticalDragUpdate: (d) => _handleDragUpdate(d, trackHeight),
                 onTapDown: (td) => _handleTapDown(td, trackHeight),
+                onDoubleTap: _handleDoubleTap,
                 child: CustomPaint(
                   size: Size(widget.width, trackHeight),
                   painter: _FaderPainter(

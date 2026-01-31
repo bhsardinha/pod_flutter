@@ -349,10 +349,15 @@ class DelayParamMapper extends EffectParamMapper {
       int Function(int)? scaler;
 
       if (paramName.contains('heads') || paramName.contains('bits')) {
-        // Scale 0-8 knob value to 0-127 MIDI value in even steps
-        // Maps 9 positions (0-8) to MIDI range 0-127
-        // Position 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→95, 7→111, 8→127
-        scaler = (v) => (v * 127 / 8).round().clamp(0, 127);
+        // Scale 0-8 knob value to 0-127 MIDI value
+        // Based on pod-ui RangeConfig::Short edge algorithm:
+        // scale = 128 / (8 - 0 + 1) = 16
+        // MIDI = (step - 0) * 16, with special case: step >= 8 → 127
+        // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112, 8→127
+        scaler = (v) {
+          print('[DelayParamMapper] scaler: step $v → MIDI ${v >= 8 ? 127 : v * 16}');
+          return v >= 8 ? 127 : v * 16;
+        };
       }
 
       mappings.add(

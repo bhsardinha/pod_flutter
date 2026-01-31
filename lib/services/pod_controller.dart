@@ -36,6 +36,7 @@ class PodController {
   int _installedPacks = 0;
   bool _patchesSynced = false;
   int _patchesSyncedCount = 0;
+  bool _userImportedAllPatches = false; // Only true after user clicks IMPORT ALL
 
   // Stream controllers
   final _connectionStateController =
@@ -96,6 +97,9 @@ class PodController {
   bool get patchesSynced => _patchesSynced;
   int get patchesSyncedCount => _patchesSyncedCount;
   Stream<SyncProgress> get onSyncProgress => _syncProgressController.stream;
+
+  /// Whether user has completed IMPORT ALL from POD Presets tab
+  bool get userImportedAllPatches => _userImportedAllPatches;
 
   /// Store operation results (success/failure)
   Stream<StoreResult> get onStoreResult => _storeResultController.stream;
@@ -976,6 +980,7 @@ class PodController {
       }
 
       _patchesSynced = true;
+      _userImportedAllPatches = true; // Mark that user has imported all patches
       _syncProgressController.add(
         SyncProgress(programCount, programCount, 'Import complete!'),
       );
