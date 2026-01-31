@@ -36,7 +36,8 @@ class PodController {
   int _installedPacks = 0;
   bool _patchesSynced = false;
   int _patchesSyncedCount = 0;
-  bool _userImportedAllPatches = false; // Only true after user clicks IMPORT ALL
+  bool _userImportedAllPatches =
+      false; // Only true after user clicks IMPORT ALL
 
   // Stream controllers
   final _connectionStateController =
@@ -119,61 +120,6 @@ class PodController {
     // Compare current edit buffer with stored patch
     final stored = _patchLibrary[_editBuffer.sourceProgram!];
     return _editBuffer.patch.data.toString() != stored.data.toString();
-  }
-
-  /// Debug method: compare edit buffer with stored patch byte-by-byte
-  /// Returns list of differences (byte index, edit buffer value, stored value)
-  List<String> debugComparePatch() {
-    if (!_patchesSynced || _editBuffer.sourceProgram == null) {
-      return ['No patch loaded or patches not synced'];
-    }
-
-    final stored = _patchLibrary[_editBuffer.sourceProgram!];
-    final editData = _editBuffer.patch.data;
-    final storedData = stored.data;
-
-    if (editData.length != storedData.length) {
-      return ['ERROR: Different lengths! Edit=${editData.length}, Stored=${storedData.length}'];
-    }
-
-    final differences = <String>[];
-
-    // Find parameter name for each address
-    String getParamName(int address) {
-      for (final param in PodXtCC.all) {
-        if (param.address == address) {
-          return param.name;
-        }
-      }
-      return 'unknown';
-    }
-
-    for (int i = 0; i < editData.length; i++) {
-      if (editData[i] != storedData[i]) {
-        final paramName = getParamName(i);
-        differences.add(
-          'Byte $i ($paramName): Edit=${editData[i]} (0x${editData[i].toRadixString(16).padLeft(2, '0')}), '
-          'Stored=${storedData[i]} (0x${storedData[i].toRadixString(16).padLeft(2, '0')})',
-        );
-      }
-    }
-
-    if (differences.isEmpty) {
-      return ['No differences found - patches are identical'];
-    }
-
-    // Add context: show byte 39 and nearby bytes regardless of differences
-    differences.add('\n--- Context around byte 39 (volLevel) ---');
-    for (int i = 35; i <= 45; i++) {
-      if (i < editData.length) {
-        final paramName = getParamName(i);
-        differences.add(
-          'Byte $i ($paramName): Edit=${editData[i]}, Stored=${storedData[i]}',
-        );
-      }
-    }
-
-    return differences;
   }
 
   /// Check if expansion pack is installed
@@ -438,19 +384,19 @@ class PodController {
 
   bool get modPositionPost => getParameter(PodXtCC.modPosition) >= 64;
   Future<void> setModPosition(bool post) =>
-    setParameter(PodXtCC.modPosition, post ? 127 : 0);
+      setParameter(PodXtCC.modPosition, post ? 127 : 0);
 
   bool get delayPositionPost => getParameter(PodXtCC.delayPosition) >= 64;
   Future<void> setDelayPosition(bool post) =>
-    setParameter(PodXtCC.delayPosition, post ? 127 : 0);
+      setParameter(PodXtCC.delayPosition, post ? 127 : 0);
 
   bool get reverbPositionPost => getParameter(PodXtCC.reverbPosition) >= 64;
   Future<void> setReverbPosition(bool post) =>
-    setParameter(PodXtCC.reverbPosition, post ? 127 : 0);
+      setParameter(PodXtCC.reverbPosition, post ? 127 : 0);
 
   bool get volumePositionPost => getParameter(PodXtCC.volPedalPosition) >= 64;
   Future<void> setVolumePosition(bool post) =>
-    setParameter(PodXtCC.volPedalPosition, post ? 127 : 0);
+      setParameter(PodXtCC.volPedalPosition, post ? 127 : 0);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PUBLIC API - Program Management
@@ -466,12 +412,6 @@ class PodController {
 
     // Request the new edit buffer
     await _midi.requestEditBuffer();
-  }
-
-  /// Save current edit buffer to a program slot
-  Future<void> saveToProgram(int program) async {
-    // TODO: Implement sysex store command
-    throw UnimplementedError('Save to program not yet implemented');
   }
 
   /// Load a patch to the edit buffer and send all parameters to hardware
@@ -500,24 +440,45 @@ class PodController {
     await setParameter(PodXtCC.room, patch.getValue(PodXtCC.room));
 
     // Effects enables
-    await setSwitch(PodXtCC.noiseGateEnable, patch.getSwitch(PodXtCC.noiseGateEnable));
+    await setSwitch(
+      PodXtCC.noiseGateEnable,
+      patch.getSwitch(PodXtCC.noiseGateEnable),
+    );
     await setSwitch(PodXtCC.wahEnable, patch.getSwitch(PodXtCC.wahEnable));
     await setSwitch(PodXtCC.stompEnable, patch.getSwitch(PodXtCC.stompEnable));
     await setSwitch(PodXtCC.modEnable, patch.getSwitch(PodXtCC.modEnable));
     await setSwitch(PodXtCC.delayEnable, patch.getSwitch(PodXtCC.delayEnable));
-    await setSwitch(PodXtCC.reverbEnable, patch.getSwitch(PodXtCC.reverbEnable));
-    await setSwitch(PodXtCC.compressorEnable, patch.getSwitch(PodXtCC.compressorEnable));
+    await setSwitch(
+      PodXtCC.reverbEnable,
+      patch.getSwitch(PodXtCC.reverbEnable),
+    );
+    await setSwitch(
+      PodXtCC.compressorEnable,
+      patch.getSwitch(PodXtCC.compressorEnable),
+    );
     await setSwitch(PodXtCC.eqEnable, patch.getSwitch(PodXtCC.eqEnable));
 
     // Effect models
-    await setParameter(PodXtCC.stompSelect, patch.getValue(PodXtCC.stompSelect));
+    await setParameter(
+      PodXtCC.stompSelect,
+      patch.getValue(PodXtCC.stompSelect),
+    );
     await setParameter(PodXtCC.modSelect, patch.getValue(PodXtCC.modSelect));
-    await setParameter(PodXtCC.delaySelect, patch.getValue(PodXtCC.delaySelect));
-    await setParameter(PodXtCC.reverbSelect, patch.getValue(PodXtCC.reverbSelect));
+    await setParameter(
+      PodXtCC.delaySelect,
+      patch.getValue(PodXtCC.delaySelect),
+    );
+    await setParameter(
+      PodXtCC.reverbSelect,
+      patch.getValue(PodXtCC.reverbSelect),
+    );
 
     // Delay/Reverb mix
     await setParameter(PodXtCC.delayMix, patch.getValue(PodXtCC.delayMix));
-    await setParameter(PodXtCC.reverbLevel, patch.getValue(PodXtCC.reverbLevel));
+    await setParameter(
+      PodXtCC.reverbLevel,
+      patch.getValue(PodXtCC.reverbLevel),
+    );
 
     _suppressModifiedFlag = false;
 
@@ -688,10 +649,8 @@ class PodController {
     } else if (message.isProgramState) {
       _handleProgramState(message);
     } else if (message.isStoreSuccess) {
-      print('POD: Patch stored successfully');
       _handleStoreSuccess(message);
     } else if (message.isStoreFailure) {
-      print('POD: ERROR - Patch store failed');
       _handleStoreFailure(message);
     } else if (message.isTunerData) {
       _handleTunerData(message);
@@ -702,9 +661,6 @@ class PodController {
     // POD XT format: [id, raw_data...] - NOT nibble-encoded!
     // Skip first byte (ID), rest is raw patch data
     if (message.payload.length < 1 + programSize) {
-      print(
-        '  ERROR: Not enough data! Got ${message.payload.length}, need ${1 + programSize}',
-      );
       return;
     }
 
@@ -757,16 +713,13 @@ class PodController {
     // POD XT format: [patch_lsb, patch_msb, id, raw_data...] - NOT nibble-encoded!
     // For single patch request: [patch_num (2 bytes), id, data]
     if (message.payload.length < 3 + programSize) {
-      print('  Patch dump too short: ${message.payload.length} bytes');
       return;
     }
 
     // Patch number is 2 bytes (LSB, MSB)
     final patchNum = message.payload[0] | (message.payload[1] << 8);
-    final id = message.payload[2];
+    // Skip byte 2 (id)
     final data = message.payload.sublist(3, 3 + programSize);
-
-    print('  Patch $patchNum (id=$id): ${data.length} bytes');
 
     if (patchNum < programCount) {
       final patch = Patch.fromData(data);
@@ -791,7 +744,6 @@ class PodController {
       return;
     }
 
-    print('POD: All patches synced! ($_patchesSyncedCount patches)');
     _patchesSynced = true;
     _syncProgressController.add(
       SyncProgress(programCount, programCount, 'Sync complete!'),
@@ -817,15 +769,7 @@ class PodController {
       if (program < programCount) {
         _currentProgram = program;
         _programChangeController.add(program);
-      } else {
-        print(
-          'POD: ERROR - Program $program out of range (max: ${programCount - 1})',
-        );
       }
-    } else {
-      print(
-        'POD: ERROR - Program state payload too short (need 5 bytes, got ${message.payload.length})',
-      );
     }
   }
 
@@ -1002,8 +946,6 @@ class PodController {
       throw ArgumentError('Patch number must be 0-${programCount - 1}');
     }
 
-    print('POD: Saving current edit buffer to hardware slot $patchNumber...');
-
     // Get patch data from current edit buffer
     final patchData = _editBuffer.patch.data;
 
@@ -1020,7 +962,6 @@ class PodController {
 
     // Wait for success/failure response (handled in _handleSysex)
     // The response will be 03 50 (success) or 03 51 (failure)
-    print('POD: Store command sent, waiting for confirmation...');
   }
 
   /// Export a specific patch to a hardware slot without loading it to edit buffer
@@ -1035,8 +976,6 @@ class PodController {
     if (patchNumber < 0 || patchNumber >= programCount) {
       throw ArgumentError('Patch number must be 0-${programCount - 1}');
     }
-
-    print('POD: Exporting "${patch.name}" to hardware slot $patchNumber...');
 
     // Use the provided patch data (not edit buffer)
     final patchData = patch.data;
@@ -1053,7 +992,6 @@ class PodController {
     await _midi.sendSysex(PodXtSysex.requestPatchDumpEnd());
 
     // Wait for success/failure response (handled in _handleSysex)
-    print('POD: Export command sent, waiting for confirmation...');
   }
 
   /// Rename an existing patch slot without loading it
@@ -1067,8 +1005,6 @@ class PodController {
     if (patchNumber < 0 || patchNumber >= programCount) {
       throw ArgumentError('Patch number must be 0-${programCount - 1}');
     }
-
-    print('POD: Renaming patch $patchNumber to "$newName"...');
 
     // Get existing patch data from library and create a copy
     final existingPatch = _patchLibrary[patchNumber];
@@ -1089,8 +1025,6 @@ class PodController {
 
     // Send end marker
     await _midi.sendSysex(PodXtSysex.requestPatchDumpEnd());
-
-    print('POD: Rename command sent, waiting for confirmation...');
   }
 
   /// Dispose resources
@@ -1142,6 +1076,7 @@ class StoreResult {
   StoreResult({required this.success, this.patchNumber, this.error});
 
   @override
-  String toString() =>
-      success ? 'StoreResult(success, patch=$patchNumber)' : 'StoreResult(failed: $error)';
+  String toString() => success
+      ? 'StoreResult(success, patch=$patchNumber)'
+      : 'StoreResult(failed: $error)';
 }

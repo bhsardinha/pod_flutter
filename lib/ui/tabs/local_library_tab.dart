@@ -390,10 +390,7 @@ class _LocalLibraryTabState extends State<LocalLibraryTab> {
   }
 
   Future<void> _exportToFile(LocalPatch patch) async {
-    print('DEBUG: _exportToFile called for patch: ${patch.patch.name}');
-
     try {
-      print('DEBUG: Opening file picker...');
       // Don't include extension in fileName - it will be added automatically
       final path = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Patch',
@@ -402,13 +399,9 @@ class _LocalLibraryTabState extends State<LocalLibraryTab> {
         allowedExtensions: ['podpatch'],
       );
 
-      print('DEBUG: File picker returned path: $path');
-
       if (path != null) {
-        print('DEBUG: Exporting to path: $path');
         await widget.localLibraryService.exportPatchToFile(patch, path);
 
-        print('DEBUG: Export successful');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -418,12 +411,8 @@ class _LocalLibraryTabState extends State<LocalLibraryTab> {
             ),
           );
         }
-      } else {
-        print('DEBUG: User cancelled file picker');
       }
-    } catch (e, stackTrace) {
-      print('DEBUG: Export failed with error: $e');
-      print('DEBUG: Stack trace: $stackTrace');
+    } catch (e) {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import '../../models/local_patch.dart';
 import '../../models/amp_models.dart';
 import '../../models/cab_models.dart';
-import '../../models/effect_models.dart';
 import '../../protocol/cc_map.dart';
 import '../theme/pod_theme.dart';
 import '../utils/value_formatters.dart';

@@ -90,7 +90,6 @@ class _EffectModalState extends State<EffectModal> {
             // step = value / 16, with special case: value == 127 → 8
             // Maps: 0-15→0, 16-31→1, 32-47→2, 48-63→3, 64-79→4, 80-95→5, 96-111→6, 112-126→7, 127→8
             final stepValue = midiValue == 127 ? 8 : (midiValue ~/ 16).clamp(0, 8);
-            print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (${param.label})');
             _paramValues[param.ccParam] = stepValue;
           } else if (paramName.contains('wave')) {
             // Reverse of Wave step → MIDI conversion (8 steps: 0-7)
@@ -98,7 +97,6 @@ class _EffectModalState extends State<EffectModal> {
             // step = value / 16 (no special case for 127)
             // Maps: 0-15→0, 16-31→1, 32-47→2, 48-63→3, 64-79→4, 80-95→5, 96-111→6, 112-127→7
             final stepValue = (midiValue ~/ 16).clamp(0, 7);
-            print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (Wave)');
             _paramValues[param.ccParam] = stepValue;
           } else if (paramName.contains('heel') || paramName.contains('toe')) {
             // Reverse of Heel/Toe MIDI → display conversion
@@ -115,7 +113,6 @@ class _EffectModalState extends State<EffectModal> {
 
             // Convert internal (0-48) to display (-24 to +24)
             final displayValue = internal - 24;
-            print('[EffectModal] descaler: MIDI $midiValue → internal $internal → display $displayValue (${param.label})');
             _paramValues[param.ccParam] = displayValue;
           } else if (paramName.contains('1m335') || paramName.contains('1457')) {
             // Reverse of Synth Harmony octave step → MIDI conversion (9 steps: 0-8)
@@ -123,7 +120,6 @@ class _EffectModalState extends State<EffectModal> {
             // step = value / 16, with special case: value == 127 → 8
             // Maps: 0-15→0, 16-31→1, 32-47→2, 48-63→3, 64-79→4, 80-95→5, 96-111→6, 112-126→7, 127→8
             final stepValue = midiValue == 127 ? 8 : (midiValue ~/ 16).clamp(0, 8);
-            print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (${param.label})');
             _paramValues[param.ccParam] = stepValue;
           } else {
             _paramValues[param.ccParam] = midiValue;

@@ -283,8 +283,7 @@ class LocalLibraryService {
       final indexFile = File('${_libraryDir!.path}/$_indexFileName');
       await indexFile.writeAsString(jsonEncode(indexData));
     } catch (e) {
-      // Index update is non-critical, log but don't throw
-      print('Warning: Failed to update index: $e');
+      // Index update is non-critical, silently ignore errors
     }
   }
 

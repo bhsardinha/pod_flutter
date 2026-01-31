@@ -251,7 +251,6 @@ class StompParamMapper extends EffectParamMapper {
         maxValue = 7;  // 8 steps: 0-7
         scaler = (v) {
           // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112
-          print('[StompParamMapper] scaler: step $v → MIDI ${v * 16}');
           return v * 16;
         };
       } else if (paramName.contains('heel') || paramName.contains('toe')) {
@@ -272,7 +271,6 @@ class StompParamMapper extends EffectParamMapper {
             midi = (internal - 1) * 2 + 18;
           }
 
-          print('[StompParamMapper] heel/toe scaler: display $v → internal $internal → MIDI $midi');
           return midi;
         };
       } else if (paramName.contains('1m335') || paramName.contains('1457')) {
@@ -280,7 +278,6 @@ class StompParamMapper extends EffectParamMapper {
         // Based on pod-ui: short!(@edge 0, 8) - same as Heads/Bits
         // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112, 8→127
         scaler = (v) {
-          print('[StompParamMapper] octave scaler: step $v → MIDI ${v >= 8 ? 127 : v * 16}');
           return v >= 8 ? 127 : v * 16;
         };
       }
@@ -537,7 +534,6 @@ class DelayParamMapper extends EffectParamMapper {
         // MIDI = (step - 0) * 16, with special case: step >= 8 → 127
         // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112, 8→127
         scaler = (v) {
-          print('[DelayParamMapper] scaler: step $v → MIDI ${v >= 8 ? 127 : v * 16}');
           return v >= 8 ? 127 : v * 16;
         };
       }
