@@ -19,8 +19,16 @@ class EffectModel {
   final List<EffectParam> params;
   final String? pack;
   final String? basedOn;
+  final List<int>? displayOrder; // Optional: reorder params for display (indices into params list)
 
-  const EffectModel(this.id, this.name, this.params, [this.pack, this.basedOn]);
+  const EffectModel(
+    this.id,
+    this.name,
+    this.params, [
+    this.pack,
+    this.basedOn,
+    this.displayOrder,
+  ]);
 
   bool get isStock => pack == null;
 }
@@ -120,12 +128,13 @@ class StompModels {
       'Tube Drive',
       [
         EffectParam('Drive'),
-        EffectParam('Gain'),
         EffectParam('Treble'),
+        EffectParam('Gain'),
         EffectParam('Bass'),
       ],
       'FX',
       'Chandler Tube Driver',
+      [0, 2, 1, 3], // Display order: Drive, Gain, Treble, Bass (hardware layout)
     ),
     EffectModel(
       12,
@@ -150,9 +159,10 @@ class StompModels {
     EffectModel(
       14,
       'Blue Comp Treb',
-      [EffectParam('Sustain'), EffectParam('Level')],
+      [EffectParam('Level'), EffectParam('Sustain')],
       'FX',
       'Boss CS-1',
+      [1, 0], // Display order: Sustain, Level (hardware layout)
     ),
     EffectModel(
       15,

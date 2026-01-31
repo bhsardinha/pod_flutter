@@ -282,6 +282,12 @@ class _EffectModalState extends State<EffectModal> {
     );
 
     final modelParams = widget.mapper.mapModelParams(currentModel);
+
+    // Reorder params for display if model specifies displayOrder
+    final displayParams = currentModel.displayOrder != null
+        ? currentModel.displayOrder!.map((i) => modelParams[i]).toList()
+        : modelParams;
+
     final fixedParams = widget.mapper.getFixedParams();
     final msbLsbParams = widget.mapper.getMsbLsbParams();
 
@@ -405,8 +411,8 @@ class _EffectModalState extends State<EffectModal> {
                   }
                 }),
 
-                // Model-specific knobs
-                ...modelParams.map((param) => LcdKnobConfig(
+                // Model-specific knobs (reordered per displayOrder if specified)
+                ...displayParams.map((param) => LcdKnobConfig(
                       label: param.label,
                       value: _paramValues[param.ccParam] ?? 0,
                       minValue: param.minValue,
