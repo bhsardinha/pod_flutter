@@ -100,6 +100,23 @@ class _EffectModalState extends State<EffectModal> {
             final stepValue = (midiValue ~/ 16).clamp(0, 7);
             print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (Wave)');
             _paramValues[param.ccParam] = stepValue;
+          } else if (paramName.contains('heel') || paramName.contains('toe')) {
+            // Reverse of Heel/Toe MIDI → display conversion
+            // Based on pod-ui heel_toe_from_midi function
+            // MIDI 0-127 → Internal 0-48 → Display -24 to +24
+            int internal;
+            if (midiValue <= 17) {
+              internal = 0;
+            } else if (midiValue >= 112) {
+              internal = 48;
+            } else {
+              internal = ((midiValue - 18) ~/ 2) + 1;
+            }
+
+            // Convert internal (0-48) to display (-24 to +24)
+            final displayValue = internal - 24;
+            print('[EffectModal] descaler: MIDI $midiValue → internal $internal → display $displayValue (${param.label})');
+            _paramValues[param.ccParam] = displayValue;
           } else {
             _paramValues[param.ccParam] = midiValue;
           }

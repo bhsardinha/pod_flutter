@@ -184,6 +184,7 @@ class StompParamMapper extends EffectParamMapper {
       final paramName = param.name.toLowerCase();
       int Function(int)? scaler;
       int maxValue = param.maxValue;
+      int minValue = param.minValue;
 
       if (paramName.contains('wave')) {
         // Wave parameter: 8 discrete steps (0-7) mapped to MIDI
@@ -195,6 +196,27 @@ class StompParamMapper extends EffectParamMapper {
           print('[StompParamMapper] scaler: step $v → MIDI ${v * 16}');
           return v * 16;
         };
+      } else if (paramName.contains('heel') || paramName.contains('toe')) {
+        // Heel/Toe parameters: -24 to +24 semitones
+        // Based on pod-ui heel_toe_to_midi function
+        // Display: -24 to +24 → Internal: 0 to 48 → MIDI: special mapping
+        scaler = (v) {
+          // Convert display (-24 to +24) to internal (0 to 48)
+          final internal = v + 24;
+
+          // Convert internal to MIDI using pod-ui algorithm
+          int midi;
+          if (internal == 0) {
+            midi = 0;
+          } else if (internal == 48) {
+            midi = 127;
+          } else {
+            midi = (internal - 1) * 2 + 18;
+          }
+
+          print('[StompParamMapper] heel/toe scaler: display $v → internal $internal → MIDI $midi');
+          return midi;
+        };
       }
 
       mappings.add(
@@ -202,7 +224,7 @@ class StompParamMapper extends EffectParamMapper {
           label: param.name.toUpperCase(),
           ccParam: ccParams[i],
           formatter: _getFormatterForParam(param.name),
-          minValue: param.minValue,
+          minValue: minValue,
           maxValue: maxValue,
           valueScaler: scaler,
         ),
@@ -239,6 +261,11 @@ class StompParamMapper extends EffectParamMapper {
     if (lower.contains('wave')) {
       // Wave parameter: knob value is already a step (0-7), display as Wave 1-8
       return (v) => 'Wave ${v + 1}';
+    }
+
+    if (lower.contains('heel') || lower.contains('toe')) {
+      // Heel/Toe parameters: display -24 to +24 with sign
+      return (v) => v >= 0 ? '+$v' : '$v';
     }
 
     // Default: percentage

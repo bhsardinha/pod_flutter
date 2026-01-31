@@ -120,8 +120,8 @@ class StompModels {
       'Tube Drive',
       [
         EffectParam('Drive'),
-        EffectParam('Treble'),
         EffectParam('Gain'),
+        EffectParam('Treble'),
         EffectParam('Bass'),
       ],
       'FX',
@@ -178,11 +178,7 @@ class StompModels {
     EffectModel(
       18,
       'Double Bass',
-      [
-        EffectParam('-1 Oct Gain'),
-        EffectParam('-2 Oct Gain'),
-        EffectParam('Mix'),
-      ],
+      [EffectParam('-1 OctG'), EffectParam('-2 OctG'), EffectParam('Mix')],
       'FX',
       'Line 6 Original',
     ),
@@ -301,11 +297,7 @@ class StompModels {
     EffectModel(
       29,
       'Sub Octaves',
-      [
-        EffectParam('-1 Oct Gain'),
-        EffectParam('-2 Oct Gain'),
-        EffectParam('Mix'),
-      ],
+      [EffectParam('-1 OctG'), EffectParam('-2 OctGf'), EffectParam('Mix')],
       'BX',
       'Line 6 Original',
     ),
@@ -314,8 +306,8 @@ class StompModels {
       'Bender',
       [
         EffectParam('Position'),
-        EffectParam('Heel'),
-        EffectParam('Toe'),
+        EffectParam('Heel', minValue: -24, maxValue: 24),
+        EffectParam('Toe', minValue: -24, maxValue: 24),
         EffectParam('Mix'),
       ],
       'BX',
@@ -469,11 +461,7 @@ class ModModels {
     EffectModel(
       22,
       'Tape Eater',
-      [
-        EffectParam('Feedback'),
-        EffectParam('Flutter'),
-        EffectParam('Distortion'),
-      ],
+      [EffectParam('Feedback'), EffectParam('Flutter'), EffectParam('Dist')],
       'FX',
       'Line 6 Original',
     ),
