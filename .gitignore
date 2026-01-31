@@ -39,6 +39,12 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# reference files and folders
+
+test/
+pod-ui-master/
+*.pdf
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

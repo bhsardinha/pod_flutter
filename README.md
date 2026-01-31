@@ -102,22 +102,6 @@ flutter build macos      # macOS
 
 ### Main Screen
 
-```
-┌─────────────────────────────────────────────┐
-│  [Connection Status]          [Settings]    │
-├─────────────────────────────────────────────┤
-│  [Amp: Brit J-800]  [Gate] [Amp Enable]    │
-│   Cabinet    Mic                            │
-├─────────────────────────────────────────────┤
-│  [Drive] [Bass] [Mid] [Treble] [Pres] ...  │
-│   Tone Controls                             │
-├─────────────────────────────────────────────┤
-│  [Stomp] [EQ] [Comp]  │  [EQ Bands 1-4]    │
-│  [Mod] [Delay] [Rev]  │                     │
-├─────────────────────────────────────────────┤
-│  [Wah] [Loop]    [Patch: 01A]    [Tap]     │
-└─────────────────────────────────────────────┘
-```
 
 ### Controls
 
@@ -175,9 +159,7 @@ Comprehensive documentation is available in the `/docs/` folder:
 
 ### Software Limitations
 
-- **No Patch Caching**: Patches must be re-imported on each app launch
-- **Single Device**: Can only connect to one POD at a time
-- **No Undo/Redo**: Parameter changes can't be undone (planned feature)
+- **No Patch Caching**: Patches must be re-imported on each app launch (not needed if just control is intended)
 - **Landscape Only**: Portrait mode not supported (planned feature)
 
 See [FEATURES.md](docs/FEATURES.md) for complete list.
@@ -188,39 +170,17 @@ See [FEATURES.md](docs/FEATURES.md) for complete list.
 
 ### Short-Term
 - Patch caching (avoid re-import on launch)
-- Tuner display
 - Error recovery improvements
 
-### Medium-Term
-- Patch export/import (.syx files)
-- Undo/redo
-- A/B comparison mode
 
 ### Long-Term
 - Tags/favorites
-- MIDI learn
-- Portrait mode support
-- Effect visualizations
 
 See [FEATURES.md](docs/FEATURES.md) for full roadmap.
 
 ---
 
 ## Troubleshooting
-
-### Can't Connect
-
-1. Verify Bluetooth is enabled
-2. Check POD is powered on
-3. Verify BT-MIDI adapter is connected to POD MIDI port
-4. Check adapter is discoverable (refer to adapter manual)
-5. Try restarting the app
-
-### Parameters Not Updating
-
-1. Check connection status (top-left icon should be green)
-2. Verify MIDI messages are being sent (check POD display for changes)
-3. Try disconnecting and reconnecting
 
 ### Wrong Patches Loading
 
@@ -230,7 +190,7 @@ See [FEATURES.md](docs/FEATURES.md) for full roadmap.
 ### Corrupted Patches After Import
 
 1. **CRITICAL**: Verify device is POD XT Pro (160-byte patches)
-2. POD XT (non-Pro) uses 152-byte patches and is NOT compatible
+2. POD XT (non-Pro) uses 152-byte patches and is NOT compatible (needs a different implementation)
 
 See [PROTOCOL.md](docs/PROTOCOL.md) for more troubleshooting.
 
@@ -263,8 +223,8 @@ See [CLAUDE.md](CLAUDE.md) for detailed developer guide.
 
 ### Key Components
 
-- **PodController**: High-level POD API (852 lines)
-- **BleMidiService**: BLE/USB MIDI implementation (390 lines)
+- **PodController**: High-level POD API
+- **BleMidiService**: BLE/USB MIDI implementation
 - **Protocol Layer**: CC map, sysex builders/parsers (5 files)
 - **Models**: Patch, EditBuffer, PatchLibrary, Amp/Cab/Effect models
 - **UI**: 35 widgets/screens/modals
@@ -293,7 +253,6 @@ This app's protocol implementation is based on [pod-ui](https://github.com/artem
 
 ## License
 
-*(License would go here - e.g., MIT, GPL, etc.)*
 
 ---
 
@@ -304,13 +263,6 @@ This software is not affiliated with, endorsed by, or sponsored by Line 6 or Yam
 This is an independent, reverse-engineered implementation based on publicly available information and the open-source pod-ui reference implementation.
 
 Use at your own risk. The authors are not responsible for any damage to hardware or data.
-
----
-
-## Contact
-
-- **Issues**: [GitHub Issues](https://github.com/yourusername/pod_flutter/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/pod_flutter/discussions)
 
 ---
 
