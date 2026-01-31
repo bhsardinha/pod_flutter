@@ -37,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `lib/services/ble_midi_service.dart` | BLE/USB MIDI implementation | 390 |
 | `lib/protocol/cc_map.dart` | 70+ CC parameter definitions | 216 |
 | `lib/protocol/sysex.dart` | Sysex message builders/parsers | 250 |
-| `lib/protocol/effect_param_mappers.dart` | Effect-specific parameter mapping | 519 |
+| `lib/protocol/effect_param_mappers.dart` | Effect-specific parameter mapping | 701 |
 | `lib/models/patch.dart` | Patch data model (160 bytes) | 150 |
 | `lib/ui/screens/main_screen.dart` | Primary UI | 708 |
 
@@ -325,6 +325,38 @@ pod.onSyncProgress.listen((progress) {
    ```
 
 3. **Test** by selecting the effect in the UI
+
+### Special Effect Implementations
+
+#### Rotary Effects (2-Position Speed Switch)
+
+**Rotary Drum + Horn** and **Rotary Drum** modulation effects use a simplified 2-position speed control instead of the full range (0.1-15.0 Hz):
+
+- **SLOW**: 990 MIDI value (~1.0 Hz)
+- **FAST**: 8684 MIDI value (~8.0 Hz)
+
+**Implementation** (`lib/protocol/effect_param_mappers.dart`):
+```dart
+// MsbLsbParamMapping with position-based support
+MsbLsbParamMapping(
+  label: 'SPEED',
+  msbParam: PodXtCC.modNoteSelect,
+  lsbParam: PodXtCC.modSpeedLsb,
+  formatter: (v) => v < 2200 ? 'SLOW' : 'FAST',
+  minValue: 0,      // UI position: 0 = SLOW, 1 = FAST
+  maxValue: 1,
+  positionLabels: ['SLOW', 'FAST'],       // Display labels
+  positionValues: [990, 8684],            // MIDI values
+  isNoteSelectBased: false,
+)
+```
+
+**UI Handling** (`lib/ui/widgets/lcd_knob_array.dart`):
+- 2-position switches (range ≤ 1) use **direction-based** movement
+- No thresholds or accumulation - just up/down detection
+- Drag up → FAST, Drag down → SLOW
+
+**Reference**: `src/config.rs` lines 131-132 show `.skip()` for speed parameter, indicating simplified control
 
 ### Debugging MIDI Issues
 

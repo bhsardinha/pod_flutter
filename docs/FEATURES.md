@@ -93,6 +93,7 @@ This document provides a comprehensive overview of implemented features, known l
 - ✅ Dynamic parameters (up to 3 per model)
 - ✅ Speed control (14-bit MSB/LSB)
 - ✅ Tempo sync (note divisions)
+- ✅ 2-position speed switch for Rotary effects (SLOW/FAST)
 - ✅ Mix control
 
 **Delay** (14 models):
