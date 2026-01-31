@@ -11,7 +11,7 @@ String formatDelayTime(int value) {
   // Negative values: Note subdivisions (inverted: -13 to -1)
   if (value < 0) {
     final duration = NoteDurations.byId(-value); // Convert back to positive ID
-    return duration?.name ?? 'Unknown';
+    return duration?.label ?? 'Unknown';
   }
 
   // Positive values: Milliseconds mode (0-16383)
@@ -27,7 +27,7 @@ String formatModSpeed(int value) {
   // Negative values: Note subdivisions (inverted: -13 to -1)
   if (value < 0) {
     final duration = NoteDurations.byId(-value); // Convert back to positive ID
-    return duration?.name ?? 'Unknown';
+    return duration?.label ?? 'Unknown';
   }
 
   // Positive values: Hz mode (0-16383)

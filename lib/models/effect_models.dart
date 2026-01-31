@@ -765,27 +765,28 @@ class WahModels {
 class NoteDuration {
   final int id;
   final String name;
+  final String label; // Compact fraction notation for display
   final double multiplier; // Relative to whole note
 
-  const NoteDuration(this.id, this.name, this.multiplier);
+  const NoteDuration(this.id, this.name, this.label, this.multiplier);
 }
 
 class NoteDurations {
   static const List<NoteDuration> all = [
-    NoteDuration(0, 'Off', 0.0),
-    NoteDuration(1, 'Whole', 1.0),
-    NoteDuration(2, 'Dotted Half', 4.0 / 3.0),
-    NoteDuration(3, 'Half', 2.0),
-    NoteDuration(4, 'Half Triplet', 3.0),
-    NoteDuration(5, 'Dotted Quarter', 8.0 / 3.0),
-    NoteDuration(6, 'Quarter', 4.0),
-    NoteDuration(7, 'Quarter Trpiplet', 6.0),
-    NoteDuration(8, 'Dotted Eighth', 16.0 / 3.0),
-    NoteDuration(9, 'Eighth', 8.0),
-    NoteDuration(10, 'Eighth Triplet', 12.0),
-    NoteDuration(11, 'Dotted Sixteenth', 32.0 / 3.0),
-    NoteDuration(12, 'Sixteenth', 16.0),
-    NoteDuration(13, 'Sixteenth Triplet', 24.0),
+    NoteDuration(0, 'Off', 'Off', 0.0),
+    NoteDuration(1, 'Whole', '1/1', 1.0),
+    NoteDuration(2, 'Dotted Half', '1/2.', 4.0 / 3.0),
+    NoteDuration(3, 'Half', '1/2', 2.0),
+    NoteDuration(4, 'Half Triplet', '1/2T', 3.0),
+    NoteDuration(5, 'Dotted Quarter', '1/4.', 8.0 / 3.0),
+    NoteDuration(6, 'Quarter', '1/4', 4.0),
+    NoteDuration(7, 'Quarter Triplet', '1/4T', 6.0),
+    NoteDuration(8, 'Dotted Eighth', '1/8.', 16.0 / 3.0),
+    NoteDuration(9, 'Eighth', '1/8', 8.0),
+    NoteDuration(10, 'Eighth Triplet', '1/8T', 12.0),
+    NoteDuration(11, 'Dotted Sixteenth', '1/16.', 32.0 / 3.0),
+    NoteDuration(12, 'Sixteenth', '1/16', 16.0),
+    NoteDuration(13, 'Sixteenth Triplet', '1/16T', 24.0),
   ];
 
   static NoteDuration? byId(int id) {

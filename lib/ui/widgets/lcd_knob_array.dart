@@ -47,6 +47,18 @@ class _LcdKnobState extends State<LcdKnob> {
   double _accumulatedScrollDistance = 0.0;
   double _accumulatedDragDistance = 0.0;
 
+  /// Reset accumulated distances when crossing between note division mode and ms/Hz mode
+  void _resetAccumulationOnModeChange(int oldValue, int newValue) {
+    // Detect mode change: crossing the boundary between negative (note division) and positive (ms/Hz)
+    final oldIsNoteMode = oldValue < 0;
+    final newIsNoteMode = newValue < 0;
+
+    if (oldIsNoteMode != newIsNoteMode) {
+      _accumulatedScrollDistance = 0.0;
+      _accumulatedDragDistance = 0.0;
+    }
+  }
+
   void _handleScroll(PointerScrollEvent event) {
     // Activate this knob when scrolling
     if (!widget.isActive && widget.onTap != null) {
@@ -86,6 +98,10 @@ class _LcdKnobState extends State<LcdKnob> {
         if (range <= 15) {
           print('[LcdKnob] Scroll: accumulated=${_accumulatedScrollDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
         }
+
+        // Reset accumulation if crossing between note division and ms/Hz mode
+        _resetAccumulationOnModeChange(widget.value, newValue);
+
         widget.onValueChanged(newValue);
 
         // Subtract the distance we "consumed" for these steps
@@ -132,6 +148,10 @@ class _LcdKnobState extends State<LcdKnob> {
         if (range <= 15) {
           print('[LcdKnob] Drag: accumulated=${_accumulatedDragDistance.toStringAsFixed(1)}, steps=$steps, ${widget.value}→$newValue (range=$range)');
         }
+
+        // Reset accumulation if crossing between note division and ms/Hz mode
+        _resetAccumulationOnModeChange(widget.value, newValue);
+
         widget.onValueChanged(newValue);
 
         // Subtract the distance we "consumed" for these steps
