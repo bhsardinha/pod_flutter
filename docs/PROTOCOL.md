@@ -143,6 +143,50 @@ class CCParam {
 | Stomp Param 5 | 81 | 113 | Model-dependent |
 | Stomp Param 6 | 82 | 114 | Model-dependent |
 
+**Special Stomp Parameter Encodings**:
+
+Some stomp effects use discrete step parameters instead of continuous 0-127 values:
+
+- **Wave parameters** (synth effects): 8 discrete steps
+  - UI: Wave 1-8 (0-7)
+  - MIDI: 0, 16, 32, 48, 64, 80, 96, 112
+  - Formula: `midiValue = step * 16`
+  - Exception: Synth Harmony uses percentage (0-127) for Wave
+
+- **Octave parameters** (Synth Harmony): 9 discrete steps
+  - UI: -1 oct, -maj 6th, -min 6th, -4th, unison, min 3rd, maj 3rd, 5th, 1 oct (0-8)
+  - MIDI: 0, 16, 32, 48, 64, 80, 96, 112, 127
+  - Formula: `midiValue = (step >= 8) ? 127 : step * 16`
+
+- **Heel/Toe parameters** (Bender): 49 discrete steps
+  - UI: -24 to +24 semitones
+  - Internal: 0-48
+  - MIDI special mapping:
+    - 0 → 0 (MIDI)
+    - 1-47 → `(internal - 1) * 2 + 18` (MIDI 18-110)
+    - 48 → 127 (MIDI)
+
+**Parameter Mapping Rules** (skip() offsets):
+
+Some effects skip parameters, requiring offset calculations:
+
+- **Dingo-Tron** (ID 15): `skip().control("Sens").control("Q")`
+  - Param2 is skipped → Sens uses Param3, Q uses Param4
+
+- **Seismik Synth** (ID 17): `wave("Wave").skip().skip().control("Mix")`
+  - Param2=Wave, Param3-4 skipped → Mix uses Param5
+
+- **Rotary Drum + Horn / Rotary Drum** (ID 8-9): `skip().control("Tone")`
+  - Speed is controlled via modSpeed MSB/LSB (2-position switch)
+  - Param2 is skipped → Tone uses Param3
+
+**displayOrder Support**:
+
+Some effects reorder parameters for display to match hardware layout:
+
+- **Tube Drive** (ID 11): Display order [0, 2, 1, 3] → Drive, Gain, Treble, Bass
+- **Blue Comp Treb** (ID 14): Display order [1, 0] → Sustain, Level
+
 #### Modulation
 
 | Name | CC | Address | Range |
@@ -156,6 +200,15 @@ class CCParam {
 | Mod Param 4 | 55 | 87 | Model-dependent |
 | Mod Mix | 56 | 88 | 0-127 |
 
+**Special Modulation Parameter Encodings**:
+
+- **Rotary Speed** (Rotary Drum + Horn, Rotary Drum): 2-position switch
+  - UI: "SLOW" or "FAST" (0-1)
+  - MIDI: 990 (~1.0 Hz) or 8684 (~8.0 Hz)
+  - Uses Mod Speed MSB/LSB (NOT a standard 0-127 parameter)
+  - Threshold at ~2.0 Hz (2200 in 14-bit MIDI value)
+  - Note Select (CC 51) must be 0 to enable MSB/LSB mode
+
 #### Delay
 
 | Name | CC | Address | Range |
@@ -168,6 +221,18 @@ class CCParam {
 | Delay Param 3 | 33 | 65 | Model-dependent |
 | Delay Param 4 | 34 | 66 | Model-dependent |
 | Delay Mix | 27 | 59 | 0-127 |
+
+**Special Delay Parameter Encodings**:
+
+- **Heads parameter** (Multi-Head, Echo Platter): 9 discrete steps
+  - UI: "12--", "1-3-", "1--4", "-23-", "123-", "12-4", "1-34", "-234", "1234" (0-8)
+  - MIDI: 0, 16, 32, 48, 64, 80, 96, 112, 127
+  - Formula: `midiValue = (step >= 8) ? 127 : step * 16`
+
+- **Bits parameter** (Low Rez): 9 discrete steps
+  - UI: "12", "11", "10", "9", "8", "7", "6", "5", "4" (0-8)
+  - MIDI: 0, 16, 32, 48, 64, 80, 96, 112, 127
+  - Formula: `midiValue = (step >= 8) ? 127 : step * 16`
 
 #### Digital I/O (D.I.)
 

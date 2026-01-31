@@ -85,7 +85,12 @@ This document provides a comprehensive overview of implemented features, known l
 - ✅ Enable/disable
 - ✅ Model selection (9 stock + 17 FX + 4 BX + 1 BX2)
 - ✅ Dynamic parameters (up to 6 per model)
-- ✅ Model-specific parameter mapping
+- ✅ Model-specific parameter mapping with skip() offset handling
+- ✅ Special parameter types:
+  - Wave parameters (8-step discrete: Wave 1-8 for synth effects)
+  - Octave parameters (9-step discrete: -1 oct to +1 oct for Synth Harmony)
+  - Heel/Toe parameters (-24 to +24 semitones for Bender)
+- ✅ Hardware knob layout support (displayOrder for reordered parameters)
 
 **Modulation** (24 models):
 - ✅ Enable/disable
@@ -102,6 +107,9 @@ This document provides a comprehensive overview of implemented features, known l
 - ✅ Dynamic parameters (up to 3 per model)
 - ✅ Time control (14-bit MSB/LSB)
 - ✅ Tempo sync (note divisions)
+- ✅ Special parameters:
+  - Heads parameter (9-step discrete: multi-head delay patterns)
+  - Bits parameter (9-step discrete: bit-depth reduction for Low Rez)
 - ✅ Mix control
 
 **Reverb** (15 models):
@@ -192,7 +200,10 @@ This document provides a comprehensive overview of implemented features, known l
   - Modified patches indicator
   - Clickable modified indicator (*) with save/discard dialog
   - Import from POD hardware to local library
-  - Backup/restore functionality
+  - Export functionality:
+    - Export single patch to .syx file
+    - Bulk export all hardware patches to file
+    - Success/failure feedback with toast messages
 
 ### User Interface
 
@@ -217,10 +228,16 @@ This document provides a comprehensive overview of implemented features, known l
 
 - ✅ **Rotary Knobs**
   - Drag-based rotation (vertical drag)
-  - Value display
+  - Mouse wheel support
+  - Distance-based movement (non-accelerated)
+  - Value display with custom formatters (dB, %, Hz, ms, etc.)
   - Min/max indicators
-  - Custom formatters (dB, %, Hz, ms, etc.)
   - Smooth animation
+  - Special handling for discrete parameters:
+    - Small-range knobs (Heads, Bits, Wave) with optimized scroll sensitivity
+    - 2-position switches (Rotary speed: SLOW/FAST) with direction-based movement
+    - Tempo sync mode with compact note division labels (1/4, 1/8, etc.)
+    - Hard stop at mode boundaries (prevents accidental crossing between tempo/ms modes)
 
 - ✅ **Effect Buttons**
   - Enable/disable toggle
@@ -396,11 +413,11 @@ This document provides a comprehensive overview of implemented features, known l
   - Copy edit buffer to clipboard
   - Paste to different slot
 
-- ❌ **Patch Export/Import (Files)**
-  - Export patches to .syx files
-  - Import patches from .syx files
-  - Backup entire library to file
-  - Restore library from backup
+- ⚠️ **Patch Export/Import (Files)** (Partially Implemented)
+  - ✅ Export single patch to .syx file
+  - ✅ Bulk export all hardware patches to file
+  - ❌ Import patches from .syx files
+  - ❌ Restore library from backup file
 
 - ❌ **Undo/Redo**
   - Parameter change history

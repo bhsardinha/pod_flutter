@@ -74,7 +74,7 @@ POD Flutter is a mobile MIDI controller for the Line 6 POD XT Pro guitar process
 - `constants.dart` (49 lines) - Sysex commands, device IDs, expansion packs
 - `cc_map.dart` (216 lines) - All 70+ CC parameter definitions
 - `sysex.dart` (250 lines) - Sysex message builders/parsers
-- `effect_param_mappers.dart` (519 lines) - Effect-specific parameter mapping
+- `effect_param_mappers.dart` (701 lines) - Effect-specific parameter mapping
 
 **Key Abstractions**:
 ```dart
@@ -682,16 +682,30 @@ Each effect type has a mapper:
 
 ```dart
 abstract class EffectParamMapper {
-  List<EffectParamMapping> mapModelParams(int modelId);
+  List<EffectParamMapping> mapModelParams(EffectModel model);
+  List<MsbLsbParamMapping> getMsbLsbParams([EffectModel? model]);
 }
 
 class StompParamMapper extends EffectParamMapper { ... }
 class ModParamMapper extends EffectParamMapper { ... }
 ```
 
+**Advanced Features**:
+- **skip() handling**: Accounts for skipped parameters in pod-ui config (e.g., Dingo-Tron, Rotary effects)
+- **Special parameter types**:
+  - `Wave` (8-step discrete: 0-7 → MIDI 0, 16, 32, ..., 112)
+  - `Octave` (9-step discrete: 0-8 → MIDI 0, 16, 32, ..., 127)
+  - `Heads/Bits` (9-step discrete with edge mapping)
+  - `Heel/Toe` (49-step: -24 to +24 semitones with special MIDI scaling)
+  - `Position-based` (2-position switches like Rotary SLOW/FAST)
+- **displayOrder support**: Reorder parameters for display to match hardware layout
+- **Value scalers**: Transform UI values to MIDI (and reverse) for special parameters
+- **Model-specific MSB/LSB**: Different handling per model (e.g., Rotary 2-position vs full-range speed)
+
 **Benefits**:
 - Centralized effect parameter logic
 - Easy to add new effect types
+- Handles complex pod-ui mapping rules automatically
 - Reusable across UI components
 
 ---
