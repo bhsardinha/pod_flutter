@@ -192,6 +192,7 @@ class StompParamMapper extends EffectParamMapper {
         maxValue = 7;  // 8 steps: 0-7
         scaler = (v) {
           // Maps: 0→0, 1→16, 2→32, 3→48, 4→64, 5→80, 6→96, 7→112
+          print('[StompParamMapper] scaler: step $v → MIDI ${v * 16}');
           return v * 16;
         };
       }

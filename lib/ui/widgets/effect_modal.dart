@@ -92,6 +92,14 @@ class _EffectModalState extends State<EffectModal> {
             final stepValue = midiValue == 127 ? 8 : (midiValue ~/ 16).clamp(0, 8);
             print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (${param.label})');
             _paramValues[param.ccParam] = stepValue;
+          } else if (paramName.contains('wave')) {
+            // Reverse of Wave step → MIDI conversion (8 steps: 0-7)
+            // Based on pod-ui: steps!(0, 16, 32, 48, 64, 80, 96, 112)
+            // step = value / 16 (no special case for 127)
+            // Maps: 0-15→0, 16-31→1, 32-47→2, 48-63→3, 64-79→4, 80-95→5, 96-111→6, 112-127→7
+            final stepValue = (midiValue ~/ 16).clamp(0, 7);
+            print('[EffectModal] descaler: MIDI $midiValue → step $stepValue (Wave)');
+            _paramValues[param.ccParam] = stepValue;
           } else {
             _paramValues[param.ccParam] = midiValue;
           }
