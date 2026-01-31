@@ -157,7 +157,7 @@ class StompModels {
     EffectModel(
       15,
       'Dingo-Tron',
-      [EffectParam('Sens'), EffectParam('Q')],
+      [EffectParam('-'), EffectParam('Sens'), EffectParam('Q')],
       'FX',
       'Mu-Tron III',
     ),
