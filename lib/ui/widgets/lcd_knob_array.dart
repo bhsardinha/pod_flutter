@@ -71,12 +71,13 @@ class _LcdKnobState extends State<LcdKnob> {
       widget.onTap!();
     }
 
-    final delta = event.scrollDelta.dy;
+    // Negate delta so scroll UP (negative) increases value, scroll DOWN (positive) decreases
+    final delta = -event.scrollDelta.dy;
     final range = widget.maxValue - widget.minValue;
 
     // SIMPLE 2-POSITION SWITCH: just check direction
     if (range <= 1) {
-      final newValue = delta < 0 ? widget.maxValue : widget.minValue; // scroll up = max (FAST), down = min (SLOW)
+      final newValue = delta > 0 ? widget.maxValue : widget.minValue; // scroll up = max (FAST), down = min (SLOW)
       if (newValue != widget.value) {
         widget.onValueChanged(newValue);
       }

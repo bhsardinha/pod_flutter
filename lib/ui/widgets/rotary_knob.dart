@@ -123,7 +123,8 @@ class _RotaryKnobState extends State<RotaryKnob> {
 
   void _handleScroll(PointerScrollEvent event) {
     // DISTANCE-BASED scroll: accumulate scroll distance, only step when threshold reached
-    final delta = event.scrollDelta.dy;
+    // Negate delta so scroll UP (negative) increases value, scroll DOWN (positive) decreases
+    final delta = -event.scrollDelta.dy;
     _accumulatedScrollDistance += delta;
 
     // Distance threshold: pixels needed per step (higher = more distance needed)

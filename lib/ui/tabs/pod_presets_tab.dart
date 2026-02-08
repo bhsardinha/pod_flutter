@@ -357,15 +357,17 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
 
     try {
       // Prompt for save location
-      final path = await FilePicker.platform.saveFile(
+      final filePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Patch',
         fileName: patch.name.isEmpty ? "Patch_$patchNumber" : patch.name,
         type: FileType.custom,
         allowedExtensions: ['podpatch'],
       );
 
-      if (path != null) {
-        await widget.localLibraryService.exportPatchToFile(localPatch, path);
+      if (filePath != null) {
+        // Ensure extension is added on Windows (macOS adds it automatically)
+        final pathWithExtension = _ensureExtension(filePath, '.podpatch');
+        await widget.localLibraryService.exportPatchToFile(localPatch, pathWithExtension);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -388,6 +390,14 @@ class _PodPresetsTabState extends State<PodPresetsTab> {
         );
       }
     }
+  }
+
+  /// Ensure file path has the correct extension (Windows doesn't add it automatically)
+  String _ensureExtension(String filePath, String extension) {
+    if (!filePath.toLowerCase().endsWith(extension.toLowerCase())) {
+      return filePath + extension;
+    }
+    return filePath;
   }
 
   Future<void> _importFromLocalLibrary(int targetSlot) async {

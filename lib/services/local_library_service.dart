@@ -5,6 +5,7 @@ library;
 
 import 'dart:io';
 import 'dart:convert';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import '../models/local_patch.dart';
 import '../models/patch.dart';
@@ -28,9 +29,9 @@ class LocalLibraryService {
   Future<void> initialize() async {
     try {
       final appDocDir = await getApplicationDocumentsDirectory();
-      _appDir = Directory('${appDocDir.path}/$_libraryDirName');
-      _libraryDir = Directory('${_appDir!.path}/$_localLibraryDirName');
-      _patchesDir = Directory('${_libraryDir!.path}/$_patchesDirName');
+      _appDir = Directory(path.join(appDocDir.path, _libraryDirName));
+      _libraryDir = Directory(path.join(_appDir!.path, _localLibraryDirName));
+      _patchesDir = Directory(path.join(_libraryDir!.path, _patchesDirName));
 
       // Create directories if they don't exist
       if (!await _appDir!.exists()) {
@@ -60,11 +61,11 @@ class LocalLibraryService {
 
     try {
       // Save binary patch data
-      final binFile = File('${_patchesDir!.path}/${patch.id}.bin');
+      final binFile = File(path.join(_patchesDir!.path, '${patch.id}.bin'));
       await binFile.writeAsBytes(patch.patch.data);
 
       // Save JSON metadata
-      final jsonFile = File('${_patchesDir!.path}/${patch.id}.json');
+      final jsonFile = File(path.join(_patchesDir!.path, '${patch.id}.json'));
       await jsonFile.writeAsString(jsonEncode(patch.toJson()));
 
       // Invalidate cache since data changed
@@ -82,8 +83,8 @@ class LocalLibraryService {
     _ensureInitialized();
 
     try {
-      final binFile = File('${_patchesDir!.path}/$id.bin');
-      final jsonFile = File('${_patchesDir!.path}/$id.json');
+      final binFile = File(path.join(_patchesDir!.path, '$id.bin'));
+      final jsonFile = File(path.join(_patchesDir!.path, '$id.json'));
 
       if (!await binFile.exists() || !await jsonFile.exists()) {
         return null;
@@ -145,8 +146,8 @@ class LocalLibraryService {
     _ensureInitialized();
 
     try {
-      final binFile = File('${_patchesDir!.path}/$id.bin');
-      final jsonFile = File('${_patchesDir!.path}/$id.json');
+      final binFile = File(path.join(_patchesDir!.path, '$id.bin'));
+      final jsonFile = File(path.join(_patchesDir!.path, '$id.json'));
 
       if (await binFile.exists()) {
         await binFile.delete();

@@ -392,15 +392,17 @@ class _LocalLibraryTabState extends State<LocalLibraryTab> {
   Future<void> _exportToFile(LocalPatch patch) async {
     try {
       // Don't include extension in fileName - it will be added automatically
-      final path = await FilePicker.platform.saveFile(
+      final filePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Patch',
         fileName: patch.patch.name,
         type: FileType.custom,
         allowedExtensions: ['podpatch'],
       );
 
-      if (path != null) {
-        await widget.localLibraryService.exportPatchToFile(patch, path);
+      if (filePath != null) {
+        // Ensure extension is added on Windows (macOS adds it automatically)
+        final pathWithExtension = _ensureExtension(filePath, '.podpatch');
+        await widget.localLibraryService.exportPatchToFile(patch, pathWithExtension);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -424,6 +426,14 @@ class _LocalLibraryTabState extends State<LocalLibraryTab> {
         );
       }
     }
+  }
+
+  /// Ensure file path has the correct extension (Windows doesn't add it automatically)
+  String _ensureExtension(String filePath, String extension) {
+    if (!filePath.toLowerCase().endsWith(extension.toLowerCase())) {
+      return filePath + extension;
+    }
+    return filePath;
   }
 
   Future<void> _editMetadata(LocalPatch patch) async {

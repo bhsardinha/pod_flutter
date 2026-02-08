@@ -56,14 +56,17 @@ class _BackupOperationsTabState extends State<BackupOperationsTab> {
         Navigator.of(context).pop(); // Close progress modal
 
         // Prompt for save location
-        final path = await FilePicker.platform.saveFile(
+        final filePath = await FilePicker.platform.saveFile(
           dialogTitle: 'Export Hardware Patches',
           fileName: 'POD_XT_Pro_Backup.podlibrary',
           type: FileType.custom,
           allowedExtensions: ['podlibrary'],
         );
 
-        if (path != null) {
+        if (filePath != null) {
+          // Ensure extension is added on Windows (macOS adds it automatically)
+          final pathWithExtension = _ensureExtension(filePath, '.podlibrary');
+
           // Convert all patches to LocalPatch format
           final localPatches = <LocalPatch>[];
           for (var i = 0; i < 128; i++) {
@@ -84,7 +87,7 @@ class _BackupOperationsTabState extends State<BackupOperationsTab> {
           }
 
           // Export to file
-          await widget.localLibraryService.exportLibraryToFile(localPatches, path);
+          await widget.localLibraryService.exportLibraryToFile(localPatches, pathWithExtension);
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -133,15 +136,17 @@ class _BackupOperationsTabState extends State<BackupOperationsTab> {
         return;
       }
 
-      final path = await FilePicker.platform.saveFile(
+      final filePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Local Library',
         fileName: 'My_Patches.podlibrary',
         type: FileType.custom,
         allowedExtensions: ['podlibrary'],
       );
 
-      if (path != null) {
-        await widget.localLibraryService.exportLibraryToFile(patches, path);
+      if (filePath != null) {
+        // Ensure extension is added on Windows (macOS adds it automatically)
+        final pathWithExtension = _ensureExtension(filePath, '.podlibrary');
+        await widget.localLibraryService.exportLibraryToFile(patches, pathWithExtension);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -407,6 +412,15 @@ class _BackupOperationsTabState extends State<BackupOperationsTab> {
     } finally {
       if (mounted) setState(() => _importing = false);
     }
+  }
+
+  /// Ensures the file path has the specified extension
+  /// (Windows doesn't automatically add extensions like macOS does)
+  String _ensureExtension(String filePath, String extension) {
+    if (!filePath.toLowerCase().endsWith(extension.toLowerCase())) {
+      return filePath + extension;
+    }
+    return filePath;
   }
 
   @override

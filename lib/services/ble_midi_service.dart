@@ -4,6 +4,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 import 'package:flutter_midi_command/flutter_midi_command.dart';
 import '../protocol/sysex.dart';
@@ -111,6 +112,7 @@ class BleMidiService implements MidiService {
   Future<void> connect(MidiDeviceInfo device) async {
     // Find the actual device
     final devices = await _getDevices();
+
     final midiDevice = devices.cast<MidiDevice?>().firstWhere(
       (d) => d?.id == device.id,
       orElse: () => null,
@@ -151,18 +153,21 @@ class BleMidiService implements MidiService {
 
       _setupSubscription = _midiCommand.onMidiSetupChanged?.listen((data) async {
         final devices = await _getDevices();
+
         final deviceStatus = devices.cast<MidiDevice?>().firstWhere(
           (d) => d?.id == device.id,
           orElse: () => null,
         );
 
-        if (deviceStatus != null && deviceStatus.connected && !completer.isCompleted) {
-          // Device just connected
-          _connectedDevice = midiDevice;
-          _startListening();
-          _connectionController.add(true);
-          completer.complete();
-        } else if (deviceStatus == null || !deviceStatus.connected) {
+        if (deviceStatus != null) {
+          if (deviceStatus.connected && !completer.isCompleted) {
+            // Device just connected
+            _connectedDevice = midiDevice;
+            _startListening();
+            _connectionController.add(true);
+            completer.complete();
+          }
+        } else {
           // Device disconnected (physically unplugged or powered off)
           if (_connectedDevice != null && _connectedDevice!.id == device.id) {
             _handleUnexpectedDisconnection();
@@ -170,12 +175,39 @@ class BleMidiService implements MidiService {
         }
       });
 
+      // Windows workaround: onMidiSetupChanged may not fire for USB MIDI
+      // Poll device status instead
+      if (Platform.isWindows && !device.isBleMidi) {
+        Timer.periodic(const Duration(milliseconds: 200), (timer) async {
+          if (completer.isCompleted) {
+            timer.cancel();
+            return;
+          }
+
+          final devices = await _getDevices();
+          final deviceStatus = devices.cast<MidiDevice?>().firstWhere(
+            (d) => d?.id == device.id,
+            orElse: () => null,
+          );
+
+          if (deviceStatus != null && deviceStatus.connected) {
+            timer.cancel();
+            _connectedDevice = midiDevice;
+            _startListening();
+            _connectionController.add(true);
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          }
+        });
+      }
+
       // Timeout after 10 seconds
       return await completer.future.timeout(
         const Duration(seconds: 10),
         onTimeout: () {
           _setupSubscription?.cancel();
-          throw Exception('Connection timeout');
+          throw Exception('Connection timeout - no setup changed event received');
         },
       );
     } catch (e) {
