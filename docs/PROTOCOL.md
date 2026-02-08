@@ -713,7 +713,7 @@ pod.onEditBufferChanged.listen((buffer) {
 
 ```dart
 // Set drive to 75%
-await pod.setParameter(CCParams.drive, 95);
+await pod.setParameter(PodXtCC.drive, 95);
 
 // Or use convenience setter
 await pod.setDrive(95);

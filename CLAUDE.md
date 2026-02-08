@@ -33,13 +33,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `lib/services/pod_controller.dart` | High-level POD API, state management | 852 |
-| `lib/services/ble_midi_service.dart` | BLE/USB MIDI implementation | 390 |
-| `lib/protocol/cc_map.dart` | 70+ CC parameter definitions | 216 |
-| `lib/protocol/sysex.dart` | Sysex message builders/parsers | 250 |
-| `lib/protocol/effect_param_mappers.dart` | Effect-specific parameter mapping | 701 |
-| `lib/models/patch.dart` | Patch data model (160 bytes) | 150 |
-| `lib/ui/screens/main_screen.dart` | Primary UI | 708 |
+| `lib/services/pod_controller.dart` | High-level POD API, state management | 1,080 |
+| `lib/services/ble_midi_service.dart` | BLE/USB MIDI implementation | 389 |
+| `lib/protocol/cc_map.dart` | 70+ CC parameter definitions | 215 |
+| `lib/protocol/sysex.dart` | Sysex message builders/parsers | 350 |
+| `lib/protocol/effect_param_mappers.dart` | Effect-specific parameter mapping | 697 |
+| `lib/models/patch.dart` | Patch data model (160 bytes) | 154 |
+| `lib/ui/screens/main_screen.dart` | Primary UI | 1,241 |
 
 ---
 
@@ -98,21 +98,21 @@ Colors.white.withValues(alpha: 0.95)
 ```
 Flutter App (iOS/Android/macOS)
        │
-       ├─── UI Layer (35 files)
+       ├─── UI Layer (43 files)
        │    └─ Screens, Modals, Widgets, Theme
        │
-       ├─── Services (3 files)
-       │    ├─ PodController (main controller, 852 lines)
+       ├─── Services (4 files)
+       │    ├─ PodController (main controller, 1,080 lines)
        │    ├─ MidiService (abstract interface)
        │    └─ BleMidiService (BLE/USB implementation)
        │
-       ├─── Models (6 files)
+       ├─── Models (8 files)
        │    ├─ Patch (160-byte data structure)
        │    ├─ EditBuffer (current patch)
        │    ├─ PatchLibrary (128 patches)
        │    └─ Amp/Cab/Effect models
        │
-       └─── Protocol (5 files)
+       └─── Protocol (4 files)
             ├─ CC Map (70+ parameters)
             ├─ Sysex (message builders/parsers)
             ├─ Constants (commands, device IDs)
@@ -216,7 +216,7 @@ pod.onEditBufferChanged.listen((buffer) {
 
 ```dart
 // Direct parameter access
-await pod.setParameter(CCParams.drive, 95);
+await pod.setParameter(PodXtCC.drive, 95);
 
 // Convenience setters
 await pod.setDrive(95);
@@ -284,8 +284,8 @@ pod.onSyncProgress.listen((progress) {
 
 2. **Add convenience getter/setter** (`lib/services/pod_controller.dart`):
    ```dart
-   int get myParam => getParameter(CCParams.myParam);
-   Future<void> setMyParam(int value) => setParameter(CCParams.myParam, value);
+   int get myParam => getParameter(PodXtCC.myParam);
+   Future<void> setMyParam(int value) => setParameter(PodXtCC.myParam, value);
    ```
 
 3. **Add UI control** (e.g., `lib/ui/screens/main_screen.dart`):
@@ -357,7 +357,7 @@ MsbLsbParamMapping(
 - No thresholds or accumulation - just up/down detection
 - Drag up → FAST, Drag down → SLOW
 
-**Reference**: `src/config.rs` lines 131-132 show `.skip()` for speed parameter, indicating simplified control
+**Reference**: `~/Documents/pod-ui-reference/pod-ui-master/mod-xt/src/config.rs` lines 131-132 show `.skip()` for speed parameter, indicating simplified control
 
 ### Debugging MIDI Issues
 
@@ -525,7 +525,7 @@ flutter run
 
 ### Reference Implementation
 
-- pod-ui (Rust/GTK): `/pod-ui-master/`
+- pod-ui (Rust/GTK): `~/Documents/pod-ui-reference/pod-ui-master/`
   - `mod-xt/src/config.rs` - Configuration
   - `mod-xt/src/handler.rs` - Message handling
   - `core/src/midi.rs` - MIDI protocol

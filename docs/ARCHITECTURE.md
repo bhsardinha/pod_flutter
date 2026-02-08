@@ -17,7 +17,7 @@ POD Flutter is a mobile MIDI controller for the Line 6 POD XT Pro guitar process
                 ▼                 ▼                 ▼
     ┌──────────────────┐  ┌──────────────┐  ┌────────────────┐
     │   UI Layer       │  │   Services   │  │    Models      │
-    │   (44 files)     │  │   (3 files)  │  │   (6 files)    │
+    │   (43 files)     │  │   (4 files)  │  │   (8 files)    │
     └──────────────────┘  └──────────────┘  └────────────────┘
                                   │
                     ┌─────────────┴─────────────┐
@@ -25,19 +25,19 @@ POD Flutter is a mobile MIDI controller for the Line 6 POD XT Pro guitar process
                     ▼                           ▼
           ┌──────────────────┐       ┌──────────────────┐
           │  PodController   │       │   MidiService    │
-          │  (852 lines)     │◄──────│   (abstract)     │
+          │  (1,080 lines)   │◄──────│   (abstract)     │
           │                  │       │                  │
           │  - EditBuffer    │       │  ┌─────────────┐ │
           │  - PatchLibrary  │       │  │ BLE-MIDI    │ │
           │  - State Mgmt    │       │  │ Service     │ │
-          └──────────────────┘       │  │ (390 lines) │ │
+          └──────────────────┘       │  │ (389 lines) │ │
                     │                │  └─────────────┘ │
                     │                └──────────────────┘
                     │                           │
                     ▼                           ▼
           ┌──────────────────┐       ┌──────────────────┐
           │  Protocol Layer  │       │  flutter_midi_   │
-          │   (5 files)      │       │    command       │
+          │   (4 files)      │       │    command       │
           │                  │       │   (package)      │
           │  - cc_map.dart   │       └──────────────────┘
           │  - sysex.dart    │                  │
@@ -72,9 +72,9 @@ POD Flutter is a mobile MIDI controller for the Line 6 POD XT Pro guitar process
 
 **Files**:
 - `constants.dart` (49 lines) - Sysex commands, device IDs, expansion packs
-- `cc_map.dart` (216 lines) - All 70+ CC parameter definitions
-- `sysex.dart` (250 lines) - Sysex message builders/parsers
-- `effect_param_mappers.dart` (701 lines) - Effect-specific parameter mapping
+- `cc_map.dart` (215 lines) - All 70+ CC parameter definitions
+- `sysex.dart` (350 lines) - Sysex message builders/parsers
+- `effect_param_mappers.dart` (697 lines) - Effect-specific parameter mapping
 
 **Key Abstractions**:
 ```dart
@@ -114,11 +114,13 @@ class SysexMessage {
 **Purpose**: Data structures representing POD XT Pro state
 
 **Files**:
-- `patch.dart` (150 lines) - Patch/EditBuffer/PatchLibrary
+- `patch.dart` (154 lines) - Patch/EditBuffer/PatchLibrary
 - `amp_models.dart` (180 lines) - 107 amp models
 - `cab_models.dart` (120 lines) - 47 cab + 8 mic models
 - `effect_models.dart` (796 lines) - All effect models (Stomp/Mod/Delay/Reverb/Wah)
 - `app_settings.dart` (65 lines) - User preferences (amp display mode, grid items, tempo scrolling, warn on unsaved changes, disable A.I.R.)
+- `cc_param.dart` - CC parameter model
+- `effect_param_value.dart` - Effect parameter value model
 
 **Key Abstractions**:
 ```dart
@@ -235,7 +237,7 @@ class BleMidiService extends MidiService {
 
 #### 3.3 PodController (Main Controller)
 
-**File**: `pod_controller.dart` (852 lines)
+**File**: `pod_controller.dart` (1,080 lines)
 
 **Purpose**: High-level API for controlling POD XT Pro
 
@@ -377,7 +379,7 @@ void _handleEditBufferDump(SysexMessage message) {
 ```
 lib/ui/
 ├── screens/              # Main screens
-│   ├── main_screen.dart         (708 lines) - Primary controller UI
+│   ├── main_screen.dart         (1,241 lines) - Primary controller UI
 │   └── settings_screen.dart     - User preferences
 ├── tabs/                 # Tab views
 │   ├── local_library_tab.dart   - Local patch library storage
