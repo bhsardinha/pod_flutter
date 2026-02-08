@@ -49,7 +49,7 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
       <td width="25%"><img src="screenshots/10-library-options.png" alt="Library Options"></td>
       <td width="25%"><img src="screenshots/11-tuner.png" alt="Tuner"></td>
       <td width="25%"><img src="screenshots/12-settings.png" alt="Settings"></td>
-      <td width="25%"></td>
+      <td width="25%"><img src="screenshots/13-connection-screen.png" alt="Connection Screen"></td>
     </tr>
   </table>
 </div>
