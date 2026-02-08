@@ -151,7 +151,7 @@ The main screen mimics the POD XT Pro hardware interface with authentic rotary k
 ### Controls
 
 - **Rotary Knobs**: Drag vertically to adjust value
-- **Effect Buttons**: Tap to toggle on/off, long-press/tap to edit parameters
+- **Effect Buttons**: Tap to toggle on/off, long-press/right-click to edit parameters
 - **Patch Browser**: Tap patch name to open 128-patch browser
 - **Tap Tempo**: Tap button to set tempo
 - **Settings**: Amp name display mode, UI preferences
