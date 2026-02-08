@@ -84,7 +84,7 @@ Colors.white.withValues(alpha: 0.95)
 
 **THE pod-ui is the only source of truth** for protocol behavior. Always verify against pod-ui when implementing protocol features.
 
-**pod-ui location**: `/pod-ui-master/` in project root
+**pod-ui location**: `~/Documents/pod-ui-reference/pod-ui-master/` (moved outside project to avoid copyright filters)
 
 **Key pod-ui files**:
 - `mod-xt/src/config.rs` - POD XT Pro configuration (patch size, parameters)

@@ -1,8 +1,14 @@
 # POD Flutter
 
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
+[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20macOS%20%7C%20Windows-lightgrey)](#requirements)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A cross-platform MIDI controller for the Line 6 POD XT Pro guitar processor.
 
 Control all parameters, manage patches, and sync with your POD XT Pro hardware via USB or Bluetooth MIDI.
+
+> **Note**: This project is under active development. Core functionality is complete and stable, but some features are still being refined. See [FEATURES.md](docs/FEATURES.md) for current status.
 
 ---
 
@@ -20,7 +26,7 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 
 ## Screenshots
 
-*(Screenshots would go here)*
+*Coming soon - screenshots will be added in a future update*
 
 ---
 
@@ -46,13 +52,20 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 
 ## Installation
 
+### macOS (DMG)
+
+1. Download the latest DMG from [Releases](https://github.com/bhsardinha/pod_flutter/releases)
+2. Open the DMG file
+3. Drag **POD Flutter.app** to the **Applications** folder
+4. Launch from Applications (right-click → Open on first launch to bypass Gatekeeper)
+
 ### iOS (via TestFlight)
 
-*(TestFlight link would go here when available)*
+*TestFlight distribution coming soon. For now, please build from source.*
 
 ### Android (APK)
 
-1. Download the latest APK from [Releases](https://github.com/yourusername/pod_flutter/releases)
+1. Download the latest APK from [Releases](https://github.com/bhsardinha/pod_flutter/releases)
 2. Enable "Install from Unknown Sources" in Android settings
 3. Install the APK
 
@@ -60,7 +73,7 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/pod_flutter.git
+git clone https://github.com/bhsardinha/pod_flutter.git
 cd pod_flutter
 
 # Install dependencies
@@ -107,6 +120,7 @@ flutter build windows    # Windows
 
 ### Main Screen
 
+The main screen mimics the POD XT Pro hardware interface with authentic rotary knobs, LCD displays, and LED indicators.
 
 ### Controls
 
@@ -205,13 +219,22 @@ See [PROTOCOL.md](docs/PROTOCOL.md) for more troubleshooting.
 
 Contributions are welcome! Please read the documentation first:
 
-1. Read [ARCHITECTURE.md](docs/ARCHITECTURE.md) for code structure
-2. Read [POD_XT_PRO_DIFFERENCES.md](docs/POD_XT_PRO_DIFFERENCES.md) for critical quirks
-3. Test on real POD XT Pro hardware (not just emulator)
-4. Follow existing code style
-5. Don't break critical sysex handling
+1. **Fork the repository** and create your branch from `main`
+2. **Read the docs**: [ARCHITECTURE.md](docs/ARCHITECTURE.md) and [POD_XT_PRO_DIFFERENCES.md](docs/POD_XT_PRO_DIFFERENCES.md)
+3. **Make your changes**: Follow existing code style and conventions
+4. **Test thoroughly**: Test on real POD XT Pro hardware (not just emulator)
+5. **Don't break critical features**: Especially sysex handling and protocol quirks
+6. **Submit a pull request**: Describe your changes clearly
 
 See [CLAUDE.md](CLAUDE.md) for detailed developer guide.
+
+### Reporting Issues
+
+Found a bug or have a feature request? Please [open an issue](https://github.com/bhsardinha/pod_flutter/issues) with:
+- Clear description of the problem/request
+- Steps to reproduce (for bugs)
+- Your device and OS version
+- POD XT Pro firmware version (if applicable)
 
 ---
 
@@ -240,6 +263,12 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete details.
 
 ## Credits
 
+### Development
+
+**This entire codebase was developed using [Claude Code](https://claude.ai/code)** - Anthropic's AI-powered coding assistant. From architecture design to protocol implementation to UI development, every line of code was collaboratively written through natural language conversation with Claude.
+
+This project demonstrates the power of AI-assisted development for complex, specialized domains like reverse-engineered hardware protocols.
+
 ### Reference Implementation
 
 This app's protocol implementation is based on [pod-ui](https://github.com/arteme/pod-ui) by [arteme](https://github.com/arteme), a Rust/GTK desktop application for POD XT/XT Pro. pod-ui was essential for understanding POD XT Pro's MIDI protocol quirks.
@@ -258,6 +287,9 @@ This app's protocol implementation is based on [pod-ui](https://github.com/artem
 
 ## License
 
+MIT License - See [LICENSE](LICENSE) file for details.
+
+**Note**: This project implements the POD XT Pro MIDI protocol based on analysis of the [pod-ui](https://github.com/arteme/pod-ui) reference implementation (GPL v3). While this is an independent implementation that doesn't contain copied code, it was developed with knowledge gained from studying pod-ui's protocol implementation.
 
 ---
 
@@ -274,6 +306,7 @@ Use at your own risk. The authors are not responsible for any damage to hardware
 ## Acknowledgments
 
 Special thanks to:
+- **[Anthropic](https://anthropic.com)** for Claude Code - this project wouldn't exist without it
 - **[arteme](https://github.com/arteme)** for the pod-ui reference implementation
 - The **Flutter community** for excellent libraries and support
 - **Line 6** for creating the POD XT Pro (even if they never released full sysex docs!)

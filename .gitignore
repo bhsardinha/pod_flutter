@@ -42,7 +42,6 @@ app.*.map.json
 # reference files and folders
 
 test/
-pod-ui-master/
 *.pdf
 
 # Internal documentation (not for public GitHub)
