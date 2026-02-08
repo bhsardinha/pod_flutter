@@ -26,7 +26,33 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 
 ## Screenshots
 
-*Coming soon - screenshots will be added in a future update*
+<div align="center">
+  <img src="screenshots/01-main-screen.png" width="100%" alt="POD Flutter Main Screen">
+  <p><em>Quasi-skeumorphic interface mimicking the POD XT Pro hardware</em></p>
+</div>
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="25%"><img src="screenshots/02-main-screen-fullscreen.png" alt="Main Screen Fullscreen"></td>
+      <td width="25%"><img src="screenshots/03-stomp-settings.png" alt="Stomp Settings"></td>
+      <td width="25%"><img src="screenshots/04-bpm-set.png" alt="BPM Set"></td>
+      <td width="25%"><img src="screenshots/05-amp-selector.png" alt="Amp Selector"></td>
+    </tr>
+    <tr>
+      <td width="25%"><img src="screenshots/06-fx-model-selector.png" alt="FX Model Selector"></td>
+      <td width="25%"><img src="screenshots/07-importing-patches.png" alt="Importing Patches"></td>
+      <td width="25%"><img src="screenshots/08-patch-library-options.png" alt="Patch Library Options"></td>
+      <td width="25%"><img src="screenshots/09-local-library.png" alt="Local Library"></td>
+    </tr>
+    <tr>
+      <td width="25%"><img src="screenshots/10-library-options.png" alt="Library Options"></td>
+      <td width="25%"><img src="screenshots/11-tuner.png" alt="Tuner"></td>
+      <td width="25%"><img src="screenshots/12-settings.png" alt="Settings"></td>
+      <td width="25%"></td>
+    </tr>
+  </table>
+</div>
 
 ---
 
