@@ -445,15 +445,18 @@ POD Flutter is a **production-ready, cross-platform MIDI controller** for the Li
    - Tuner sysex doesn't include note name string
    - Must calculate note name from MIDI number
 
+### Software Design Decisions
+
+1. **No Auto-Import on Launch** ✅
+   - App launches instantly without importing POD hardware patches
+   - Allows immediate use as a real-time controller without waiting
+   - Users can manually import patches only when needed ("Import All Patches" button)
+   - Importing all 128 patches takes ~6.4 seconds when requested
+   - Local library provides persistent storage independent of hardware sync
+
 ### Software Limitations
 
-1. **POD Hardware Patch Sync**
-   - POD hardware patches must be re-imported on every app launch
-   - Takes ~6.4 seconds to import all 128 patches
-   - No automatic sync (must use "Import All Patches" manually)
-   - Local library provides persistent storage independent of hardware
-
-2. **Limited Error Recovery**
+1. **Limited Error Recovery**
    - No retry logic for failed sysex
    - Timeout handling could be more robust
    - Connection loss requires manual reconnect
@@ -467,15 +470,6 @@ POD Flutter is a **production-ready, cross-platform MIDI controller** for the Li
    - Windows BLE-MIDI not supported (USB MIDI only)
    - Web platform not supported (no MIDI API)
 
-### Testing Limitations
-
-1. **Limited Test Coverage**
-   - Only basic widget_test.dart exists
-   - No unit tests for protocol layer
-   - No integration tests for PodController
-   - No mock MIDI service
-   - Production code works but testing infrastructure is minimal
-
 ---
 
 ## Possible Future Enhancements
@@ -487,7 +481,6 @@ The following features are not planned for v1.0.0 but could be considered for fu
 - **MIDI Features**: MIDI learn, MIDI clock sync, external controller mapping
 - **UI Enhancements**: Portrait mode support, tablet/iPad optimization, custom themes, accessibility features
 - **Performance**: Auto-reconnect on connection loss, retry logic for failed sysex, patch caching optimizations
-- **Testing**: Comprehensive unit tests, integration tests, mock MIDI device for automated testing
 
 ---
 
@@ -543,11 +536,6 @@ If you'd like to contribute:
 - See "Possible Future Enhancements" section for ideas
 - Propose new features via GitHub issues
 - Follow existing code patterns and architecture
-
-**Testing**:
-- Add unit tests for protocol layer
-- Add integration tests for PodController
-- Create widget tests for UI components
 
 **Documentation**:
 - See `ARCHITECTURE.md` for complete code structure and design patterns
