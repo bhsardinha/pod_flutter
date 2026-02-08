@@ -6,6 +6,7 @@ import '../theme/pod_theme.dart';
 import '../../models/app_settings.dart';
 import '../../models/amp_models.dart';
 import '../../services/pod_controller.dart';
+import '../modals/about_modal.dart';
 
 class SettingsScreen extends StatefulWidget {
   final AppSettings settings;
@@ -83,13 +84,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Settings',
-            style: TextStyle(
-              color: PodColors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Settings',
+                style: TextStyle(
+                  color: PodColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline, color: PodColors.accent),
+                iconSize: 24,
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierColor: PodColors.modalOverlay,
+                    builder: (context) => const AboutModal(),
+                  );
+                },
+                tooltip: 'About',
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 

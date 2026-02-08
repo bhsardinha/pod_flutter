@@ -186,6 +186,7 @@ class AmpSelectorSection extends StatelessWidget {
                 // LCD
                 GestureDetector(
                   onTap: onAmpTap,
+                  onSecondaryTap: onAmpTap,
                   child: Builder(
                     builder: (context) {
                       final amp = podController.ampModel;

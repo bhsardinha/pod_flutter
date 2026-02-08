@@ -87,12 +87,15 @@ class _EffectModelSelectorState extends State<EffectModelSelector> {
                   }
                 : null,
           ),
-          // Current model name and based-on info (clickable to show picker)
+          // Current model name and based-on info (clickable or right-clickable to show picker)
           Expanded(
-            child: InkWell(
+            child: GestureDetector(
               onTap: widget.isEnabled ? () => _showModelPicker(context) : null,
+              onSecondaryTap: widget.isEnabled ? () => _showModelPicker(context) : null,
+              behavior: HitTestBehavior.opaque,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     currentModel.name,

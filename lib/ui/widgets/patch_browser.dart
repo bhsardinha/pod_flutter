@@ -52,6 +52,7 @@ class PatchBrowser extends StatelessWidget {
         Expanded(
           child: GestureDetector(
             onTap: onTap,
+            onSecondaryTap: onTap,
             behavior: HitTestBehavior.opaque,
             child: Container(
               decoration: BoxDecoration(
