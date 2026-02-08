@@ -16,65 +16,30 @@ class AboutModal extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'About POD Flutter',
-                style: TextStyle(
-                  color: PodColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: PodColors.textSecondary),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // App Icon and Name
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: PodColors.accent.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: PodColors.accent, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.router,
-                    size: 48,
-                    color: PodColors.accent,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'POD Flutter',
-                  style: TextStyle(
-                    color: PodColors.textPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Version 1.0.0',
-                  style: TextStyle(
-                    color: PodColors.textSecondary,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+          // Close button (top-right)
+          Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: PodColors.textSecondary),
+              onPressed: () => Navigator.of(context).pop(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+
+          // Version
+          const Center(
+            child: Text(
+              'POD Flutter v1.0.0',
+              style: TextStyle(
+                color: PodColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
 
           // Description
           const Text(
@@ -82,15 +47,15 @@ class AboutModal extends StatelessWidget {
             'Control all parameters, manage patches, and sync with hardware via USB or Bluetooth MIDI.',
             style: TextStyle(
               color: PodColors.textPrimary,
-              fontSize: 14,
-              height: 1.5,
+              fontSize: 12,
+              height: 1.4,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           const Divider(height: 1, color: PodColors.surfaceLight),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // License Section
           _buildInfoRow(
@@ -98,7 +63,7 @@ class AboutModal extends StatelessWidget {
             label: 'License',
             value: 'GNU General Public License v3.0',
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Target Device
           _buildInfoRow(
@@ -106,7 +71,7 @@ class AboutModal extends StatelessWidget {
             label: 'Target Device',
             value: 'Line 6 POD XT Pro',
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Platform Support
           _buildInfoRow(
@@ -114,10 +79,10 @@ class AboutModal extends StatelessWidget {
             label: 'Platforms',
             value: 'iOS, Android, macOS, Windows',
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           const Divider(height: 1, color: PodColors.surfaceLight),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Repository Link
           const Center(
@@ -127,21 +92,21 @@ class AboutModal extends StatelessWidget {
                   'Repository',
                   style: TextStyle(
                     color: PodColors.textSecondary,
-                    fontSize: 12,
+                    fontSize: 10,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 3),
                 Text(
                   'github.com/bhsardinha/pod-flutter',
                   style: TextStyle(
                     color: PodColors.accent,
-                    fontSize: 13,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Credits
           const Center(
@@ -151,15 +116,15 @@ class AboutModal extends StatelessWidget {
                   'Reference Implementation',
                   style: TextStyle(
                     color: PodColors.textSecondary,
-                    fontSize: 12,
+                    fontSize: 10,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 3),
                 Text(
                   'pod-ui by arteme',
                   style: TextStyle(
                     color: PodColors.accent,
-                    fontSize: 13,
+                    fontSize: 11,
                   ),
                 ),
                 SizedBox(height: 2),
@@ -167,7 +132,7 @@ class AboutModal extends StatelessWidget {
                   'github.com/arteme/pod-ui',
                   style: TextStyle(
                     color: PodColors.textSecondary,
-                    fontSize: 11,
+                    fontSize: 10,
                   ),
                 ),
               ],
@@ -181,7 +146,7 @@ class AboutModal extends StatelessWidget {
               '© 2026 POD Flutter Contributors',
               style: TextStyle(
                 color: PodColors.textSecondary,
-                fontSize: 11,
+                fontSize: 10,
               ),
             ),
           ),
@@ -200,7 +165,7 @@ class AboutModal extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: 18,
+          size: 16,
           color: PodColors.accent,
         ),
         const SizedBox(width: 8),
@@ -212,7 +177,7 @@ class AboutModal extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   color: PodColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -221,7 +186,7 @@ class AboutModal extends StatelessWidget {
                 value,
                 style: const TextStyle(
                   color: PodColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: 11,
                 ),
               ),
             ],

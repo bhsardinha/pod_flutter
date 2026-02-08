@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../services/pod_controller.dart';
 import '../../services/midi_service.dart';
 import '../theme/pod_theme.dart';
+import 'about_modal.dart';
 
 /// Connection panel widget for device discovery and connection
 class ConnectionModal extends StatefulWidget {
@@ -130,15 +131,36 @@ class _ConnectionModalState extends State<ConnectionModal> {
             style: TextStyle(color: PodColors.textSecondary, fontSize: 12),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              widget.onDisconnect();
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
-            ),
-            child: const Text('Disconnect'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  widget.onDisconnect();
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade700,
+                ),
+                child: const Text('Disconnect'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    barrierColor: PodColors.modalOverlay,
+                    builder: (context) => const AboutModal(),
+                  );
+                },
+                icon: const Icon(Icons.info_outline, size: 18),
+                label: const Text('About'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: PodColors.accent,
+                  side: const BorderSide(color: PodColors.accent),
+                ),
+              ),
+            ],
           ),
         ],
       );
