@@ -2,7 +2,7 @@
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android%20%7C%20macOS%20%7C%20Windows-lightgrey)](#requirements)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](LICENSE)
 
 A cross-platform MIDI controller for the Line 6 POD XT Pro guitar processor.
 
@@ -306,9 +306,9 @@ The pod-ui project was essential for understanding POD XT Pro's MIDI protocol qu
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
+GNU General Public License v3.0 - See [LICENSE](LICENSE) file for details.
 
-**Note**: This project implements the POD XT Pro MIDI protocol based on analysis of the [pod-ui](https://github.com/arteme/pod-ui) reference implementation (GPL v3). While this is an independent implementation that doesn't contain copied code, it was developed with knowledge gained from studying pod-ui's protocol implementation.
+This project is licensed under GPL v3, matching the [pod-ui](https://github.com/arteme/pod-ui) reference implementation from which protocol knowledge was derived.
 
 ---
 
