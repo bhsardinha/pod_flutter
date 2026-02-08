@@ -6,9 +6,9 @@
 
 A cross-platform MIDI controller for the Line 6 POD XT Pro guitar processor.
 
-Control all parameters, manage patches, and sync with your POD XT Pro hardware via USB or Bluetooth MIDI.
+**This is a Flutter spinoff of [pod-ui](https://github.com/arteme/pod-ui)** (by [arteme](https://github.com/arteme)), reimagined with a **quasi-skeumorphic interface** that mimics the actual POD hardware. While the original pod-ui takes a lean, lightweight "all-in-one-screen" approach, POD Flutter focuses on an authentic hardware-like experience with rotary knobs, LCD displays, and physical-style controls.
 
-> **Note**: This project is under active development. Core functionality is complete and stable, but some features are still being refined. See [FEATURES.md](docs/FEATURES.md) for current status.
+Control all parameters, manage patches, and sync with your POD XT Pro hardware via USB or Bluetooth MIDI.
 
 ---
 
@@ -185,20 +185,6 @@ See [FEATURES.md](docs/FEATURES.md) for complete list.
 
 ---
 
-## Roadmap
-
-### Short-Term
-- Patch caching (avoid re-import on launch)
-- Error recovery improvements
-
-
-### Long-Term
-- Tags/favorites
-
-See [FEATURES.md](docs/FEATURES.md) for full roadmap.
-
----
-
 ## Troubleshooting
 
 ### Wrong Patches Loading
@@ -269,9 +255,16 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete details.
 
 This project demonstrates the power of AI-assisted development for complex, specialized domains like reverse-engineered hardware protocols.
 
-### Reference Implementation
+### Spinoff Project
 
-This app's protocol implementation is based on [pod-ui](https://github.com/arteme/pod-ui) by [arteme](https://github.com/arteme), a Rust/GTK desktop application for POD XT/XT Pro. pod-ui was essential for understanding POD XT Pro's MIDI protocol quirks.
+**POD Flutter is a spinoff of [pod-ui](https://github.com/arteme/pod-ui)** by [arteme](https://github.com/arteme) - a Rust/GTK desktop application for POD XT/XT Pro.
+
+While pod-ui takes a **lean, lightweight "all-in-one-screen" approach**, POD Flutter reimagines the interface with a **quasi-skeumorphic design** that closely mimics the physical hardware. Both projects share the same protocol implementation knowledge, but offer different user experience philosophies:
+
+- **pod-ui**: Efficient, minimalist, all controls visible at once
+- **POD Flutter**: Hardware-authentic, with rotary knobs, LCD screens, and physical-style navigation
+
+The pod-ui project was essential for understanding POD XT Pro's MIDI protocol quirks and behavior.
 
 ### Dependencies
 
