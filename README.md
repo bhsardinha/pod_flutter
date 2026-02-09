@@ -191,9 +191,11 @@ Tap patch name to open patch browser:
 
 The POD XT Pro's cab modeling is limited by 2026 standards. For modern, studio-quality tones:
 
-1. **Disable Cab**: Long-press/right-click the cab button → turn cab off
-2. **Disable A.I.R.**: Turn the A.I.R. knob fully counter-clockwise (off)
-3. **Route Audio**: POD output → your IR loader (plugin/hardware) → DAW/amp
+1. **Disable Cab**: Left-click the cab button to toggle cab on/off
+2. **Disable A.I.R.**: Open Settings menu → toggle "A.I.R. Disable" on
+3. **Route Audio**:
+   - **Option A**: POD output → IR loader plugin in DAW
+   - **Option B**: POD FX loop → hardware IR loader → return to POD (requires line-level compatible IR loader - POD XT Pro FX loop is line level, not high-Z pedal level)
 4. **Enjoy**: Keep POD's excellent high-gain amp models, replace dated cabs with modern IRs
 
 This workflow lets you leverage POD's strengths (amp modeling) while bypassing its weaknesses (cab simulation).
