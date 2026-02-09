@@ -85,15 +85,21 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 3. Drag **POD Flutter.app** to the **Applications** folder
 4. Launch from Applications (right-click → Open on first launch to bypass Gatekeeper)
 
+### Windows (Portable)
+
+1. Download the latest Windows ZIP from [Releases](https://github.com/bhsardinha/pod_flutter/releases)
+2. Extract the ZIP file to a folder of your choice
+3. Run `pod_flutter.exe` from the extracted folder
+4. **Note**: Windows version supports USB MIDI only (BLE MIDI not supported)
+5. **USB Connection**: Install [Line 6 drivers](https://line6.com/software/) if using USB MIDI
+
 ### iOS (via TestFlight)
 
 *TestFlight distribution coming soon. For now, please build from source.*
 
-### Android (APK)
+### Android
 
-1. Download the latest APK from [Releases](https://github.com/bhsardinha/pod_flutter/releases)
-2. Enable "Install from Unknown Sources" in Android settings
-3. Install the APK
+*Android release coming soon. Some fixes needed before public release. For now, please build from source.*
 
 ### Build from Source
 
@@ -121,12 +127,12 @@ flutter build windows    # Windows
 
 1. **Connect Hardware**:
    - Power on your POD XT Pro
-   - Connect BT-MIDI adapter to POD MIDI port (or use USB MIDI)
-   - Ensure adapter is discoverable (check adapter manual)
+   - **For BLE MIDI**: Connect BT-MIDI adapter to POD MIDI port and ensure adapter is discoverable (check adapter manual)
+   - **For USB MIDI**: Connect USB cable directly to POD (Windows requires [Line 6 drivers](https://line6.com/software/))
 
 2. **Launch App**:
    - Open POD Flutter
-   - Tap connection icon (top-left)
+   - Connection modal opens automatically on launch
    - Select your MIDI device from the list
    - Tap "Connect"
 
