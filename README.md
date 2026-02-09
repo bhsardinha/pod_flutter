@@ -21,6 +21,7 @@ Control all parameters, manage patches, and sync with your POD XT Pro hardware v
 - **POD Hardware UI**: Authentic POD appearance with rotary knobs, LCD display, LED indicators
 - **BLE & USB MIDI**: Connect via Bluetooth or USB MIDI adapter
 - **Expansion Pack Support**: MS, CC, FX, BX expansion models
+- **External IR Ready**: Easily disable cab and A.I.R. to use modern impulse responses - bypassing POD's dated cab modeling for superior tones with your favorite IR loader
 
 ---
 
@@ -185,6 +186,17 @@ Tap patch name to open patch browser:
 - **Load**: Tap patch to load to edit buffer
 - **Save**: Long-press patch to save current edit buffer
 - **Modified Indicator**: Shows which patches have been edited
+
+### Using External IRs
+
+The POD XT Pro's cab modeling is limited by 2026 standards. For modern, studio-quality tones:
+
+1. **Disable Cab**: Long-press/right-click the cab button → turn cab off
+2. **Disable A.I.R.**: Turn the A.I.R. knob fully counter-clockwise (off)
+3. **Route Audio**: POD output → your IR loader (plugin/hardware) → DAW/amp
+4. **Enjoy**: Keep POD's excellent high-gain amp models, replace dated cabs with modern IRs
+
+This workflow lets you leverage POD's strengths (amp modeling) while bypassing its weaknesses (cab simulation).
 
 ---
 
